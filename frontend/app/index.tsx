@@ -1,16 +1,48 @@
-import { Text, View, StyleSheet, Image } from "react-native";
+import React, { useEffect } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useAuthStore } from '../src/store';
+import * as api from '../src/api';
 
-const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const COLORS = {
+  primary: '#7C3AED',
+  background: '#F8F9FA',
+};
 
 export default function Index() {
-  console.log(EXPO_PUBLIC_BACKEND_URL, "EXPO_PUBLIC_BACKEND_URL");
+  const router = useRouter();
+  const { user, sessionToken, isLoading, setUser, setIsLoading } = useAuthStore();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (isLoading) return;
+
+      if (!sessionToken) {
+        router.replace('/(auth)/login');
+        return;
+      }
+
+      try {
+        const response = await api.getMe();
+        setUser(response.data);
+        
+        if (!response.data.is_agent) {
+          router.replace('/register');
+        } else {
+          router.replace('/(main)/home');
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        router.replace('/(auth)/login');
+      }
+    };
+
+    checkAuth();
+  }, [isLoading, sessionToken]);
 
   return (
     <View style={styles.container}>
-      <Image
-        source={require("../assets/images/app-image.png")}
-        style={styles.image}
-      />
+      <ActivityIndicator size="large" color={COLORS.primary} />
     </View>
   );
 }
@@ -18,13 +50,8 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0c0c0c",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "contain",
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
