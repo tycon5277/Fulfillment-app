@@ -78,12 +78,3 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
 });
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
