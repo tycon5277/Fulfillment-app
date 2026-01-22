@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import * as ExpoLinking from 'expo-linking';
-import { makeRedirectUri } from 'expo-auth-session';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -44,12 +44,12 @@ export default function LoginScreen() {
       }
       return '/';
     }
-    // For mobile, use makeRedirectUri which creates proper deep link
-    // This will create an exp:// URL for Expo Go
-    return makeRedirectUri({
-      scheme: 'quickwish-agent',
-      path: '/',
-    });
+    
+    // For mobile in Expo Go, create the exp:// URL
+    // This ensures the browser will redirect back to Expo Go
+    const expoUrl = ExpoLinking.createURL('/');
+    console.log('Created Expo URL:', expoUrl);
+    return expoUrl;
   };
 
   // Parse session_id from URL (supports both hash and query)
@@ -60,7 +60,7 @@ export default function LoginScreen() {
     if (url.includes('#session_id=')) {
       return url.split('#session_id=')[1]?.split('&')[0] || null;
     }
-    // Check query parameter: ?session_id=xxx
+    // Check query parameter: ?session_id=xxx or &session_id=xxx
     if (url.includes('session_id=')) {
       try {
         const match = url.match(/session_id=([^&#]+)/);
@@ -132,6 +132,7 @@ export default function LoginScreen() {
         if (initialUrl) {
           const sessionId = parseSessionId(initialUrl);
           if (sessionId) {
+            console.log('Found session_id in initial URL:', sessionId);
             await handleSessionExchange(sessionId);
           }
         }
@@ -151,6 +152,7 @@ export default function LoginScreen() {
       console.log('Deep link received:', event.url);
       const sessionId = parseSessionId(event.url);
       if (sessionId) {
+        console.log('Found session_id in deep link:', sessionId);
         await handleSessionExchange(sessionId);
       }
     });
@@ -176,13 +178,13 @@ export default function LoginScreen() {
       }
 
       // For mobile, use WebBrowser.openAuthSessionAsync
-      // This will properly close the browser when redirected back to our app scheme
+      // The browser will automatically close when redirected to our exp:// URL
       const result = await WebBrowser.openAuthSessionAsync(
         authUrl,
         redirectUrl,
         {
           showInRecents: false,
-          preferEphemeralSession: true, // Don't persist auth state in browser
+          preferEphemeralSession: true,
         }
       );
       
@@ -191,7 +193,7 @@ export default function LoginScreen() {
       if (result.type === 'success' && result.url) {
         // Browser closed automatically, process the session_id
         const sessionId = parseSessionId(result.url);
-        console.log('Parsed session_id:', sessionId);
+        console.log('Parsed session_id from result:', sessionId);
         if (sessionId) {
           await handleSessionExchange(sessionId);
           return;
