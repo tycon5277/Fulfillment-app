@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,11 @@ import {
   ActivityIndicator,
   Image,
   Dimensions,
+  Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
+import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,68 +32,94 @@ const COLORS = {
 
 const AUTH_URL = 'https://demobackend.emergentagent.com/auth/v1/env/oauth/google-login';
 
+// Warm up the browser for better UX
+WebBrowser.maybeCompleteAuthSession();
+
 export default function LoginScreen() {
   const router = useRouter();
-  const webViewRef = useRef<WebView>(null);
-  const [showWebView, setShowWebView] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { setUser, setSessionToken } = useAuthStore();
 
-  const handleGoogleLogin = () => {
-    setShowWebView(true);
-  };
-
-  const handleNavigationChange = async (navState: any) => {
-    const { url } = navState;
-    
-    if (url.includes('session_id=')) {
-      const sessionId = url.split('session_id=')[1]?.split('&')[0];
-      
-      if (sessionId) {
-        setShowWebView(false);
-        setIsLoading(true);
-        
-        try {
-          const response = await api.createSession(sessionId);
-          const { user, session_token } = response.data;
-          
-          await AsyncStorage.setItem('session_token', session_token);
-          setSessionToken(session_token);
-          setUser(user);
-          
-          if (!user.is_agent) {
-            router.replace('/register');
-          } else {
-            router.replace('/(main)/home');
-          }
-        } catch (error) {
-          console.error('Login error:', error);
-          setIsLoading(false);
+  // Handle deep link when returning from OAuth
+  useEffect(() => {
+    const handleDeepLink = async (event: { url: string }) => {
+      const { url } = event;
+      if (url.includes('session_id=')) {
+        const sessionId = url.split('session_id=')[1]?.split('&')[0];
+        if (sessionId) {
+          await handleSessionExchange(sessionId);
         }
       }
+    };
+
+    // Listen for deep links
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    // Check if app was opened with a deep link
+    Linking.getInitialURL().then((url) => {
+      if (url && url.includes('session_id=')) {
+        const sessionId = url.split('session_id=')[1]?.split('&')[0];
+        if (sessionId) {
+          handleSessionExchange(sessionId);
+        }
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  const handleSessionExchange = async (sessionId: string) => {
+    setIsLoading(true);
+    try {
+      const response = await api.createSession(sessionId);
+      const { user, session_token } = response.data;
+
+      await AsyncStorage.setItem('session_token', session_token);
+      setSessionToken(session_token);
+      setUser(user);
+
+      if (!user.is_agent) {
+        router.replace('/register');
+      } else {
+        router.replace('/(main)/home');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setIsLoading(false);
     }
   };
 
-  if (showWebView) {
-    return (
-      <SafeAreaView style={styles.webViewContainer}>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => setShowWebView(false)}
-        >
-          <Ionicons name="close" size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <WebView
-          ref={webViewRef}
-          source={{ uri: AUTH_URL }}
-          onNavigationStateChange={handleNavigationChange}
-          style={styles.webView}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-        />
-      </SafeAreaView>
-    );
-  }
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    try {
+      // Open browser for OAuth
+      const result = await WebBrowser.openAuthSessionAsync(
+        AUTH_URL,
+        Platform.select({
+          web: window.location.origin,
+          default: 'quickwish-agent://',
+        })
+      );
+
+      if (result.type === 'success' && result.url) {
+        const url = result.url;
+        if (url.includes('session_id=')) {
+          const sessionId = url.split('session_id=')[1]?.split('&')[0];
+          if (sessionId) {
+            await handleSessionExchange(sessionId);
+            return;
+          }
+        }
+      }
+      
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Auth error:', error);
+      setIsLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -237,16 +265,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 24,
     lineHeight: 18,
-  },
-  webViewContainer: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-  },
-  closeButton: {
-    padding: 16,
-    alignItems: 'flex-end',
-  },
-  webView: {
-    flex: 1,
   },
 });
