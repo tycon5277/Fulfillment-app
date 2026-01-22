@@ -28,25 +28,41 @@ export const getMe = () => api.get('/auth/me');
 
 export const logout = () => api.post('/auth/logout');
 
-// Agent Registration & Profile
-export const registerAsAgent = (data: { vehicle_type: string; phone: string }) =>
-  api.post('/agent/register', data);
+// Partner Registration
+export const registerAsAgent = (data: { 
+  phone: string; 
+  vehicle_type: string; 
+  services: string[];
+}) => api.post('/partner/register/agent', data);
 
-export const updateAgentStatus = (status: string) =>
-  api.put('/agent/status', { status });
+export const registerAsVendor = (data: { 
+  phone: string; 
+  shop_name: string;
+  shop_type: string;
+  shop_address: string;
+  shop_location?: { lat: number; lng: number };
+  can_deliver: boolean;
+  categories: string[];
+}) => api.post('/partner/register/vendor', data);
 
-export const updateAgentProfile = (data: any) =>
-  api.put('/agent/profile', data);
+export const registerAsPromoter = (data: { 
+  phone: string; 
+  business_name: string;
+  promoter_type: string;
+  description: string;
+}) => api.post('/partner/register/promoter', data);
 
-export const getAgentStats = () => api.get('/agent/stats');
+// Partner Status & Stats
+export const updatePartnerStatus = (status: string) =>
+  api.put('/partner/status', { status });
 
-// Orders
+export const getPartnerStats = () => api.get('/partner/stats');
+
+// Agent - Orders
 export const getAvailableOrders = () => api.get('/agent/available-orders');
 
 export const acceptOrder = (orderId: string) =>
   api.post(`/agent/orders/${orderId}/accept`);
-
-export const getAgentOrders = () => api.get('/agent/orders');
 
 export const getActiveOrders = () => api.get('/agent/orders/active');
 
@@ -59,7 +75,7 @@ export const updateOrderStatus = (orderId: string, status: string, location?: { 
 export const updateDeliveryLocation = (orderId: string, lat: number, lng: number) =>
   api.put(`/agent/orders/${orderId}/location`, { lat, lng });
 
-// Wishes
+// Agent - Wishes
 export const getAvailableWishes = () => api.get('/agent/available-wishes');
 
 export const acceptWish = (wishId: string) =>
@@ -70,20 +86,68 @@ export const getAgentWishes = () => api.get('/agent/wishes');
 export const completeWish = (wishId: string) =>
   api.put(`/agent/wishes/${wishId}/complete`);
 
-// Chat
-export const getChatRooms = () => api.get('/agent/chat/rooms');
+// Vendor - Products
+export const createProduct = (data: {
+  name: string;
+  description?: string;
+  price: number;
+  category: string;
+  image?: string;
+}) => api.post('/vendor/products', data);
+
+export const getVendorProducts = () => api.get('/vendor/products');
+
+export const updateProduct = (productId: string, data: any) =>
+  api.put(`/vendor/products/${productId}`, data);
+
+export const deleteProduct = (productId: string) =>
+  api.delete(`/vendor/products/${productId}`);
+
+// Vendor - Orders
+export const getVendorOrders = () => api.get('/vendor/orders');
+
+export const updateVendorOrderStatus = (orderId: string, status: string) =>
+  api.put(`/vendor/orders/${orderId}/status`, { status });
+
+export const assignAgentToOrder = (orderId: string) =>
+  api.post(`/vendor/orders/${orderId}/assign-agent`);
+
+// Promoter - Events
+export const createEvent = (data: {
+  event_type: string;
+  title: string;
+  description: string;
+  date?: string;
+  location?: { lat: number; lng: number };
+  price: number;
+  total_slots: number;
+  images?: string[];
+}) => api.post('/promoter/events', data);
+
+export const getPromoterEvents = () => api.get('/promoter/events');
+
+export const updateEvent = (eventId: string, data: any) =>
+  api.put(`/promoter/events/${eventId}`, data);
+
+export const deleteEvent = (eventId: string) =>
+  api.delete(`/promoter/events/${eventId}`);
+
+export const getPromoterBookings = () => api.get('/promoter/bookings');
+
+// Chat (Partner)
+export const getChatRooms = () => api.get('/partner/chat/rooms');
 
 export const getChatMessages = (roomId: string) =>
-  api.get(`/agent/chat/rooms/${roomId}/messages`);
+  api.get(`/partner/chat/rooms/${roomId}/messages`);
 
 export const sendMessage = (roomId: string, content: string) =>
-  api.post(`/agent/chat/rooms/${roomId}/messages`, { content });
+  api.post(`/partner/chat/rooms/${roomId}/messages`, { content });
 
 // Earnings
-export const getEarningsSummary = () => api.get('/agent/earnings');
+export const getEarningsSummary = () => api.get('/partner/earnings');
 
 export const getEarningsHistory = (limit?: number) =>
-  api.get('/agent/earnings/history', { params: { limit } });
+  api.get('/partner/earnings/history', { params: { limit } });
 
 // Seed data (for testing)
 export const seedOrders = () => api.post('/seed/orders');
