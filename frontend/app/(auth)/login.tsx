@@ -7,10 +7,10 @@ import {
   ActivityIndicator,
   Image,
   Platform,
-  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
+import * as ExpoLinking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -43,7 +43,6 @@ export default function LoginScreen() {
   }, []);
 
   // Get the correct redirect URL based on platform
-  // For mobile, we need to use a web URL, not exp:// scheme
   const getRedirectUrl = () => {
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined') {
@@ -52,7 +51,6 @@ export default function LoginScreen() {
       return '/';
     }
     // For mobile, use the backend/preview URL which is web-compatible
-    // The auth service will redirect here, and we'll handle it in the browser result
     return `${BACKEND_URL}/`;
   };
 
@@ -131,7 +129,7 @@ export default function LoginScreen() {
     
     const checkInitialUrl = async () => {
       try {
-        const initialUrl = await Linking.getInitialURL();
+        const initialUrl = await ExpoLinking.getInitialURL();
         if (initialUrl) {
           const sessionId = parseSessionId(initialUrl);
           if (sessionId) {
@@ -150,7 +148,7 @@ export default function LoginScreen() {
   useEffect(() => {
     if (Platform.OS === 'web') return;
     
-    const subscription = Linking.addEventListener('url', async (event) => {
+    const subscription = ExpoLinking.addEventListener('url', async (event) => {
       const sessionId = parseSessionId(event.url);
       if (sessionId) {
         await handleSessionExchange(sessionId);
@@ -178,13 +176,8 @@ export default function LoginScreen() {
       }
 
       // For mobile, use WebBrowser.openAuthSessionAsync
-      // The redirect URL is a web URL, so auth service can handle it
-      // After auth, the browser will show the web page with session_id
-      // We need to capture the URL from the browser result
       const result = await WebBrowser.openAuthSessionAsync(
         authUrl,
-        // For the return URL, we can use any URL - we just need to capture when 
-        // the browser navigates to our redirect URL with session_id
         redirectUrl
       );
       
