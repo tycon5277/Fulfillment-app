@@ -27,6 +27,9 @@ const COLORS = {
   lavender: '#E8D9F4',
 };
 
+// Backend URL from environment
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+
 export default function LoginScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -40,6 +43,7 @@ export default function LoginScreen() {
   }, []);
 
   // Get the correct redirect URL based on platform
+  // For mobile, we need to use a web URL, not exp:// scheme
   const getRedirectUrl = () => {
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined') {
@@ -47,8 +51,9 @@ export default function LoginScreen() {
       }
       return '/';
     }
-    // For mobile Expo Go, use exp:// URL scheme
-    return Linking.createURL('/');
+    // For mobile, use the backend/preview URL which is web-compatible
+    // The auth service will redirect here, and we'll handle it in the browser result
+    return `${BACKEND_URL}/`;
   };
 
   // Parse session_id from URL (supports both hash and query)
@@ -62,12 +67,10 @@ export default function LoginScreen() {
     // Check query parameter: ?session_id=xxx
     if (url.includes('session_id=')) {
       try {
-        const urlObj = new URL(url);
-        return urlObj.searchParams.get('session_id');
-      } catch {
-        // If URL parsing fails, try regex
-        const match = url.match(/session_id=([^&]+)/);
+        const match = url.match(/session_id=([^&#]+)/);
         return match ? match[1] : null;
+      } catch {
+        return null;
       }
     }
     return null;
@@ -175,7 +178,15 @@ export default function LoginScreen() {
       }
 
       // For mobile, use WebBrowser.openAuthSessionAsync
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
+      // The redirect URL is a web URL, so auth service can handle it
+      // After auth, the browser will show the web page with session_id
+      // We need to capture the URL from the browser result
+      const result = await WebBrowser.openAuthSessionAsync(
+        authUrl,
+        // For the return URL, we can use any URL - we just need to capture when 
+        // the browser navigates to our redirect URL with session_id
+        redirectUrl
+      );
       
       console.log('WebBrowser result:', JSON.stringify(result));
 
@@ -186,6 +197,8 @@ export default function LoginScreen() {
           await handleSessionExchange(sessionId);
           return;
         }
+      } else if (result.type === 'dismiss' || result.type === 'cancel') {
+        console.log('User dismissed or cancelled the auth flow');
       }
       
       setIsLoading(false);
