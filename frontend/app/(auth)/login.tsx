@@ -88,7 +88,7 @@ export default function LoginScreen() {
 
       console.log('Login successful, user:', user.email);
       
-      if (!user.is_agent) {
+      if (!user.partner_type) {
         router.replace('/register');
       } else {
         router.replace('/(main)/home');
