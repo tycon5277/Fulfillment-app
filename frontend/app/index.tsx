@@ -93,11 +93,11 @@ export default function Index() {
         const response = await api.getMe();
         setUser(response.data);
         
-        if (!response.data.is_agent) {
-          console.log('User is not an agent, redirecting to register');
+        if (!response.data.partner_type) {
+          console.log('User is not a partner, redirecting to register');
           router.replace('/register');
         } else {
-          console.log('User is an agent, redirecting to home');
+          console.log('User is a partner, redirecting to home');
           router.replace('/(main)/home');
         }
       } catch (error) {
