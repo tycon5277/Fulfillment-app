@@ -27,37 +27,48 @@ const COLORS = {
   lavender: '#E8D9F4',
 };
 
-// Get the correct redirect URL based on platform
-const getRedirectUrl = () => {
-  if (Platform.OS === 'web') {
-    // For web, use the current origin
-    if (typeof window !== 'undefined') {
-      return window.location.origin + '/';
-    }
-    return '/';
-  }
-  // For mobile, use Expo's deep link
-  return Linking.createURL('/');
-};
-
-// Warm up the browser for better UX
-WebBrowser.maybeCompleteAuthSession();
-
 export default function LoginScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { setUser, setSessionToken } = useAuthStore();
 
+  // Call maybeCompleteAuthSession inside useEffect to avoid cross-origin issues
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      WebBrowser.maybeCompleteAuthSession();
+    }
+  }, []);
+
+  // Get the correct redirect URL based on platform
+  const getRedirectUrl = () => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined') {
+        return window.location.origin + '/';
+      }
+      return '/';
+    }
+    // For mobile Expo Go, use exp:// URL scheme
+    return Linking.createURL('/');
+  };
+
   // Parse session_id from URL (supports both hash and query)
   const parseSessionId = (url: string): string | null => {
+    if (!url) return null;
+    
     // Check hash fragment first: #session_id=xxx
     if (url.includes('#session_id=')) {
       return url.split('#session_id=')[1]?.split('&')[0] || null;
     }
     // Check query parameter: ?session_id=xxx
     if (url.includes('session_id=')) {
-      const urlObj = new URL(url);
-      return urlObj.searchParams.get('session_id');
+      try {
+        const urlObj = new URL(url);
+        return urlObj.searchParams.get('session_id');
+      } catch {
+        // If URL parsing fails, try regex
+        const match = url.match(/session_id=([^&]+)/);
+        return match ? match[1] : null;
+      }
     }
     return null;
   };
@@ -89,25 +100,34 @@ export default function LoginScreen() {
     }
   };
 
-  // Handle initial URL (cold start)
+  // Handle initial URL (cold start) - web only
   useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const hash = window.location.hash;
+      const search = window.location.search;
+      
+      let sessionId = null;
+      if (hash.includes('session_id=')) {
+        sessionId = hash.split('session_id=')[1]?.split('&')[0];
+      } else if (search.includes('session_id=')) {
+        const params = new URLSearchParams(search);
+        sessionId = params.get('session_id');
+      }
+      
+      if (sessionId) {
+        // Clean the URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        handleSessionExchange(sessionId);
+      }
+    }
+  }, []);
+
+  // Handle deep link for mobile cold start
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    
     const checkInitialUrl = async () => {
       try {
-        // For web, check window.location.hash
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          const hash = window.location.hash;
-          if (hash.includes('session_id=')) {
-            const sessionId = hash.split('session_id=')[1]?.split('&')[0];
-            if (sessionId) {
-              // Clean the URL
-              window.history.replaceState({}, document.title, window.location.pathname);
-              await handleSessionExchange(sessionId);
-            }
-          }
-          return;
-        }
-
-        // For mobile, check Linking.getInitialURL()
         const initialUrl = await Linking.getInitialURL();
         if (initialUrl) {
           const sessionId = parseSessionId(initialUrl);
@@ -125,6 +145,8 @@ export default function LoginScreen() {
 
   // Handle deep link when app is running (hot link)
   useEffect(() => {
+    if (Platform.OS === 'web') return;
+    
     const subscription = Linking.addEventListener('url', async (event) => {
       const sessionId = parseSessionId(event.url);
       if (sessionId) {
@@ -152,13 +174,14 @@ export default function LoginScreen() {
         return;
       }
 
-      // For mobile, use WebBrowser
+      // For mobile, use WebBrowser.openAuthSessionAsync
       const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
       
-      console.log('WebBrowser result:', result);
+      console.log('WebBrowser result:', JSON.stringify(result));
 
       if (result.type === 'success' && result.url) {
         const sessionId = parseSessionId(result.url);
+        console.log('Parsed session_id:', sessionId);
         if (sessionId) {
           await handleSessionExchange(sessionId);
           return;
