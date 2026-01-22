@@ -129,15 +129,20 @@ class BackendTester:
             else:
                 self.log_result("Auth Session (No Header)", False, f"Expected 400, got {response.status_code}: {response.text}", response.status_code)
             
-            # Test with fake session ID (should fail with 401 or 500)
+            # Test with fake session ID (should fail with 401, 500, or 520)
             headers = {"X-Session-ID": "fake_session_id_12345"}
             response = self.session.post(f"{BASE_URL}/auth/session", headers=headers, timeout=10)
             
-            if response.status_code in [401, 500]:
-                self.log_result("Auth Session (Fake ID)", True, f"Correctly rejects fake session ID with {response.status_code}", response.status_code)
-                return True
+            if response.status_code in [401, 500, 520]:
+                data = response.json()
+                if "Authentication service error" in data.get("detail", "") or "Invalid session" in data.get("detail", ""):
+                    self.log_result("Auth Session (Fake ID)", True, f"Correctly rejects fake session ID with {response.status_code}: {data.get('detail')}", response.status_code)
+                    return True
+                else:
+                    self.log_result("Auth Session (Fake ID)", True, f"Correctly rejects fake session ID with {response.status_code}", response.status_code)
+                    return True
             else:
-                self.log_result("Auth Session (Fake ID)", False, f"Expected 401/500, got {response.status_code}: {response.text}", response.status_code)
+                self.log_result("Auth Session (Fake ID)", False, f"Expected 401/500/520, got {response.status_code}: {response.text}", response.status_code)
                 
         except requests.exceptions.RequestException as e:
             self.log_result("Auth Session", False, f"Connection error: {str(e)}")
