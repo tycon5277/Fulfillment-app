@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import * as ExpoLinking from 'expo-linking';
+import { makeRedirectUri } from 'expo-auth-session';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,20 +28,13 @@ const COLORS = {
   lavender: '#E8D9F4',
 };
 
-// Backend URL from environment
-const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+// Warm up browser on component mount for better UX
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { setUser, setSessionToken } = useAuthStore();
-
-  // Call maybeCompleteAuthSession inside useEffect to avoid cross-origin issues
-  useEffect(() => {
-    if (Platform.OS !== 'web') {
-      WebBrowser.maybeCompleteAuthSession();
-    }
-  }, []);
 
   // Get the correct redirect URL based on platform
   const getRedirectUrl = () => {
@@ -50,8 +44,12 @@ export default function LoginScreen() {
       }
       return '/';
     }
-    // For mobile, use the backend/preview URL which is web-compatible
-    return `${BACKEND_URL}/`;
+    // For mobile, use makeRedirectUri which creates proper deep link
+    // This will create an exp:// URL for Expo Go
+    return makeRedirectUri({
+      scheme: 'quickwish-agent',
+      path: '/',
+    });
   };
 
   // Parse session_id from URL (supports both hash and query)
@@ -130,6 +128,7 @@ export default function LoginScreen() {
     const checkInitialUrl = async () => {
       try {
         const initialUrl = await ExpoLinking.getInitialURL();
+        console.log('Initial URL:', initialUrl);
         if (initialUrl) {
           const sessionId = parseSessionId(initialUrl);
           if (sessionId) {
@@ -149,6 +148,7 @@ export default function LoginScreen() {
     if (Platform.OS === 'web') return;
     
     const subscription = ExpoLinking.addEventListener('url', async (event) => {
+      console.log('Deep link received:', event.url);
       const sessionId = parseSessionId(event.url);
       if (sessionId) {
         await handleSessionExchange(sessionId);
@@ -176,14 +176,20 @@ export default function LoginScreen() {
       }
 
       // For mobile, use WebBrowser.openAuthSessionAsync
+      // This will properly close the browser when redirected back to our app scheme
       const result = await WebBrowser.openAuthSessionAsync(
         authUrl,
-        redirectUrl
+        redirectUrl,
+        {
+          showInRecents: false,
+          preferEphemeralSession: true, // Don't persist auth state in browser
+        }
       );
       
       console.log('WebBrowser result:', JSON.stringify(result));
 
       if (result.type === 'success' && result.url) {
+        // Browser closed automatically, process the session_id
         const sessionId = parseSessionId(result.url);
         console.log('Parsed session_id:', sessionId);
         if (sessionId) {
