@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the QuickWish Fulfillment Agent backend API"
+user_problem_statement: "Test the QuickWish Fulfillment Agent mobile app. The app uses Google OAuth for authentication via Emergent Auth."
 
 backend:
   - task: "Health Check Endpoint"
