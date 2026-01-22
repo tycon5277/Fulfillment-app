@@ -15,7 +15,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store';
 import * as api from '../../src/api';
-import type { AgentStats } from '../../src/types';
+
+interface PartnerStats {
+  partner_type: string;
+  total_tasks: number;
+  total_earnings: number;
+  today_earnings: number;
+  rating: number;
+  active_count: number;
+  status: string;
+}
 
 const COLORS = {
   primary: '#7C3AED',
