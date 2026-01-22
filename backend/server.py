@@ -41,13 +41,32 @@ class User(BaseModel):
     picture: Optional[str] = None
     phone: Optional[str] = None
     addresses: List[dict] = []
-    # Agent fields
-    is_agent: bool = False
-    agent_status: str = "offline"  # available, busy, offline
+    
+    # Partner type: agent, vendor, promoter, or None (not registered)
+    partner_type: Optional[str] = None
+    partner_status: str = "offline"  # available, busy, offline
+    partner_rating: float = 5.0
+    partner_total_tasks: int = 0
+    partner_total_earnings: float = 0.0
+    
+    # Agent-specific fields
     agent_vehicle: Optional[str] = None  # bike, scooter, car
-    agent_rating: float = 5.0
-    agent_total_deliveries: int = 0
-    agent_total_earnings: float = 0.0
+    agent_services: List[str] = []  # delivery, courier, rides, errands
+    
+    # Vendor-specific fields
+    vendor_shop_name: Optional[str] = None
+    vendor_shop_type: Optional[str] = None  # grocery, restaurant, pharmacy, etc.
+    vendor_shop_address: Optional[str] = None
+    vendor_shop_location: Optional[dict] = None  # {lat, lng}
+    vendor_can_deliver: bool = False
+    vendor_categories: List[str] = []
+    vendor_is_verified: bool = False
+    
+    # Promoter-specific fields
+    promoter_business_name: Optional[str] = None
+    promoter_type: Optional[str] = None  # trip_organizer, event_organizer, service_provider
+    promoter_description: Optional[str] = None
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserSession(BaseModel):
@@ -62,16 +81,6 @@ class SessionDataResponse(BaseModel):
     name: str
     picture: Optional[str] = None
     session_token: str
-
-class WishCreate(BaseModel):
-    wish_type: str
-    title: str
-    description: Optional[str] = None
-    location: dict
-    radius_km: float = 5.0
-    remuneration: float
-    is_immediate: bool = True
-    scheduled_time: Optional[datetime] = None
 
 class Wish(BaseModel):
     wish_id: str
@@ -93,7 +102,7 @@ class ChatRoom(BaseModel):
     room_id: str
     wish_id: str
     wisher_id: str
-    agent_id: str
+    partner_id: str  # Can be agent, vendor, or promoter
     wish_title: Optional[str] = None
     status: str = "active"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -102,7 +111,7 @@ class Message(BaseModel):
     message_id: str
     room_id: str
     sender_id: str
-    sender_type: str
+    sender_type: str  # wisher or partner
     content: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -117,7 +126,7 @@ class ShopOrder(BaseModel):
     items: List[dict]
     total_amount: float
     delivery_address: dict
-    delivery_type: str
+    delivery_type: str  # self_pickup, vendor_delivery, agent_delivery
     delivery_fee: float = 0.0
     assigned_agent_id: Optional[str] = None
     agent_name: Optional[str] = None
@@ -130,12 +139,41 @@ class ShopOrder(BaseModel):
 
 class EarningsRecord(BaseModel):
     earning_id: str
-    agent_id: str
+    partner_id: str
     order_id: Optional[str] = None
     wish_id: Optional[str] = None
+    event_id: Optional[str] = None
     amount: float
-    type: str  # delivery, wish, bonus
+    type: str  # delivery, wish, sale, ticket, booking
     description: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Vendor Products
+class Product(BaseModel):
+    product_id: str
+    vendor_id: str
+    name: str
+    description: Optional[str] = None
+    price: float
+    category: str
+    image: Optional[str] = None  # base64
+    in_stock: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Promoter Events/Services
+class PromoterEvent(BaseModel):
+    event_id: str
+    promoter_id: str
+    event_type: str  # trip, event, service
+    title: str
+    description: str
+    date: Optional[datetime] = None
+    location: Optional[dict] = None
+    price: float
+    total_slots: int
+    booked_slots: int = 0
+    images: List[str] = []  # base64 images
+    status: str = "active"  # active, completed, cancelled
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 # ===================== AUTH HELPERS =====================
@@ -175,11 +213,32 @@ async def require_auth(request: Request, session_token: Optional[str] = Cookie(d
         raise HTTPException(status_code=401, detail="Not authenticated")
     return user
 
-async def require_agent(request: Request, session_token: Optional[str] = Cookie(default=None)) -> User:
-    """Require authenticated agent"""
+async def require_partner(request: Request, session_token: Optional[str] = Cookie(default=None)) -> User:
+    """Require registered partner (agent, vendor, or promoter)"""
     user = await require_auth(request, session_token)
-    if not user.is_agent:
+    if not user.partner_type:
+        raise HTTPException(status_code=403, detail="Partner registration required")
+    return user
+
+async def require_agent(request: Request, session_token: Optional[str] = Cookie(default=None)) -> User:
+    """Require agent partner"""
+    user = await require_partner(request, session_token)
+    if user.partner_type != "agent":
         raise HTTPException(status_code=403, detail="Agent access required")
+    return user
+
+async def require_vendor(request: Request, session_token: Optional[str] = Cookie(default=None)) -> User:
+    """Require vendor partner"""
+    user = await require_partner(request, session_token)
+    if user.partner_type != "vendor":
+        raise HTTPException(status_code=403, detail="Vendor access required")
+    return user
+
+async def require_promoter(request: Request, session_token: Optional[str] = Cookie(default=None)) -> User:
+    """Require promoter partner"""
+    user = await require_partner(request, session_token)
+    if user.partner_type != "promoter":
+        raise HTTPException(status_code=403, detail="Promoter access required")
     return user
 
 # ===================== AUTH ENDPOINTS =====================
@@ -220,12 +279,23 @@ async def create_session(request: Request, response: Response):
             "picture": session_data.picture,
             "phone": None,
             "addresses": [],
-            "is_agent": False,
-            "agent_status": "offline",
+            "partner_type": None,
+            "partner_status": "offline",
+            "partner_rating": 5.0,
+            "partner_total_tasks": 0,
+            "partner_total_earnings": 0.0,
             "agent_vehicle": None,
-            "agent_rating": 5.0,
-            "agent_total_deliveries": 0,
-            "agent_total_earnings": 0.0,
+            "agent_services": [],
+            "vendor_shop_name": None,
+            "vendor_shop_type": None,
+            "vendor_shop_address": None,
+            "vendor_shop_location": None,
+            "vendor_can_deliver": False,
+            "vendor_categories": [],
+            "vendor_is_verified": False,
+            "promoter_business_name": None,
+            "promoter_type": None,
+            "promoter_description": None,
             "created_at": datetime.now(timezone.utc)
         }
         await db.users.insert_one(new_user)
@@ -272,117 +342,159 @@ async def logout(request: Request, response: Response, session_token: Optional[s
     response.delete_cookie(key="session_token", path="/")
     return {"message": "Logged out successfully"}
 
-# ===================== AGENT REGISTRATION & PROFILE =====================
+# ===================== PARTNER REGISTRATION =====================
 
 class AgentRegistration(BaseModel):
-    vehicle_type: str  # bike, scooter, car
     phone: str
+    vehicle_type: str  # bike, scooter, car
+    services: List[str]  # delivery, courier, rides, errands
 
-class AgentStatusUpdate(BaseModel):
+class VendorRegistration(BaseModel):
+    phone: str
+    shop_name: str
+    shop_type: str  # grocery, restaurant, pharmacy, supermarket, farm_produce, fish, nursery, etc.
+    shop_address: str
+    shop_location: Optional[dict] = None  # {lat, lng}
+    can_deliver: bool = False
+    categories: List[str] = []
+
+class PromoterRegistration(BaseModel):
+    phone: str
+    business_name: str
+    promoter_type: str  # trip_organizer, event_organizer, service_provider
+    description: str
+
+class PartnerStatusUpdate(BaseModel):
     status: str  # available, busy, offline
 
-class AgentProfileUpdate(BaseModel):
-    name: Optional[str] = None
-    phone: Optional[str] = None
-    vehicle_type: Optional[str] = None
-    picture: Optional[str] = None
-
-@api_router.post("/agent/register")
+@api_router.post("/partner/register/agent")
 async def register_as_agent(data: AgentRegistration, current_user: User = Depends(require_auth)):
-    """Register current user as an agent"""
-    if current_user.is_agent:
-        raise HTTPException(status_code=400, detail="Already registered as agent")
+    """Register as an agent partner"""
+    if current_user.partner_type:
+        raise HTTPException(status_code=400, detail=f"Already registered as {current_user.partner_type}")
     
     await db.users.update_one(
         {"user_id": current_user.user_id},
         {"$set": {
-            "is_agent": True,
-            "agent_status": "offline",
-            "agent_vehicle": data.vehicle_type,
+            "partner_type": "agent",
+            "partner_status": "offline",
             "phone": data.phone,
-            "agent_rating": 5.0,
-            "agent_total_deliveries": 0,
-            "agent_total_earnings": 0.0
+            "agent_vehicle": data.vehicle_type,
+            "agent_services": data.services,
         }}
     )
     
     updated_user = await db.users.find_one({"user_id": current_user.user_id}, {"_id": 0})
     return {"message": "Registered as agent successfully", "user": updated_user}
 
-@api_router.put("/agent/status")
-async def update_agent_status(data: AgentStatusUpdate, current_user: User = Depends(require_agent)):
-    """Update agent's availability status"""
+@api_router.post("/partner/register/vendor")
+async def register_as_vendor(data: VendorRegistration, current_user: User = Depends(require_auth)):
+    """Register as a vendor partner"""
+    if current_user.partner_type:
+        raise HTTPException(status_code=400, detail=f"Already registered as {current_user.partner_type}")
+    
+    await db.users.update_one(
+        {"user_id": current_user.user_id},
+        {"$set": {
+            "partner_type": "vendor",
+            "partner_status": "offline",
+            "phone": data.phone,
+            "vendor_shop_name": data.shop_name,
+            "vendor_shop_type": data.shop_type,
+            "vendor_shop_address": data.shop_address,
+            "vendor_shop_location": data.shop_location,
+            "vendor_can_deliver": data.can_deliver,
+            "vendor_categories": data.categories,
+        }}
+    )
+    
+    updated_user = await db.users.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    return {"message": "Registered as vendor successfully", "user": updated_user}
+
+@api_router.post("/partner/register/promoter")
+async def register_as_promoter(data: PromoterRegistration, current_user: User = Depends(require_auth)):
+    """Register as a promoter partner"""
+    if current_user.partner_type:
+        raise HTTPException(status_code=400, detail=f"Already registered as {current_user.partner_type}")
+    
+    await db.users.update_one(
+        {"user_id": current_user.user_id},
+        {"$set": {
+            "partner_type": "promoter",
+            "partner_status": "offline",
+            "phone": data.phone,
+            "promoter_business_name": data.business_name,
+            "promoter_type": data.promoter_type,
+            "promoter_description": data.description,
+        }}
+    )
+    
+    updated_user = await db.users.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    return {"message": "Registered as promoter successfully", "user": updated_user}
+
+@api_router.put("/partner/status")
+async def update_partner_status(data: PartnerStatusUpdate, current_user: User = Depends(require_partner)):
+    """Update partner's availability status"""
     if data.status not in ["available", "busy", "offline"]:
         raise HTTPException(status_code=400, detail="Invalid status")
     
     await db.users.update_one(
         {"user_id": current_user.user_id},
-        {"$set": {"agent_status": data.status}}
+        {"$set": {"partner_status": data.status}}
     )
     return {"message": f"Status updated to {data.status}"}
 
-@api_router.put("/agent/profile")
-async def update_agent_profile(data: AgentProfileUpdate, current_user: User = Depends(require_agent)):
-    """Update agent profile"""
-    update_fields = {}
-    if data.name:
-        update_fields["name"] = data.name
-    if data.phone:
-        update_fields["phone"] = data.phone
-    if data.vehicle_type:
-        update_fields["agent_vehicle"] = data.vehicle_type
-    if data.picture:
-        update_fields["picture"] = data.picture
-    
-    if update_fields:
-        await db.users.update_one(
-            {"user_id": current_user.user_id},
-            {"$set": update_fields}
-        )
-    
-    updated_user = await db.users.find_one({"user_id": current_user.user_id}, {"_id": 0})
-    return {"message": "Profile updated", "user": updated_user}
-
-@api_router.get("/agent/stats")
-async def get_agent_stats(current_user: User = Depends(require_agent)):
-    """Get agent's statistics"""
-    # Get today's earnings
+@api_router.get("/partner/stats")
+async def get_partner_stats(current_user: User = Depends(require_partner)):
+    """Get partner's statistics"""
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     
     today_earnings = await db.earnings.aggregate([
         {"$match": {
-            "agent_id": current_user.user_id,
+            "partner_id": current_user.user_id,
             "created_at": {"$gte": today_start}
         }},
         {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
     ]).to_list(1)
     
-    # Get active deliveries count
-    active_orders = await db.shop_orders.count_documents({
-        "assigned_agent_id": current_user.user_id,
-        "status": {"$in": ["picked_up", "on_the_way", "nearby"]}
-    })
-    
-    active_wishes = await db.wishes.count_documents({
-        "accepted_by": current_user.user_id,
-        "status": "in_progress"
-    })
+    # Count active tasks based on partner type
+    active_count = 0
+    if current_user.partner_type == "agent":
+        active_orders = await db.shop_orders.count_documents({
+            "assigned_agent_id": current_user.user_id,
+            "status": {"$in": ["picked_up", "on_the_way", "nearby"]}
+        })
+        active_wishes = await db.wishes.count_documents({
+            "accepted_by": current_user.user_id,
+            "status": "in_progress"
+        })
+        active_count = active_orders + active_wishes
+    elif current_user.partner_type == "vendor":
+        active_count = await db.shop_orders.count_documents({
+            "vendor_id": current_user.user_id,
+            "status": {"$in": ["pending", "confirmed", "preparing", "ready"]}
+        })
+    elif current_user.partner_type == "promoter":
+        active_count = await db.promoter_events.count_documents({
+            "promoter_id": current_user.user_id,
+            "status": "active"
+        })
     
     return {
-        "total_deliveries": current_user.agent_total_deliveries,
-        "total_earnings": current_user.agent_total_earnings,
+        "partner_type": current_user.partner_type,
+        "total_tasks": current_user.partner_total_tasks,
+        "total_earnings": current_user.partner_total_earnings,
         "today_earnings": today_earnings[0]["total"] if today_earnings else 0,
-        "rating": current_user.agent_rating,
-        "active_orders": active_orders,
-        "active_wishes": active_wishes,
-        "status": current_user.agent_status
+        "rating": current_user.partner_rating,
+        "active_count": active_count,
+        "status": current_user.partner_status
     }
 
-# ===================== AGENT ORDER MANAGEMENT =====================
+# ===================== AGENT ENDPOINTS =====================
 
 @api_router.get("/agent/available-orders")
 async def get_available_orders(current_user: User = Depends(require_agent)):
-    """Get orders available for pickup"""
+    """Get orders available for pickup by agents"""
     orders = await db.shop_orders.find({
         "delivery_type": "agent_delivery",
         "assigned_agent_id": None,
@@ -402,7 +514,6 @@ async def accept_order(order_id: str, current_user: User = Depends(require_agent
     if order.get("assigned_agent_id"):
         raise HTTPException(status_code=400, detail="Order already assigned")
     
-    # Update order
     await db.shop_orders.update_one(
         {"order_id": order_id},
         {"$set": {
@@ -420,32 +531,15 @@ async def accept_order(order_id: str, current_user: User = Depends(require_agent
         }}
     )
     
-    # Update agent status to busy
     await db.users.update_one(
         {"user_id": current_user.user_id},
-        {"$set": {"agent_status": "busy"}}
-    )
-    
-    # Update linked wish if exists
-    await db.wishes.update_one(
-        {"linked_order_id": order_id},
-        {"$set": {"accepted_by": current_user.user_id, "status": "accepted"}}
+        {"$set": {"partner_status": "busy"}}
     )
     
     return {"message": "Order accepted successfully"}
 
-@api_router.get("/agent/orders")
-async def get_agent_orders(current_user: User = Depends(require_agent)):
-    """Get all orders assigned to agent"""
-    orders = await db.shop_orders.find(
-        {"assigned_agent_id": current_user.user_id},
-        {"_id": 0}
-    ).sort("created_at", -1).to_list(100)
-    
-    return orders
-
 @api_router.get("/agent/orders/active")
-async def get_active_orders(current_user: User = Depends(require_agent)):
+async def get_agent_active_orders(current_user: User = Depends(require_agent)):
     """Get agent's active deliveries"""
     orders = await db.shop_orders.find({
         "assigned_agent_id": current_user.user_id,
@@ -455,7 +549,7 @@ async def get_active_orders(current_user: User = Depends(require_agent)):
     return orders
 
 @api_router.get("/agent/orders/{order_id}")
-async def get_order_detail(order_id: str, current_user: User = Depends(require_agent)):
+async def get_agent_order_detail(order_id: str, current_user: User = Depends(require_agent)):
     """Get order details"""
     order = await db.shop_orders.find_one({"order_id": order_id}, {"_id": 0})
     if not order:
@@ -480,9 +574,7 @@ async def update_order_status(order_id: str, data: OrderStatusUpdate, current_us
     if order.get("assigned_agent_id") != current_user.user_id:
         raise HTTPException(status_code=403, detail="Not your order")
     
-    update_data = {
-        "status": data.status
-    }
+    update_data = {"status": data.status}
     if data.location:
         update_data["agent_location"] = data.location
     
@@ -500,11 +592,10 @@ async def update_order_status(order_id: str, data: OrderStatusUpdate, current_us
         }
     )
     
-    # If delivered, record earnings and update stats
     if data.status == "delivered":
         earning = {
             "earning_id": f"earn_{uuid.uuid4().hex[:12]}",
-            "agent_id": current_user.user_id,
+            "partner_id": current_user.user_id,
             "order_id": order_id,
             "amount": order.get("delivery_fee", 30),
             "type": "delivery",
@@ -517,17 +608,11 @@ async def update_order_status(order_id: str, data: OrderStatusUpdate, current_us
             {"user_id": current_user.user_id},
             {
                 "$inc": {
-                    "agent_total_deliveries": 1,
-                    "agent_total_earnings": order.get("delivery_fee", 30)
+                    "partner_total_tasks": 1,
+                    "partner_total_earnings": order.get("delivery_fee", 30)
                 },
-                "$set": {"agent_status": "available"}
+                "$set": {"partner_status": "available"}
             }
-        )
-        
-        # Update linked wish
-        await db.wishes.update_one(
-            {"linked_order_id": order_id},
-            {"$set": {"status": "completed"}}
         )
     
     return {"message": f"Order status updated to {data.status}"}
@@ -556,13 +641,27 @@ async def update_delivery_location(order_id: str, data: LocationUpdate, current_
 @api_router.get("/agent/available-wishes")
 async def get_available_wishes(current_user: User = Depends(require_agent)):
     """Get pending wishes available for agents"""
-    wishes = await db.wishes.find({
+    # Filter wishes based on agent services
+    wish_types = []
+    if "delivery" in current_user.agent_services:
+        wish_types.extend(["delivery", "food_delivery", "grocery_delivery", "medicine_delivery"])
+    if "courier" in current_user.agent_services:
+        wish_types.extend(["courier", "document_delivery"])
+    if "rides" in current_user.agent_services:
+        wish_types.extend(["ride_request", "airport_transfer"])
+    if "errands" in current_user.agent_services:
+        wish_types.extend(["errands", "bill_payment", "pickup"])
+    
+    query = {
         "status": "pending",
         "accepted_by": None,
-        "linked_order_id": None  # Not auto-created delivery wishes
-    }, {"_id": 0}).sort("created_at", -1).to_list(50)
+        "linked_order_id": None
+    }
+    if wish_types:
+        query["wish_type"] = {"$in": wish_types}
     
-    # Enrich with wisher info
+    wishes = await db.wishes.find(query, {"_id": 0}).sort("created_at", -1).to_list(50)
+    
     for wish in wishes:
         wisher = await db.users.find_one({"user_id": wish["user_id"]}, {"_id": 0, "name": 1, "picture": 1})
         if wisher:
@@ -572,7 +671,7 @@ async def get_available_wishes(current_user: User = Depends(require_agent)):
     return wishes
 
 @api_router.post("/agent/wishes/{wish_id}/accept")
-async def accept_wish(wish_id: str, current_user: User = Depends(require_agent)):
+async def agent_accept_wish(wish_id: str, current_user: User = Depends(require_agent)):
     """Agent accepts a wish - creates chat room for negotiation"""
     wish = await db.wishes.find_one({"wish_id": wish_id}, {"_id": 0})
     
@@ -582,31 +681,28 @@ async def accept_wish(wish_id: str, current_user: User = Depends(require_agent))
     if wish.get("accepted_by"):
         raise HTTPException(status_code=400, detail="Wish already accepted")
     
-    # Create chat room
     room_id = f"room_{uuid.uuid4().hex[:12]}"
     chat_room = {
         "room_id": room_id,
         "wish_id": wish_id,
         "wisher_id": wish["user_id"],
-        "agent_id": current_user.user_id,
+        "partner_id": current_user.user_id,
         "wish_title": wish.get("title"),
         "status": "negotiating",
         "created_at": datetime.now(timezone.utc)
     }
     await db.chat_rooms.insert_one(chat_room)
     
-    # Send initial message
     message = {
         "message_id": f"msg_{uuid.uuid4().hex[:12]}",
         "room_id": room_id,
         "sender_id": current_user.user_id,
-        "sender_type": "agent",
+        "sender_type": "partner",
         "content": f"Hi! I'm {current_user.name} and I can help with your request.",
         "created_at": datetime.now(timezone.utc)
     }
     await db.messages.insert_one(message)
     
-    # Update wish status
     await db.wishes.update_one(
         {"wish_id": wish_id},
         {"$set": {"status": "negotiating", "accepted_by": current_user.user_id}}
@@ -622,7 +718,6 @@ async def get_agent_wishes(current_user: User = Depends(require_agent)):
         {"_id": 0}
     ).sort("created_at", -1).to_list(100)
     
-    # Enrich with wisher info
     for wish in wishes:
         wisher = await db.users.find_one({"user_id": wish["user_id"]}, {"_id": 0, "name": 1, "picture": 1, "phone": 1})
         if wisher:
@@ -633,7 +728,7 @@ async def get_agent_wishes(current_user: User = Depends(require_agent)):
     return wishes
 
 @api_router.put("/agent/wishes/{wish_id}/complete")
-async def complete_wish(wish_id: str, current_user: User = Depends(require_agent)):
+async def agent_complete_wish(wish_id: str, current_user: User = Depends(require_agent)):
     """Mark wish as completed"""
     wish = await db.wishes.find_one({"wish_id": wish_id}, {"_id": 0})
     
@@ -648,10 +743,9 @@ async def complete_wish(wish_id: str, current_user: User = Depends(require_agent
         {"$set": {"status": "completed"}}
     )
     
-    # Record earnings
     earning = {
         "earning_id": f"earn_{uuid.uuid4().hex[:12]}",
-        "agent_id": current_user.user_id,
+        "partner_id": current_user.user_id,
         "wish_id": wish_id,
         "amount": wish.get("remuneration", 0),
         "type": "wish",
@@ -660,18 +754,16 @@ async def complete_wish(wish_id: str, current_user: User = Depends(require_agent
     }
     await db.earnings.insert_one(earning)
     
-    # Update agent stats
     await db.users.update_one(
         {"user_id": current_user.user_id},
         {
             "$inc": {
-                "agent_total_deliveries": 1,
-                "agent_total_earnings": wish.get("remuneration", 0)
+                "partner_total_tasks": 1,
+                "partner_total_earnings": wish.get("remuneration", 0)
             }
         }
     )
     
-    # Update chat room status
     await db.chat_rooms.update_one(
         {"wish_id": wish_id},
         {"$set": {"status": "completed"}}
@@ -679,13 +771,227 @@ async def complete_wish(wish_id: str, current_user: User = Depends(require_agent
     
     return {"message": "Wish completed successfully"}
 
-# ===================== AGENT CHAT =====================
+# ===================== VENDOR ENDPOINTS =====================
 
-@api_router.get("/agent/chat/rooms")
-async def get_agent_chat_rooms(current_user: User = Depends(require_agent)):
-    """Get chat rooms for agent"""
+class ProductCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: float
+    category: str
+    image: Optional[str] = None  # base64
+
+@api_router.post("/vendor/products")
+async def create_product(data: ProductCreate, current_user: User = Depends(require_vendor)):
+    """Create a new product"""
+    product = {
+        "product_id": f"prod_{uuid.uuid4().hex[:12]}",
+        "vendor_id": current_user.user_id,
+        "name": data.name,
+        "description": data.description,
+        "price": data.price,
+        "category": data.category,
+        "image": data.image,
+        "in_stock": True,
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.products.insert_one(product)
+    return {"message": "Product created", "product_id": product["product_id"]}
+
+@api_router.get("/vendor/products")
+async def get_vendor_products(current_user: User = Depends(require_vendor)):
+    """Get vendor's products"""
+    products = await db.products.find(
+        {"vendor_id": current_user.user_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(200)
+    return products
+
+@api_router.put("/vendor/products/{product_id}")
+async def update_product(product_id: str, data: ProductCreate, current_user: User = Depends(require_vendor)):
+    """Update a product"""
+    await db.products.update_one(
+        {"product_id": product_id, "vendor_id": current_user.user_id},
+        {"$set": {
+            "name": data.name,
+            "description": data.description,
+            "price": data.price,
+            "category": data.category,
+            "image": data.image
+        }}
+    )
+    return {"message": "Product updated"}
+
+@api_router.delete("/vendor/products/{product_id}")
+async def delete_product(product_id: str, current_user: User = Depends(require_vendor)):
+    """Delete a product"""
+    await db.products.delete_one({"product_id": product_id, "vendor_id": current_user.user_id})
+    return {"message": "Product deleted"}
+
+@api_router.get("/vendor/orders")
+async def get_vendor_orders(current_user: User = Depends(require_vendor)):
+    """Get orders for vendor's shop"""
+    orders = await db.shop_orders.find(
+        {"vendor_id": current_user.user_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return orders
+
+@api_router.put("/vendor/orders/{order_id}/status")
+async def update_vendor_order_status(order_id: str, data: OrderStatusUpdate, current_user: User = Depends(require_vendor)):
+    """Update order status as vendor"""
+    valid_statuses = ["confirmed", "preparing", "ready", "out_for_delivery", "delivered", "cancelled"]
+    if data.status not in valid_statuses:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    
+    order = await db.shop_orders.find_one({"order_id": order_id, "vendor_id": current_user.user_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    await db.shop_orders.update_one(
+        {"order_id": order_id},
+        {
+            "$set": {"status": data.status},
+            "$push": {
+                "status_history": {
+                    "status": data.status,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "message": f"Vendor updated status to {data.status}"
+                }
+            }
+        }
+    )
+    
+    if data.status == "delivered":
+        # Record vendor earnings (order total minus platform fee)
+        earning = {
+            "earning_id": f"earn_{uuid.uuid4().hex[:12]}",
+            "partner_id": current_user.user_id,
+            "order_id": order_id,
+            "amount": order.get("total_amount", 0) * 0.9,  # 90% to vendor
+            "type": "sale",
+            "description": f"Order #{order_id[-8:]}",
+            "created_at": datetime.now(timezone.utc)
+        }
+        await db.earnings.insert_one(earning)
+        
+        await db.users.update_one(
+            {"user_id": current_user.user_id},
+            {
+                "$inc": {
+                    "partner_total_tasks": 1,
+                    "partner_total_earnings": order.get("total_amount", 0) * 0.9
+                }
+            }
+        )
+    
+    return {"message": f"Order status updated to {data.status}"}
+
+@api_router.post("/vendor/orders/{order_id}/assign-agent")
+async def assign_agent_to_order(order_id: str, current_user: User = Depends(require_vendor)):
+    """Mark order for agent delivery"""
+    order = await db.shop_orders.find_one({"order_id": order_id, "vendor_id": current_user.user_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    await db.shop_orders.update_one(
+        {"order_id": order_id},
+        {"$set": {"delivery_type": "agent_delivery", "assigned_agent_id": None}}
+    )
+    
+    return {"message": "Order marked for agent delivery"}
+
+# ===================== PROMOTER ENDPOINTS =====================
+
+class EventCreate(BaseModel):
+    event_type: str  # trip, event, service
+    title: str
+    description: str
+    date: Optional[datetime] = None
+    location: Optional[dict] = None
+    price: float
+    total_slots: int
+    images: List[str] = []  # base64 images
+
+@api_router.post("/promoter/events")
+async def create_event(data: EventCreate, current_user: User = Depends(require_promoter)):
+    """Create a new event/trip/service"""
+    event = {
+        "event_id": f"event_{uuid.uuid4().hex[:12]}",
+        "promoter_id": current_user.user_id,
+        "event_type": data.event_type,
+        "title": data.title,
+        "description": data.description,
+        "date": data.date,
+        "location": data.location,
+        "price": data.price,
+        "total_slots": data.total_slots,
+        "booked_slots": 0,
+        "images": data.images,
+        "status": "active",
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.promoter_events.insert_one(event)
+    return {"message": "Event created", "event_id": event["event_id"]}
+
+@api_router.get("/promoter/events")
+async def get_promoter_events(current_user: User = Depends(require_promoter)):
+    """Get promoter's events"""
+    events = await db.promoter_events.find(
+        {"promoter_id": current_user.user_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return events
+
+@api_router.put("/promoter/events/{event_id}")
+async def update_event(event_id: str, data: EventCreate, current_user: User = Depends(require_promoter)):
+    """Update an event"""
+    await db.promoter_events.update_one(
+        {"event_id": event_id, "promoter_id": current_user.user_id},
+        {"$set": {
+            "event_type": data.event_type,
+            "title": data.title,
+            "description": data.description,
+            "date": data.date,
+            "location": data.location,
+            "price": data.price,
+            "total_slots": data.total_slots,
+            "images": data.images
+        }}
+    )
+    return {"message": "Event updated"}
+
+@api_router.delete("/promoter/events/{event_id}")
+async def delete_event(event_id: str, current_user: User = Depends(require_promoter)):
+    """Delete/cancel an event"""
+    await db.promoter_events.update_one(
+        {"event_id": event_id, "promoter_id": current_user.user_id},
+        {"$set": {"status": "cancelled"}}
+    )
+    return {"message": "Event cancelled"}
+
+@api_router.get("/promoter/bookings")
+async def get_promoter_bookings(current_user: User = Depends(require_promoter)):
+    """Get bookings for promoter's events"""
+    bookings = await db.event_bookings.find(
+        {"promoter_id": current_user.user_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(200)
+    
+    # Enrich with event details
+    for booking in bookings:
+        event = await db.promoter_events.find_one({"event_id": booking["event_id"]}, {"_id": 0, "title": 1})
+        if event:
+            booking["event_title"] = event.get("title")
+    
+    return bookings
+
+# ===================== CHAT ENDPOINTS (SHARED) =====================
+
+@api_router.get("/partner/chat/rooms")
+async def get_partner_chat_rooms(current_user: User = Depends(require_partner)):
+    """Get chat rooms for partner"""
     rooms = await db.chat_rooms.find(
-        {"agent_id": current_user.user_id},
+        {"partner_id": current_user.user_id},
         {"_id": 0}
     ).sort("created_at", -1).to_list(100)
     
@@ -708,11 +1014,11 @@ async def get_agent_chat_rooms(current_user: User = Depends(require_agent)):
     
     return enriched_rooms
 
-@api_router.get("/agent/chat/rooms/{room_id}/messages")
-async def get_agent_chat_messages(room_id: str, current_user: User = Depends(require_agent)):
+@api_router.get("/partner/chat/rooms/{room_id}/messages")
+async def get_partner_chat_messages(room_id: str, current_user: User = Depends(require_partner)):
     """Get messages in a chat room"""
     room = await db.chat_rooms.find_one(
-        {"room_id": room_id, "agent_id": current_user.user_id},
+        {"room_id": room_id, "partner_id": current_user.user_id},
         {"_id": 0}
     )
     if not room:
@@ -725,11 +1031,11 @@ async def get_agent_chat_messages(room_id: str, current_user: User = Depends(req
     
     return messages
 
-@api_router.post("/agent/chat/rooms/{room_id}/messages")
-async def send_agent_message(room_id: str, msg: MessageCreate, current_user: User = Depends(require_agent)):
-    """Send message as agent"""
+@api_router.post("/partner/chat/rooms/{room_id}/messages")
+async def send_partner_message(room_id: str, msg: MessageCreate, current_user: User = Depends(require_partner)):
+    """Send message as partner"""
     room = await db.chat_rooms.find_one(
-        {"room_id": room_id, "agent_id": current_user.user_id},
+        {"room_id": room_id, "partner_id": current_user.user_id},
         {"_id": 0}
     )
     if not room:
@@ -739,7 +1045,7 @@ async def send_agent_message(room_id: str, msg: MessageCreate, current_user: Use
         "message_id": f"msg_{uuid.uuid4().hex[:12]}",
         "room_id": room_id,
         "sender_id": current_user.user_id,
-        "sender_type": "agent",
+        "sender_type": "partner",
         "content": msg.content,
         "created_at": datetime.now(timezone.utc)
     }
@@ -747,10 +1053,10 @@ async def send_agent_message(room_id: str, msg: MessageCreate, current_user: Use
     
     return Message(**message)
 
-# ===================== AGENT EARNINGS =====================
+# ===================== EARNINGS (SHARED) =====================
 
-@api_router.get("/agent/earnings")
-async def get_earnings_summary(current_user: User = Depends(require_agent)):
+@api_router.get("/partner/earnings")
+async def get_earnings_summary(current_user: User = Depends(require_partner)):
     """Get earnings summary"""
     now = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -760,7 +1066,7 @@ async def get_earnings_summary(current_user: User = Depends(require_agent)):
     async def get_total(start_date):
         result = await db.earnings.aggregate([
             {"$match": {
-                "agent_id": current_user.user_id,
+                "partner_id": current_user.user_id,
                 "created_at": {"$gte": start_date}
             }},
             {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
@@ -775,14 +1081,14 @@ async def get_earnings_summary(current_user: User = Depends(require_agent)):
         "today": today,
         "week": week,
         "month": month,
-        "total": current_user.agent_total_earnings
+        "total": current_user.partner_total_earnings
     }
 
-@api_router.get("/agent/earnings/history")
-async def get_earnings_history(limit: int = 50, current_user: User = Depends(require_agent)):
+@api_router.get("/partner/earnings/history")
+async def get_earnings_history(limit: int = 50, current_user: User = Depends(require_partner)):
     """Get detailed earnings history"""
     earnings = await db.earnings.find(
-        {"agent_id": current_user.user_id},
+        {"partner_id": current_user.user_id},
         {"_id": 0}
     ).sort("created_at", -1).to_list(limit)
     
@@ -792,7 +1098,7 @@ async def get_earnings_history(limit: int = 50, current_user: User = Depends(req
 
 @api_router.post("/seed/orders")
 async def seed_sample_orders():
-    """Seed sample orders for testing agent app"""
+    """Seed sample orders for testing"""
     vendors = [
         {"vendor_id": "vendor_1", "name": "Fresh Mart Grocery", "address": "Shop 12, Central Market"},
         {"vendor_id": "vendor_2", "name": "Biryani House", "address": "15, Food Street"},
