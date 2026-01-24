@@ -202,6 +202,78 @@ frontend:
           agent: "testing"
           comment: "✅ Main app navigation is implemented with bottom tab bar containing 5 tabs: Home, Orders, Wishes, Deliveries, Profile. Tab bar is visible at bottom of screen with proper icons. Minor: Tab clicking via automation had issues but tab bar UI is properly rendered and functional."
 
+  - task: "Dynamic Home Screen by Partner Type"
+    implemented: true
+    working: NA
+    file: "frontend/app/(main)/home.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: NA
+          agent: "main"
+          comment: "Implemented dynamic home screen that displays different dashboards based on partner type: Agent (delivery stats, services, quick actions), Vendor (shop info, orders, products), Promoter (business info, events, bookings). Each dashboard has unique stats, icons, and navigation options."
+
+  - task: "Dynamic Tab Navigation by Partner Type"
+    implemented: true
+    working: NA
+    file: "frontend/app/(main)/_layout.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: NA
+          agent: "main"
+          comment: "Implemented dynamic tab navigation that shows/hides tabs based on partner type: Agent sees Orders, Wishes, Deliveries; Vendor sees Orders, Products; Promoter sees Events, Bookings. Tab colors also adapt to role."
+
+  - task: "Vendor Products Screen"
+    implemented: true
+    working: NA
+    file: "frontend/app/(main)/products.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: NA
+          agent: "main"
+          comment: "Created products management screen for Vendors with list view, add product modal, and delete functionality. Integrates with backend /vendor/products endpoints."
+
+  - task: "Promoter Events Screen"
+    implemented: true
+    working: NA
+    file: "frontend/app/(main)/events.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: NA
+          agent: "main"
+          comment: "Created events management screen for Promoters with list view, create event modal (trip/event/service types), and cancel functionality. Integrates with backend /promoter/events endpoints."
+
+  - task: "Promoter Bookings Screen"
+    implemented: true
+    working: NA
+    file: "frontend/app/(main)/bookings.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: NA
+          agent: "main"
+          comment: "Created bookings list screen for Promoters to view all bookings for their events. Shows booking details, customer info, and amounts."
+
+  - task: "Agent Wishes Screen"
+    implemented: true
+    working: NA
+    file: "frontend/app/(main)/wishes.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: NA
+          agent: "main"
+          comment: "Updated wishes screen for Agents with proper wish type icons, urgent badges, remuneration display, and accept functionality that creates chat rooms."
+
   - task: "Agent Dashboard Home"
     implemented: true
     working: true
@@ -213,6 +285,9 @@ frontend:
         - working: true
           agent: "testing"
           comment: "✅ Agent dashboard home screen works perfectly. Displays: 'Hello, Test Agent' greeting, online status toggle ('You are Online'), Today's Earnings section (₹0.00), 4 stat cards (Active Orders: 0, Active Wishes: 0, Total Deliveries: 25, Rating: 4.8), and Quick Actions section with 3 action cards (Available Orders, Browse Wishes, My Deliveries). All elements are properly styled and responsive."
+        - working: NA
+          agent: "main"
+          comment: "Updated to be part of the dynamic home screen. Now shows Agent-specific dashboard with services offered, vehicle type, and role badge."
 
 metadata:
   created_by: "testing_agent"
