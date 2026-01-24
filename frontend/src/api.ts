@@ -59,6 +59,14 @@ export const registerAsPromoter = (data: {
   description: string;
 }) => api.post('/partner/register/promoter', data);
 
+// Profile Update
+export const updateProfile = (data: {
+  name?: string;
+  email?: string;
+  date_of_birth?: string;
+  address?: string;
+}) => api.put('/auth/profile', data);
+
 // Partner Status & Stats
 export const updatePartnerStatus = (status: string) =>
   api.put('/partner/status', { status });
