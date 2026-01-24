@@ -447,6 +447,34 @@ async def get_me(current_user: User = Depends(require_auth)):
     """Get current authenticated user"""
     return current_user
 
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    address: Optional[str] = None
+
+@api_router.put("/auth/profile")
+async def update_profile(data: ProfileUpdate, current_user: User = Depends(require_auth)):
+    """Update user profile"""
+    update_fields = {}
+    if data.name is not None:
+        update_fields["name"] = data.name
+    if data.email is not None:
+        update_fields["email"] = data.email
+    if data.date_of_birth is not None:
+        update_fields["date_of_birth"] = data.date_of_birth
+    if data.address is not None:
+        update_fields["address"] = data.address
+    
+    if update_fields:
+        await db.users.update_one(
+            {"user_id": current_user.user_id},
+            {"$set": update_fields}
+        )
+    
+    user_doc = await db.users.find_one({"user_id": current_user.user_id}, {"_id": 0})
+    return {"user": user_doc}
+
 @api_router.post("/auth/logout")
 async def logout(request: Request, response: Response, session_token: Optional[str] = Cookie(default=None)):
     """Logout user"""
