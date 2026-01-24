@@ -500,7 +500,8 @@ async def logout(request: Request, response: Response, session_token: Optional[s
 class AgentRegistration(BaseModel):
     phone: str
     agent_type: str = "mobile"  # 'mobile' or 'skilled'
-    vehicle_type: Optional[str] = None  # bike, scooter, car
+    vehicle_type: Optional[str] = None  # motorbike, scooter, car
+    is_electric: bool = False  # whether the vehicle is electric
     services: List[str] = []  # delivery, courier, rides, errands, surprise (for mobile)
     skills: List[str] = []  # electrician, plumber, etc. (for skilled)
     has_vehicle: bool = False
