@@ -22,17 +22,6 @@ import { useAuthStore, PartnerStats } from '../../src/store';
 import * as api from '../../src/api';
 import THEME from '../../src/theme';
 
-// Conditionally import MapView for native only
-let MapView: any = null;
-let Marker: any = null;
-let Circle: any = null;
-if (Platform.OS !== 'web') {
-  const Maps = require('react-native-maps');
-  MapView = Maps.default;
-  Marker = Maps.Marker;
-  Circle = Maps.Circle;
-}
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Mock location for when GPS is not available
@@ -40,18 +29,6 @@ const MOCK_LOCATION = {
   latitude: 12.9716,
   longitude: 77.5946,
 };
-
-// Dark map style
-const DARK_MAP_STYLE = [
-  { elementType: 'geometry', stylers: [{ color: '#1d1d2e' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#1d1d2e' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#8ec3b9' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2a2a3e' }] },
-  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#1d1d2e' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0e0e1a' }] },
-  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#1d1d2e' }] },
-  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#1d1d2e' }] },
-];
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -66,48 +43,70 @@ export default function HomeScreen() {
   
   // Animation refs
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0)).current;
+  const pulse2Anim = useRef(new Animated.Value(1)).current;
+  const pulse3Anim = useRef(new Animated.Value(1)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
+  const dotGlow = useRef(new Animated.Value(0.5)).current;
 
   const isMobileGenie = user?.agent_type === 'mobile';
 
-  // Pulse animation for online status
+  // Pulse animation for location indicator
   useEffect(() => {
     if (isOnline) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.5,
-            duration: 1500,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 1500,
-            easing: Easing.in(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
+      // Multi-ring pulse animation
+      const createPulse = (anim: Animated.Value, delay: number) => {
+        return Animated.loop(
+          Animated.sequence([
+            Animated.delay(delay),
+            Animated.timing(anim, {
+              toValue: 2.5,
+              duration: 2000,
+              easing: Easing.out(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(anim, {
+              toValue: 1,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ])
+        );
+      };
+
+      const p1 = createPulse(pulseAnim, 0);
+      const p2 = createPulse(pulse2Anim, 700);
+      const p3 = createPulse(pulse3Anim, 1400);
       
+      p1.start();
+      p2.start();
+      p3.start();
+
+      // Dot glow
       Animated.loop(
         Animated.sequence([
-          Animated.timing(glowAnim, {
+          Animated.timing(dotGlow, {
             toValue: 1,
-            duration: 2000,
+            duration: 1000,
             useNativeDriver: true,
           }),
-          Animated.timing(glowAnim, {
-            toValue: 0,
-            duration: 2000,
+          Animated.timing(dotGlow, {
+            toValue: 0.5,
+            duration: 1000,
             useNativeDriver: true,
           }),
         ])
       ).start();
+
+      return () => {
+        p1.stop();
+        p2.stop();
+        p3.stop();
+      };
     } else {
       pulseAnim.setValue(1);
-      glowAnim.setValue(0);
+      pulse2Anim.setValue(1);
+      pulse3Anim.setValue(1);
+      dotGlow.setValue(0.5);
     }
   }, [isOnline]);
 
@@ -259,72 +258,81 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Map Card */}
+          {/* Location Card with Stylized Map */}
           <View style={styles.mapCard}>
             <View style={styles.mapContainer}>
-              <MapView
-                style={styles.map}
-                provider={PROVIDER_DEFAULT}
-                initialRegion={{
-                  latitude: location.latitude,
-                  longitude: location.longitude,
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
-                }}
-                customMapStyle={DARK_MAP_STYLE}
-                showsUserLocation={false}
-                showsMyLocationButton={false}
-                scrollEnabled={false}
-                zoomEnabled={false}
-                rotateEnabled={false}
-                pitchEnabled={false}
-              >
-                {/* Pulse circle when online */}
-                {isOnline && (
-                  <Circle
-                    center={location}
-                    radius={200}
-                    fillColor="rgba(52, 211, 153, 0.1)"
-                    strokeColor="rgba(52, 211, 153, 0.3)"
-                    strokeWidth={1}
+              {/* Stylized map grid background */}
+              <View style={styles.mapGrid}>
+                {/* Horizontal lines */}
+                {[...Array(8)].map((_, i) => (
+                  <View key={`h-${i}`} style={[styles.gridLine, styles.gridLineH, { top: `${(i + 1) * 12}%` }]} />
+                ))}
+                {/* Vertical lines */}
+                {[...Array(8)].map((_, i) => (
+                  <View key={`v-${i}`} style={[styles.gridLine, styles.gridLineV, { left: `${(i + 1) * 12}%` }]} />
+                ))}
+              </View>
+
+              {/* Pulse rings when online */}
+              {isOnline && (
+                <>
+                  <Animated.View 
+                    style={[
+                      styles.pulseRing,
+                      { 
+                        transform: [{ scale: pulseAnim }],
+                        opacity: pulseAnim.interpolate({
+                          inputRange: [1, 2.5],
+                          outputRange: [0.4, 0],
+                        }),
+                      }
+                    ]} 
                   />
-                )}
-                <Circle
-                  center={location}
-                  radius={80}
-                  fillColor="rgba(6, 182, 212, 0.15)"
-                  strokeColor="rgba(6, 182, 212, 0.4)"
-                  strokeWidth={2}
+                  <Animated.View 
+                    style={[
+                      styles.pulseRing,
+                      { 
+                        transform: [{ scale: pulse2Anim }],
+                        opacity: pulse2Anim.interpolate({
+                          inputRange: [1, 2.5],
+                          outputRange: [0.4, 0],
+                        }),
+                      }
+                    ]} 
+                  />
+                  <Animated.View 
+                    style={[
+                      styles.pulseRing,
+                      { 
+                        transform: [{ scale: pulse3Anim }],
+                        opacity: pulse3Anim.interpolate({
+                          inputRange: [1, 2.5],
+                          outputRange: [0.4, 0],
+                        }),
+                      }
+                    ]} 
+                  />
+                </>
+              )}
+
+              {/* Center location marker */}
+              <View style={styles.locationMarkerContainer}>
+                <Animated.View 
+                  style={[
+                    styles.locationGlow, 
+                    isOnline && { opacity: dotGlow }
+                  ]} 
                 />
-                {/* Custom marker */}
-                <Marker coordinate={location} anchor={{ x: 0.5, y: 0.5 }}>
-                  <View style={styles.markerContainer}>
-                    {isOnline && (
-                      <Animated.View 
-                        style={[
-                          styles.markerPulse,
-                          { 
-                            transform: [{ scale: pulseAnim }],
-                            opacity: pulseAnim.interpolate({
-                              inputRange: [1, 1.5],
-                              outputRange: [0.6, 0],
-                            }),
-                          }
-                        ]} 
-                      />
-                    )}
-                    <View style={[styles.markerDot, isOnline && styles.markerDotOnline]}>
-                      <Ionicons 
-                        name={user?.agent_vehicle === 'car' ? 'car' : 'bicycle'} 
-                        size={14} 
-                        color="#FFF" 
-                      />
-                    </View>
-                  </View>
-                </Marker>
-              </MapView>
-              
-              {/* Map overlay info */}
+                <View style={[styles.locationMarker, isOnline && styles.locationMarkerOnline]}>
+                  <Ionicons 
+                    name={user?.agent_vehicle === 'car' ? 'car' : 'bicycle'} 
+                    size={16} 
+                    color="#FFF" 
+                  />
+                </View>
+              </View>
+
+              {/* Location info badge */}
               <View style={styles.mapOverlay}>
                 <View style={styles.locationBadge}>
                   <Ionicons name="location" size={12} color={THEME.primary} />
@@ -333,17 +341,23 @@ export default function HomeScreen() {
                   </Text>
                 </View>
               </View>
+
+              {/* Coordinates display */}
+              <View style={styles.coordsContainer}>
+                <Text style={styles.coordsText}>
+                  {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+                </Text>
+              </View>
             </View>
 
             {/* Go Online Button - Distinctive Design */}
-            <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+            <Animated.View style={[styles.buttonWrapper, { transform: [{ scale: buttonScale }] }]}>
               <TouchableOpacity
                 onPress={toggleOnlineStatus}
                 onPressIn={handleButtonPressIn}
                 onPressOut={handleButtonPressOut}
                 disabled={statusLoading}
                 activeOpacity={1}
-                style={styles.onlineButtonWrapper}
               >
                 {isOnline ? (
                   <LinearGradient
@@ -356,11 +370,15 @@ export default function HomeScreen() {
                       <ActivityIndicator color="#FFF" size="small" />
                     ) : (
                       <>
-                        <View style={styles.onlineIndicator}>
-                          <View style={styles.onlineDot} />
+                        <View style={styles.onlineDotContainer}>
+                          <View style={styles.onlineDotOuter}>
+                            <View style={styles.onlineDotInner} />
+                          </View>
                         </View>
-                        <Text style={styles.onlineButtonText}>ONLINE</Text>
-                        <Text style={styles.onlineSubtext}>Tap to go offline</Text>
+                        <View style={styles.buttonTextContainer}>
+                          <Text style={styles.onlineButtonText}>ONLINE</Text>
+                          <Text style={styles.onlineSubtext}>Tap to go offline</Text>
+                        </View>
                       </>
                     )}
                   </LinearGradient>
@@ -369,15 +387,19 @@ export default function HomeScreen() {
                     colors={['#6366F1', '#8B5CF6']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    style={styles.onlineButton}
+                    style={styles.offlineButton}
                   >
                     {statusLoading ? (
                       <ActivityIndicator color="#FFF" size="small" />
                     ) : (
                       <>
-                        <Ionicons name="power" size={28} color="#FFF" />
-                        <Text style={styles.offlineButtonText}>GO ONLINE</Text>
-                        <Text style={styles.offlineSubtext}>Start accepting wishes</Text>
+                        <View style={styles.powerIconContainer}>
+                          <Ionicons name="power" size={32} color="#FFF" />
+                        </View>
+                        <View style={styles.buttonTextContainer}>
+                          <Text style={styles.offlineButtonText}>GO ONLINE</Text>
+                          <Text style={styles.offlineSubtext}>Start accepting wishes</Text>
+                        </View>
                       </>
                     )}
                   </LinearGradient>
@@ -622,11 +644,61 @@ const styles = StyleSheet.create({
     borderColor: THEME.cardBorder,
   },
   mapContainer: {
-    height: 180,
+    height: 160,
     position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: THEME.backgroundSecondary,
   },
-  map: {
+  mapGrid: {
     ...StyleSheet.absoluteFillObject,
+  },
+  gridLine: {
+    position: 'absolute',
+    backgroundColor: THEME.cardBorder,
+  },
+  gridLineH: {
+    left: 0,
+    right: 0,
+    height: 1,
+  },
+  gridLineV: {
+    top: 0,
+    bottom: 0,
+    width: 1,
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: THEME.success,
+  },
+  locationMarkerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locationGlow: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: THEME.primary,
+    opacity: 0.2,
+  },
+  locationMarker: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: THEME.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: THEME.cardBg,
+  },
+  locationMarkerOnline: {
+    backgroundColor: THEME.success,
   },
   mapOverlay: {
     position: 'absolute',
@@ -647,77 +719,78 @@ const styles = StyleSheet.create({
     color: THEME.text,
     fontWeight: '500',
   },
-  markerContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  markerPulse: {
+  coordsContainer: {
     position: 'absolute',
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: THEME.success,
+    bottom: 12,
+    right: 12,
   },
-  markerDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: THEME.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: THEME.cardBg,
+  coordsText: {
+    fontSize: 10,
+    color: THEME.textMuted,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
-  markerDotOnline: {
-    backgroundColor: THEME.success,
-  },
-  // Online Button
-  onlineButtonWrapper: {
+  // Button styles
+  buttonWrapper: {
     margin: 12,
   },
   onlineButton: {
     borderRadius: 16,
-    paddingVertical: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  onlineIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  offlineButton: {
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  onlineDotContainer: {
+    marginRight: 14,
+  },
+  onlineDotOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 4,
   },
-  onlineDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+  onlineDotInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: '#FFF',
   },
+  powerIconContainer: {
+    marginRight: 14,
+  },
+  buttonTextContainer: {
+    flex: 1,
+  },
   onlineButtonText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     color: '#FFF',
-    letterSpacing: 2,
+    letterSpacing: 1,
   },
   onlineSubtext: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.8)',
     marginTop: 2,
   },
   offlineButtonText: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#FFF',
-    marginTop: 8,
     letterSpacing: 1,
   },
   offlineSubtext: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.8)',
-    marginTop: 4,
+    marginTop: 2,
   },
   // Quick Stats
   quickStats: {
