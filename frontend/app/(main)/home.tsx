@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Switch,
   ActivityIndicator,
   Image,
   Animated,
@@ -15,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { useAuthStore, PartnerStats } from '../../src/store';
@@ -22,6 +22,7 @@ import * as api from '../../src/api';
 import THEME from '../../src/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const RADAR_SIZE = SCREEN_WIDTH - 80;
 
 // Mock location for when GPS is not available
 const MOCK_LOCATION = {
