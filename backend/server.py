@@ -52,8 +52,11 @@ class User(BaseModel):
     partner_total_earnings: float = 0.0
     
     # Agent-specific fields
+    agent_type: Optional[str] = None  # 'mobile' or 'skilled'
     agent_vehicle: Optional[str] = None  # bike, scooter, car
-    agent_services: List[str] = []  # delivery, courier, rides, errands
+    agent_services: List[str] = []  # delivery, courier, rides, errands, surprise (for mobile genies)
+    agent_skills: List[str] = []  # electrician, plumber, etc. (for skilled genies)
+    agent_has_vehicle: bool = False  # for skilled genies who have vehicle for commuting
     
     # Vendor-specific fields
     vendor_shop_name: Optional[str] = None
