@@ -1,27 +1,49 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export type PartnerType = 'agent' | 'vendor' | 'promoter' | null;
+
 export interface User {
   user_id: string;
   email: string;
   name: string;
   picture?: string;
   phone?: string;
-  is_agent: boolean;
-  agent_status: string;
-  agent_vehicle?: string;
-  agent_rating: number;
-  agent_total_deliveries: number;
-  agent_total_earnings: number;
+  addresses?: any[];
+  
+  // Partner fields (all partner types)
+  partner_type: PartnerType;
+  partner_status: string;  // available, busy, offline
+  partner_rating: number;
+  partner_total_tasks: number;
+  partner_total_earnings: number;
+  
+  // Agent-specific
+  agent_vehicle?: string;  // bike, scooter, car
+  agent_services?: string[];  // delivery, courier, rides, errands
+  
+  // Vendor-specific
+  vendor_shop_name?: string;
+  vendor_shop_type?: string;
+  vendor_shop_address?: string;
+  vendor_shop_location?: { lat: number; lng: number };
+  vendor_can_deliver?: boolean;
+  vendor_categories?: string[];
+  vendor_is_verified?: boolean;
+  
+  // Promoter-specific
+  promoter_business_name?: string;
+  promoter_type?: string;  // trip_organizer, event_organizer, service_provider
+  promoter_description?: string;
 }
 
-export interface AgentStats {
-  total_deliveries: number;
+export interface PartnerStats {
+  partner_type: string;
+  total_tasks: number;
   total_earnings: number;
   today_earnings: number;
   rating: number;
-  active_orders: number;
-  active_wishes: number;
+  active_count: number;
   status: string;
 }
 
