@@ -33,7 +33,7 @@ const COLORS = {
 };
 
 type AgentType = 'mobile' | 'skilled' | null;
-type VehicleType = 'bike' | 'scooter' | 'car';
+type VehicleType = 'motorbike' | 'scooter' | 'car';
 
 // Mobile Genie Services
 const MOBILE_SERVICES = [
