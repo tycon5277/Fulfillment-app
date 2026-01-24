@@ -503,6 +503,10 @@ class AgentRegistration(BaseModel):
     agent_type: str = "mobile"  # 'mobile' or 'skilled'
     vehicle_type: Optional[str] = None  # motorbike, scooter, car
     is_electric: bool = False  # whether the vehicle is electric
+    vehicle_registration: Optional[str] = None  # registration number
+    vehicle_make: Optional[str] = None  # brand
+    vehicle_model: Optional[str] = None  # model name
+    vehicle_color: Optional[str] = None  # color
     services: List[str] = []  # delivery, courier, rides, errands, surprise (for mobile)
     skills: List[str] = []  # electrician, plumber, etc. (for skilled)
     has_vehicle: bool = False
