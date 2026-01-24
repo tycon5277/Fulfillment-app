@@ -154,14 +154,6 @@ export default function MainLayout() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: COLORS.background,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    height: 60,
-    paddingBottom: 8,
-    paddingTop: 8,
-  },
   tabLabel: {
     fontSize: 11,
     fontWeight: '500',
