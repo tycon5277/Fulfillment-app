@@ -1,7 +1,8 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/store';
 
 const COLORS = {
@@ -15,6 +16,7 @@ const COLORS = {
 export default function MainLayout() {
   const { user } = useAuthStore();
   const partnerType = user?.partner_type;
+  const insets = useSafeAreaInsets();
 
   // Get role-specific primary color
   const getPrimaryColor = () => {
@@ -26,11 +28,21 @@ export default function MainLayout() {
     }
   };
 
+  // Calculate tab bar height with safe area
+  const tabBarHeight = 60 + insets.bottom;
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: {
+          backgroundColor: COLORS.background,
+          borderTopWidth: 1,
+          borderTopColor: '#E5E7EB',
+          height: tabBarHeight,
+          paddingBottom: insets.bottom + 8,
+          paddingTop: 8,
+        },
         tabBarActiveTintColor: getPrimaryColor(),
         tabBarInactiveTintColor: COLORS.inactive,
         tabBarLabelStyle: styles.tabLabel,
