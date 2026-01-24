@@ -155,6 +155,7 @@ export default function AgentSetupScreen() {
   
   // Mobile Genie fields
   const [vehicleType, setVehicleType] = useState<VehicleType>('scooter');
+  const [isElectric, setIsElectric] = useState(false);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   
   // Skilled Genie fields
