@@ -336,6 +336,29 @@ export default function AgentSetupScreen() {
         ))}
       </View>
 
+      {/* Electric Vehicle Toggle */}
+      <TouchableOpacity 
+        style={styles.electricToggleCard}
+        onPress={() => setIsElectric(!isElectric)}
+      >
+        <View style={[styles.electricIconBg, isElectric && { backgroundColor: COLORS.success + '20' }]}>
+          <Ionicons 
+            name="leaf" 
+            size={24} 
+            color={isElectric ? COLORS.success : COLORS.textSecondary} 
+          />
+        </View>
+        <View style={styles.electricToggleContent}>
+          <Text style={styles.electricToggleTitle}>Electric Vehicle</Text>
+          <Text style={styles.electricToggleSubtext}>
+            {isElectric ? 'Yes, my vehicle is electric ⚡' : 'Is your vehicle electric?'}
+          </Text>
+        </View>
+        <View style={[styles.toggle, isElectric && { backgroundColor: COLORS.success }]}>
+          <View style={[styles.toggleDot, isElectric && { transform: [{ translateX: 20 }] }]} />
+        </View>
+      </TouchableOpacity>
+
       <Text style={styles.sectionTitle}>Services You Want to Offer</Text>
       <Text style={styles.sectionSubtitle}>Select all that apply</Text>
       
