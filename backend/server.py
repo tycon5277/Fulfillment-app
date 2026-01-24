@@ -243,9 +243,127 @@ async def require_promoter(request: Request, session_token: Optional[str] = Cook
 
 # ===================== AUTH ENDPOINTS =====================
 
+# In-memory OTP storage (for demo purposes)
+otp_storage = {}
+
+class SendOTPRequest(BaseModel):
+    phone: str
+
+class VerifyOTPRequest(BaseModel):
+    phone: str
+    otp: str
+
+@api_router.post("/auth/send-otp")
+async def send_otp(data: SendOTPRequest):
+    """Send OTP to phone number (mock implementation)"""
+    phone = data.phone.strip()
+    if len(phone) < 10:
+        raise HTTPException(status_code=400, detail="Invalid phone number")
+    
+    # Mock OTP - always 123456 for testing
+    otp = "123456"
+    otp_storage[phone] = {
+        "otp": otp,
+        "expires_at": datetime.now(timezone.utc) + timedelta(minutes=5)
+    }
+    
+    logger.info(f"OTP for {phone}: {otp}")
+    return {"message": "OTP sent successfully", "debug_otp": otp}  # Remove debug_otp in production
+
+@api_router.post("/auth/verify-otp")
+async def verify_otp(data: VerifyOTPRequest, response: Response):
+    """Verify OTP and create session"""
+    phone = data.phone.strip()
+    otp = data.otp.strip()
+    
+    # Check stored OTP
+    stored = otp_storage.get(phone)
+    if not stored:
+        raise HTTPException(status_code=400, detail="OTP expired or not found. Please request a new OTP.")
+    
+    if stored["expires_at"] < datetime.now(timezone.utc):
+        del otp_storage[phone]
+        raise HTTPException(status_code=400, detail="OTP expired. Please request a new OTP.")
+    
+    # Mock OTP verification - accept "123456" always
+    if otp != "123456" and otp != stored["otp"]:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+    
+    # Clear used OTP
+    del otp_storage[phone]
+    
+    # Check if user exists
+    existing_user = await db.users.find_one({"phone": phone}, {"_id": 0})
+    
+    if existing_user:
+        user_id = existing_user["user_id"]
+        is_new_user = False
+    else:
+        # Create new user with phone only
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        new_user = {
+            "user_id": user_id,
+            "phone": phone,
+            "name": None,
+            "email": None,
+            "picture": None,
+            "date_of_birth": None,
+            "address": None,
+            "addresses": [],
+            "partner_type": None,
+            "partner_status": "offline",
+            "partner_rating": 5.0,
+            "partner_total_tasks": 0,
+            "partner_total_earnings": 0.0,
+            "agent_vehicle": None,
+            "agent_services": [],
+            "vendor_shop_name": None,
+            "vendor_shop_type": None,
+            "vendor_shop_address": None,
+            "vendor_shop_location": None,
+            "vendor_can_deliver": False,
+            "vendor_categories": [],
+            "vendor_is_verified": False,
+            "promoter_business_name": None,
+            "promoter_type": None,
+            "promoter_description": None,
+            "created_at": datetime.now(timezone.utc)
+        }
+        await db.users.insert_one(new_user)
+        is_new_user = True
+    
+    # Create session
+    session_token = f"sess_{uuid.uuid4().hex}"
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+    session_doc = {
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.user_sessions.insert_one(session_doc)
+    
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=30*24*60*60,
+        path="/"
+    )
+    
+    user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    return {
+        "user": user_doc, 
+        "session_token": session_token,
+        "is_new_user": is_new_user,
+        "needs_profile": user_doc.get("name") is None or user_doc.get("partner_type") is None
+    }
+
 @api_router.post("/auth/session")
 async def create_session(request: Request, response: Response):
-    """Exchange session_id for session_token"""
+    """Legacy: Exchange session_id for session_token (kept for compatibility)"""
     session_id = request.headers.get("X-Session-ID")
     if not session_id:
         raise HTTPException(status_code=400, detail="Missing X-Session-ID header")
@@ -278,6 +396,8 @@ async def create_session(request: Request, response: Response):
             "name": session_data.name,
             "picture": session_data.picture,
             "phone": None,
+            "date_of_birth": None,
+            "address": None,
             "addresses": [],
             "partner_type": None,
             "partner_status": "offline",
