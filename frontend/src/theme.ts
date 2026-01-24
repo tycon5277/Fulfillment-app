@@ -1,50 +1,52 @@
-// Mobile Genie Theme - Dark with Neon Green (Gamified)
+// Mobile Genie Theme - Sophisticated Dark with Balanced Accents
 export const MOBILE_GENIE_THEME = {
-  // Core colors
-  background: '#0A0A0A',
-  backgroundSecondary: '#111111',
-  cardBg: '#1A1A1A',
-  cardBgHover: '#222222',
-  cardBorder: '#2A2A2A',
+  // Core colors - Deeper, richer dark
+  background: '#0D0D12',
+  backgroundSecondary: '#13131A',
+  cardBg: '#1A1A24',
+  cardBgHover: '#22222E',
+  cardBorder: '#2A2A38',
   
-  // Primary - Neon Green
-  primary: '#10B981',
-  primaryLight: '#34D399',
-  primaryDark: '#059669',
-  primaryGlow: '#10B98150',
+  // Primary - Soft Cyan/Teal (less aggressive than neon green)
+  primary: '#06B6D4',
+  primaryLight: '#22D3EE',
+  primaryDark: '#0891B2',
+  primaryGlow: '#06B6D430',
   
   // Accent colors for gamification
   secondary: '#8B5CF6',    // Purple - XP/Level
-  accent1: '#EC4899',      // Pink - Streak/Hot
-  accent2: '#F59E0B',      // Amber - Coins/Rewards
-  accent3: '#3B82F6',      // Blue - Info/Tasks
-  accent4: '#06B6D4',      // Cyan - Speed/Time
-  accent5: '#EF4444',      // Red - Urgent/Error
-  accent6: '#A855F7',      // Violet - Special
+  accent1: '#F472B6',      // Soft Pink - Streak/Hot
+  accent2: '#FBBF24',      // Gold - Coins/Rewards
+  accent3: '#60A5FA',      // Soft Blue - Info/Tasks
+  accent4: '#34D399',      // Emerald - Success/Online
+  accent5: '#F87171',      // Soft Red - Urgent/Error
+  accent6: '#A78BFA',      // Lavender - Special
   
   // Text
   white: '#FFFFFF',
-  text: '#FFFFFF',
-  textSecondary: '#9CA3AF',
-  textMuted: '#6B7280',
-  textDim: '#4B5563',
+  text: '#F8FAFC',
+  textSecondary: '#94A3B8',
+  textMuted: '#64748B',
+  textDim: '#475569',
   
   // Status
-  success: '#22C55E',
-  error: '#EF4444',
-  warning: '#F59E0B',
-  info: '#3B82F6',
+  success: '#34D399',
+  error: '#F87171',
+  warning: '#FBBF24',
+  info: '#60A5FA',
   
   // Online status
-  online: '#10B981',
-  offline: '#EF4444',
-  busy: '#F59E0B',
+  online: '#34D399',
+  offline: '#64748B',
+  busy: '#FBBF24',
   
   // Gradients
-  gradientPrimary: ['#10B981', '#059669'],
-  gradientGold: ['#F59E0B', '#D97706'],
+  gradientPrimary: ['#06B6D4', '#0891B2'],
+  gradientOnline: ['#34D399', '#10B981'],
+  gradientGold: ['#FBBF24', '#F59E0B'],
   gradientPurple: ['#8B5CF6', '#7C3AED'],
-  gradientPink: ['#EC4899', '#DB2777'],
+  gradientPink: ['#F472B6', '#EC4899'],
+  gradientButton: ['#6366F1', '#8B5CF6'],  // Indigo to Purple for buttons
 };
 
 // Skilled Genie Theme - Professional Teal
