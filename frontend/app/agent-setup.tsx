@@ -728,6 +728,38 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
   },
+  electricToggleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  electricIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  electricToggleContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  electricToggleTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  electricToggleSubtext: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
   serviceCard: {
     flexDirection: 'row',
     alignItems: 'center',
