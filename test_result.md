@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the QuickWish Fulfillment Agent mobile app. The app uses Google OAuth for authentication via Emergent Auth."
+user_problem_statement: "Build a multi-role fulfillment app for QuickWish platform. The app supports 3 partner types: Agent (mobile delivery/service providers with vehicles), Vendor (offline shop owners going online), and Promoter (event/trip organizers). Each partner type has a unique dashboard and features."
 
 backend:
   - task: "Health Check Endpoint"
