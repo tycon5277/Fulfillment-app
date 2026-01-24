@@ -53,7 +53,8 @@ class User(BaseModel):
     
     # Agent-specific fields
     agent_type: Optional[str] = None  # 'mobile' or 'skilled'
-    agent_vehicle: Optional[str] = None  # bike, scooter, car
+    agent_vehicle: Optional[str] = None  # motorbike, scooter, car
+    agent_is_electric: bool = False  # whether the vehicle is electric
     agent_services: List[str] = []  # delivery, courier, rides, errands, surprise (for mobile genies)
     agent_skills: List[str] = []  # electrician, plumber, etc. (for skilled genies)
     agent_has_vehicle: bool = False  # for skilled genies who have vehicle for commuting
