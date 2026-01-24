@@ -38,8 +38,11 @@ export const logout = () => api.post('/auth/logout');
 // Partner Registration
 export const registerAsAgent = (data: { 
   phone: string; 
-  vehicle_type: string; 
-  services: string[];
+  agent_type?: string;  // 'mobile' or 'skilled'
+  vehicle_type?: string | null; 
+  services?: string[];
+  skills?: string[];
+  has_vehicle?: boolean;
 }) => api.post('/partner/register/agent', data);
 
 export const registerAsVendor = (data: { 
