@@ -522,19 +522,27 @@ class PartnerStatusUpdate(BaseModel):
 
 @api_router.post("/partner/register/agent")
 async def register_as_agent(data: AgentRegistration, current_user: User = Depends(require_auth)):
-    """Register as an agent partner"""
+    """Register as an agent partner (Mobile Genie or Skilled Genie)"""
     if current_user.partner_type:
         raise HTTPException(status_code=400, detail=f"Already registered as {current_user.partner_type}")
     
+    update_data = {
+        "partner_type": "agent",
+        "partner_status": "offline",
+        "agent_type": data.agent_type,  # 'mobile' or 'skilled'
+        "agent_vehicle": data.vehicle_type,
+        "agent_services": data.services,
+        "agent_skills": data.skills,
+        "agent_has_vehicle": data.has_vehicle,
+    }
+    
+    # Only set phone if provided
+    if data.phone:
+        update_data["phone"] = data.phone
+    
     await db.users.update_one(
         {"user_id": current_user.user_id},
-        {"$set": {
-            "partner_type": "agent",
-            "partner_status": "offline",
-            "phone": data.phone,
-            "agent_vehicle": data.vehicle_type,
-            "agent_services": data.services,
-        }}
+        {"$set": update_data}
     )
     
     updated_user = await db.users.find_one({"user_id": current_user.user_id}, {"_id": 0})
