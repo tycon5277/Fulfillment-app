@@ -58,6 +58,11 @@ export const updatePartnerStatus = (status: string) =>
 
 export const getPartnerStats = () => api.get('/partner/stats');
 
+// Alias for backward compatibility
+export const getAgentStats = () => api.get('/partner/stats');
+export const updateAgentStatus = (status: string) =>
+  api.put('/partner/status', { status });
+
 // Agent - Orders
 export const getAvailableOrders = () => api.get('/agent/available-orders');
 
