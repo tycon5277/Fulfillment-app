@@ -138,7 +138,7 @@ const SKILL_CATEGORIES = [
 ];
 
 const VEHICLES = [
-  { type: 'bike' as VehicleType, label: 'Bike', icon: 'bicycle' as const },
+  { type: 'motorbike' as VehicleType, label: 'Motor Bike', icon: 'bicycle' as const },
   { type: 'scooter' as VehicleType, label: 'Scooter', icon: 'speedometer' as const },
   { type: 'car' as VehicleType, label: 'Car', icon: 'car' as const },
 ];
