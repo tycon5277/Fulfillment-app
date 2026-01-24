@@ -51,12 +51,12 @@ interface AuthState {
   user: User | null;
   sessionToken: string | null;
   isLoading: boolean;
-  stats: AgentStats | null;
+  stats: PartnerStats | null;
   
   setUser: (user: User | null) => void;
   setSessionToken: (token: string | null) => void;
   setIsLoading: (loading: boolean) => void;
-  setStats: (stats: AgentStats | null) => void;
+  setStats: (stats: PartnerStats | null) => void;
   logout: () => void;
   loadStoredAuth: () => Promise<void>;
 }
