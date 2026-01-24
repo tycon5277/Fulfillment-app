@@ -11,10 +11,12 @@ import {
   Animated,
   Easing,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import MapView, { Marker, Circle, PROVIDER_DEFAULT } from 'react-native-maps';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { useAuthStore, PartnerStats } from '../../src/store';
@@ -22,21 +24,23 @@ import * as api from '../../src/api';
 import THEME from '../../src/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const RADAR_SIZE = SCREEN_WIDTH - 64;
 
 // Mock location for when GPS is not available
 const MOCK_LOCATION = {
-  latitude: 9.9312,
-  longitude: 76.2673,
+  latitude: 12.9716,
+  longitude: 77.5946,
 };
 
-// Inspirational quotes for Genies
-const INSPIRATION_QUOTES = [
-  "Every wish fulfilled makes the world brighter ✨",
-  "You're not just delivering, you're making dreams come true 🌟",
-  "Today's wishes become tomorrow's smiles 😊",
-  "Be the magic someone needs today 🪄",
-  "Small acts, big impacts. Keep going! 💪",
+// Dark map style
+const DARK_MAP_STYLE = [
+  { elementType: 'geometry', stylers: [{ color: '#1d1d2e' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#1d1d2e' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#8ec3b9' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2a2a3e' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#1d1d2e' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0e0e1a' }] },
+  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#1d1d2e' }] },
+  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#1d1d2e' }] },
 ];
 
 export default function HomeScreen() {
@@ -49,136 +53,52 @@ export default function HomeScreen() {
   const [statusLoading, setStatusLoading] = useState(false);
   const [location, setLocation] = useState(MOCK_LOCATION);
   const [locationError, setLocationError] = useState(false);
-  const [currentQuote] = useState(() => 
-    INSPIRATION_QUOTES[Math.floor(Math.random() * INSPIRATION_QUOTES.length)]
-  );
   
   // Animation refs
-  const radarPulse1 = useRef(new Animated.Value(0)).current;
-  const radarPulse2 = useRef(new Animated.Value(0)).current;
-  const radarPulse3 = useRef(new Animated.Value(0)).current;
-  const radarSweep = useRef(new Animated.Value(0)).current;
-  const dotPulse = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0.5)).current;
-  const wishFloat1 = useRef(new Animated.Value(0)).current;
-  const wishFloat2 = useRef(new Animated.Value(0)).current;
-  const wishFloat3 = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
 
   const isMobileGenie = user?.agent_type === 'mobile';
 
-  // Radar animations
+  // Pulse animation for online status
   useEffect(() => {
-    const createPulseAnimation = (value: Animated.Value, delay: number) => {
-      return Animated.loop(
+    if (isOnline) {
+      Animated.loop(
         Animated.sequence([
-          Animated.delay(delay),
-          Animated.timing(value, {
-            toValue: 1,
-            duration: 2500,
+          Animated.timing(pulseAnim, {
+            toValue: 1.5,
+            duration: 1500,
             easing: Easing.out(Easing.ease),
             useNativeDriver: true,
           }),
-          Animated.timing(value, {
-            toValue: 0,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-    };
-
-    // Sweep animation
-    const sweepAnimation = Animated.loop(
-      Animated.timing(radarSweep, {
-        toValue: 1,
-        duration: 3000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    );
-
-    // Glow animation
-    const glowAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(glowAnim, {
-          toValue: 0.5,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-
-    // Wish floating animations
-    const createFloatAnimation = (value: Animated.Value, duration: number) => {
-      return Animated.loop(
-        Animated.sequence([
-          Animated.timing(value, {
+          Animated.timing(pulseAnim, {
             toValue: 1,
-            duration: duration,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(value, {
-            toValue: 0,
-            duration: duration,
-            easing: Easing.inOut(Easing.ease),
+            duration: 1500,
+            easing: Easing.in(Easing.ease),
             useNativeDriver: true,
           }),
         ])
-      );
-    };
-
-    const pulse1 = createPulseAnimation(radarPulse1, 0);
-    const pulse2 = createPulseAnimation(radarPulse2, 833);
-    const pulse3 = createPulseAnimation(radarPulse3, 1666);
-    
-    const dotAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(dotPulse, {
-          toValue: 1.4,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(dotPulse, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-
-    const float1 = createFloatAnimation(wishFloat1, 2000);
-    const float2 = createFloatAnimation(wishFloat2, 2500);
-    const float3 = createFloatAnimation(wishFloat3, 1800);
-
-    if (isOnline) {
-      pulse1.start();
-      pulse2.start();
-      pulse3.start();
-      sweepAnimation.start();
-      dotAnimation.start();
-      float1.start();
-      float2.start();
-      float3.start();
+      ).start();
+      
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(glowAnim, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowAnim, {
+            toValue: 0,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      pulseAnim.setValue(1);
+      glowAnim.setValue(0);
     }
-    glowAnimation.start();
-
-    return () => {
-      pulse1.stop();
-      pulse2.stop();
-      pulse3.stop();
-      sweepAnimation.stop();
-      dotAnimation.stop();
-      glowAnimation.stop();
-      float1.stop();
-      float2.stop();
-      float3.stop();
-    };
   }, [isOnline]);
 
   // Get location
@@ -234,6 +154,22 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, []);
 
+  const handleButtonPressIn = () => {
+    Animated.spring(buttonScale, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleButtonPressOut = () => {
+    Animated.spring(buttonScale, {
+      toValue: 1,
+      friction: 3,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  };
+
   const toggleOnlineStatus = async () => {
     setStatusLoading(true);
     const newStatus = isOnline ? 'offline' : 'available';
@@ -252,10 +188,8 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Animated.View style={{ opacity: glowAnim }}>
-            <Text style={styles.loadingEmoji}>🧞</Text>
-          </Animated.View>
-          <Text style={styles.loadingText}>Summoning your dashboard...</Text>
+          <Text style={styles.loadingEmoji}>🧞</Text>
+          <Text style={styles.loadingText}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -266,7 +200,6 @@ export default function HomeScreen() {
   const currentLevel = Math.floor(totalTasks / 10) + 1;
   const xpInLevel = (totalTasks % 10) * 100;
   const xpNeeded = 1000;
-  const tasksToNextLevel = 10 - (totalTasks % 10);
 
   // Get vehicle display
   const getVehicleDisplay = () => {
@@ -275,16 +208,7 @@ export default function HomeScreen() {
     if (make && model) return `${make} ${model}`;
     if (make) return make;
     if (model) return model;
-    return (user?.agent_vehicle || 'Vehicle').charAt(0).toUpperCase() + (user?.agent_vehicle || '').slice(1);
-  };
-
-  // Get level title
-  const getLevelTitle = () => {
-    if (currentLevel < 5) return 'Rookie Genie';
-    if (currentLevel < 10) return 'Rising Genie';
-    if (currentLevel < 20) return 'Star Genie';
-    if (currentLevel < 50) return 'Master Genie';
-    return 'Legendary Genie';
+    return user?.agent_vehicle?.charAt(0).toUpperCase() + (user?.agent_vehicle || '').slice(1) || 'Vehicle';
   };
 
   // Mobile Genie Dashboard
@@ -304,9 +228,12 @@ export default function HomeScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <Text style={styles.greeting}>Hey, {user?.name?.split(' ')[0] || 'Genie'} 👋</Text>
-              <Text style={styles.levelTitle}>{getLevelTitle()}</Text>
+            <View>
+              <Text style={styles.greeting}>Hey, {user?.name?.split(' ')[0] || 'Genie'}</Text>
+              <View style={styles.statusBadge}>
+                <View style={[styles.statusDot, isOnline ? styles.statusOnline : styles.statusOffline]} />
+                <Text style={styles.statusText}>{isOnline ? 'Online' : 'Offline'}</Text>
+              </View>
             </View>
             <TouchableOpacity 
               style={styles.profileBtn}
@@ -315,269 +242,182 @@ export default function HomeScreen() {
               {user?.picture ? (
                 <Image source={{ uri: user.picture }} style={styles.avatar} />
               ) : (
-                <LinearGradient
-                  colors={[THEME.primary, THEME.primaryDark]}
-                  style={styles.avatarPlaceholder}
-                >
+                <View style={styles.avatarPlaceholder}>
                   <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'G'}</Text>
-                </LinearGradient>
+                </View>
               )}
-              <View style={[styles.statusIndicator, isOnline ? styles.statusOnline : styles.statusOffline]} />
             </TouchableOpacity>
           </View>
 
-          {/* Level & Coins Bar */}
-          <View style={styles.levelBar}>
-            <View style={styles.levelBadge}>
-              <Text style={styles.levelIcon}>⚡</Text>
-              <Text style={styles.levelBadgeText}>Lvl {currentLevel}</Text>
-            </View>
-            <View style={styles.xpMiniBar}>
-              <View style={[styles.xpMiniFill, { width: `${(xpInLevel / xpNeeded) * 100}%` }]} />
-            </View>
-            <View style={styles.coinBadge}>
-              <Text style={styles.coinIcon}>🪙</Text>
-              <Text style={styles.coinText}>{Math.floor(stats?.total_earnings || 0)}</Text>
-            </View>
-          </View>
-
-          {/* Radar Map Card - Hero Section */}
-          <View style={styles.radarCard}>
-            {/* Background glow effect */}
-            <Animated.View style={[styles.radarGlow, { opacity: glowAnim }]} />
-            
-            <View style={styles.radarContainer}>
-              {/* Radar grid lines */}
-              <View style={styles.radarGrid}>
-                <View style={styles.gridLineH} />
-                <View style={styles.gridLineV} />
-              </View>
-              
-              {/* Radar rings */}
-              <View style={[styles.radarRing, { width: RADAR_SIZE * 0.3, height: RADAR_SIZE * 0.3 }]} />
-              <View style={[styles.radarRing, { width: RADAR_SIZE * 0.55, height: RADAR_SIZE * 0.55 }]} />
-              <View style={[styles.radarRing, { width: RADAR_SIZE * 0.8, height: RADAR_SIZE * 0.8 }]} />
-              <View style={[styles.radarRing, { width: RADAR_SIZE * 1.0, height: RADAR_SIZE * 1.0 }]} />
-              
-              {/* Animated pulse rings */}
-              {isOnline && (
-                <>
-                  <Animated.View style={[
-                    styles.radarPulse,
-                    {
-                      width: RADAR_SIZE,
-                      height: RADAR_SIZE,
-                      transform: [{ scale: radarPulse1.interpolate({ inputRange: [0, 1], outputRange: [0.1, 1.1] }) }],
-                      opacity: radarPulse1.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] }),
-                    }
-                  ]} />
-                  <Animated.View style={[
-                    styles.radarPulse,
-                    {
-                      width: RADAR_SIZE,
-                      height: RADAR_SIZE,
-                      transform: [{ scale: radarPulse2.interpolate({ inputRange: [0, 1], outputRange: [0.1, 1.1] }) }],
-                      opacity: radarPulse2.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] }),
-                    }
-                  ]} />
-                  <Animated.View style={[
-                    styles.radarPulse,
-                    {
-                      width: RADAR_SIZE,
-                      height: RADAR_SIZE,
-                      transform: [{ scale: radarPulse3.interpolate({ inputRange: [0, 1], outputRange: [0.1, 1.1] }) }],
-                      opacity: radarPulse3.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] }),
-                    }
-                  ]} />
-                </>
-              )}
-              
-              {/* Radar sweep line */}
-              {isOnline && (
-                <Animated.View style={[
-                  styles.radarSweep,
-                  {
-                    transform: [{
-                      rotate: radarSweep.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['0deg', '360deg'],
-                      }),
-                    }],
-                  }
-                ]}>
-                  <LinearGradient
-                    colors={['transparent', THEME.primary + '60', THEME.primary]}
-                    style={styles.sweepGradient}
-                    start={{ x: 0, y: 0.5 }}
-                    end={{ x: 1, y: 0.5 }}
+          {/* Map Card */}
+          <View style={styles.mapCard}>
+            <View style={styles.mapContainer}>
+              <MapView
+                style={styles.map}
+                provider={PROVIDER_DEFAULT}
+                initialRegion={{
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                }}
+                customMapStyle={DARK_MAP_STYLE}
+                showsUserLocation={false}
+                showsMyLocationButton={false}
+                scrollEnabled={false}
+                zoomEnabled={false}
+                rotateEnabled={false}
+                pitchEnabled={false}
+              >
+                {/* Pulse circle when online */}
+                {isOnline && (
+                  <Circle
+                    center={location}
+                    radius={200}
+                    fillColor="rgba(52, 211, 153, 0.1)"
+                    strokeColor="rgba(52, 211, 153, 0.3)"
+                    strokeWidth={1}
                   />
-                </Animated.View>
-              )}
+                )}
+                <Circle
+                  center={location}
+                  radius={80}
+                  fillColor="rgba(6, 182, 212, 0.15)"
+                  strokeColor="rgba(6, 182, 212, 0.4)"
+                  strokeWidth={2}
+                />
+                {/* Custom marker */}
+                <Marker coordinate={location} anchor={{ x: 0.5, y: 0.5 }}>
+                  <View style={styles.markerContainer}>
+                    {isOnline && (
+                      <Animated.View 
+                        style={[
+                          styles.markerPulse,
+                          { 
+                            transform: [{ scale: pulseAnim }],
+                            opacity: pulseAnim.interpolate({
+                              inputRange: [1, 1.5],
+                              outputRange: [0.6, 0],
+                            }),
+                          }
+                        ]} 
+                      />
+                    )}
+                    <View style={[styles.markerDot, isOnline && styles.markerDotOnline]}>
+                      <Ionicons 
+                        name={user?.agent_vehicle === 'car' ? 'car' : 'bicycle'} 
+                        size={14} 
+                        color="#FFF" 
+                      />
+                    </View>
+                  </View>
+                </Marker>
+              </MapView>
               
-              {/* Center dot (you) */}
-              <Animated.View style={[
-                styles.centerDotOuter,
-                isOnline && { transform: [{ scale: dotPulse }] }
-              ]}>
-                <View style={styles.centerDot}>
-                  <View style={styles.centerDotInner} />
-                </View>
-              </Animated.View>
-
-              {/* Nearby wishes indicators - floating */}
-              {isOnline && (
-                <>
-                  <Animated.View style={[
-                    styles.wishDot, 
-                    { 
-                      top: '20%', 
-                      left: '25%',
-                      transform: [{ translateY: wishFloat1.interpolate({ inputRange: [0, 1], outputRange: [0, -8] }) }],
-                    }
-                  ]}>
-                    <Text style={styles.wishDotEmoji}>🛒</Text>
-                  </Animated.View>
-                  <Animated.View style={[
-                    styles.wishDot, 
-                    { 
-                      top: '30%', 
-                      right: '20%',
-                      transform: [{ translateY: wishFloat2.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) }],
-                    }
-                  ]}>
-                    <Text style={styles.wishDotEmoji}>🎁</Text>
-                  </Animated.View>
-                  <Animated.View style={[
-                    styles.wishDot, 
-                    { 
-                      bottom: '25%', 
-                      left: '18%',
-                      transform: [{ translateY: wishFloat3.interpolate({ inputRange: [0, 1], outputRange: [0, -10] }) }],
-                    }
-                  ]}>
-                    <Text style={styles.wishDotEmoji}>📦</Text>
-                  </Animated.View>
-                  <Animated.View style={[
-                    styles.wishDot, 
-                    { 
-                      bottom: '35%', 
-                      right: '25%',
-                      transform: [{ translateY: wishFloat1.interpolate({ inputRange: [0, 1], outputRange: [0, -7] }) }],
-                    }
-                  ]}>
-                    <Text style={styles.wishDotEmoji}>🍔</Text>
-                  </Animated.View>
-                </>
-              )}
-            </View>
-            
-            {/* Radar info bar */}
-            <View style={styles.radarInfo}>
-              <View style={styles.radarStatusContainer}>
-                <View style={[styles.radarStatusDot, isOnline ? styles.statusOnlineSmall : styles.statusOfflineSmall]} />
-                <Text style={styles.radarStatusText}>
-                  {isOnline ? 'Scanning for wishes nearby...' : 'Go online to discover wishes'}
-                </Text>
-              </View>
-              <View style={styles.locationBadge}>
-                <Text style={styles.locationIcon}>📍</Text>
-                <Text style={styles.locationText}>{locationError ? 'Demo' : 'Live'}</Text>
-              </View>
-            </View>
-
-            {/* Online Toggle Button */}
-            <TouchableOpacity 
-              style={[styles.onlineButton, isOnline && styles.onlineButtonActive]}
-              onPress={toggleOnlineStatus}
-              disabled={statusLoading}
-              activeOpacity={0.8}
-            >
-              {statusLoading ? (
-                <ActivityIndicator color={isOnline ? THEME.background : THEME.primary} size="small" />
-              ) : isOnline ? (
-                <LinearGradient
-                  colors={[THEME.primary, THEME.primaryDark]}
-                  style={styles.onlineButtonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  <Text style={styles.onlineEmoji}>📡</Text>
-                  <Text style={styles.onlineButtonTextActive}>ONLINE - SCANNING</Text>
-                </LinearGradient>
-              ) : (
-                <>
-                  <Text style={styles.offlineEmoji}>🔌</Text>
-                  <Text style={styles.onlineButtonText}>TAP TO GO ONLINE</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Inspiration Quote */}
-          <View style={styles.quoteCard}>
-            <Text style={styles.quoteText}>{currentQuote}</Text>
-          </View>
-
-          {/* Stats Grid */}
-          <View style={styles.statsGrid}>
-            <View style={[styles.statCard, styles.statCardGreen]}>
-              <Text style={styles.statEmoji}>💰</Text>
-              <Text style={styles.statValue}>₹{stats?.today_earnings?.toFixed(0) || '0'}</Text>
-              <Text style={styles.statLabel}>Today's Earnings</Text>
-            </View>
-            <View style={[styles.statCard, styles.statCardBlue]}>
-              <Text style={styles.statEmoji}>🎯</Text>
-              <Text style={styles.statValue}>{totalTasks}</Text>
-              <Text style={styles.statLabel}>Wishes Granted</Text>
-            </View>
-            <View style={[styles.statCard, styles.statCardGold]}>
-              <Text style={styles.statEmoji}>⭐</Text>
-              <Text style={styles.statValue}>{stats?.rating?.toFixed(1) || '5.0'}</Text>
-              <Text style={styles.statLabel}>Your Rating</Text>
-            </View>
-            <View style={[styles.statCard, styles.statCardPink]}>
-              <Text style={styles.statEmoji}>🔥</Text>
-              <Text style={styles.statValue}>{stats?.active_count || 0}</Text>
-              <Text style={styles.statLabel}>Active Now</Text>
-            </View>
-          </View>
-
-          {/* XP Progress Card */}
-          <View style={styles.xpCard}>
-            <View style={styles.xpHeader}>
-              <View style={styles.xpTitleRow}>
-                <Text style={styles.xpLevelEmoji}>🏆</Text>
-                <View>
-                  <Text style={styles.xpTitle}>Level {currentLevel} Progress</Text>
-                  <Text style={styles.xpSubtitle}>{tasksToNextLevel} more wishes to level up!</Text>
+              {/* Map overlay info */}
+              <View style={styles.mapOverlay}>
+                <View style={styles.locationBadge}>
+                  <Ionicons name="location" size={12} color={THEME.primary} />
+                  <Text style={styles.locationText}>
+                    {locationError ? 'Demo Location' : 'Your Location'}
+                  </Text>
                 </View>
               </View>
-              <View style={styles.xpValueContainer}>
-                <Text style={styles.xpAmount}>{xpInLevel}</Text>
-                <Text style={styles.xpTotal}>/{xpNeeded}</Text>
+            </View>
+
+            {/* Go Online Button - Distinctive Design */}
+            <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+              <TouchableOpacity
+                onPress={toggleOnlineStatus}
+                onPressIn={handleButtonPressIn}
+                onPressOut={handleButtonPressOut}
+                disabled={statusLoading}
+                activeOpacity={1}
+                style={styles.onlineButtonWrapper}
+              >
+                {isOnline ? (
+                  <LinearGradient
+                    colors={['#34D399', '#10B981']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.onlineButton}
+                  >
+                    {statusLoading ? (
+                      <ActivityIndicator color="#FFF" size="small" />
+                    ) : (
+                      <>
+                        <View style={styles.onlineIndicator}>
+                          <View style={styles.onlineDot} />
+                        </View>
+                        <Text style={styles.onlineButtonText}>ONLINE</Text>
+                        <Text style={styles.onlineSubtext}>Tap to go offline</Text>
+                      </>
+                    )}
+                  </LinearGradient>
+                ) : (
+                  <LinearGradient
+                    colors={['#6366F1', '#8B5CF6']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.onlineButton}
+                  >
+                    {statusLoading ? (
+                      <ActivityIndicator color="#FFF" size="small" />
+                    ) : (
+                      <>
+                        <Ionicons name="power" size={28} color="#FFF" />
+                        <Text style={styles.offlineButtonText}>GO ONLINE</Text>
+                        <Text style={styles.offlineSubtext}>Start accepting wishes</Text>
+                      </>
+                    )}
+                  </LinearGradient>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+
+          {/* Quick Stats Row */}
+          <View style={styles.quickStats}>
+            <View style={styles.quickStatItem}>
+              <Text style={styles.quickStatValue}>₹{stats?.today_earnings?.toFixed(0) || '0'}</Text>
+              <Text style={styles.quickStatLabel}>Today</Text>
+            </View>
+            <View style={styles.quickStatDivider} />
+            <View style={styles.quickStatItem}>
+              <Text style={styles.quickStatValue}>{totalTasks}</Text>
+              <Text style={styles.quickStatLabel}>Completed</Text>
+            </View>
+            <View style={styles.quickStatDivider} />
+            <View style={styles.quickStatItem}>
+              <Text style={styles.quickStatValue}>{stats?.rating?.toFixed(1) || '5.0'}</Text>
+              <Text style={styles.quickStatLabel}>Rating</Text>
+            </View>
+          </View>
+
+          {/* Level Progress */}
+          <View style={styles.levelCard}>
+            <View style={styles.levelHeader}>
+              <View style={styles.levelBadge}>
+                <Text style={styles.levelNumber}>{currentLevel}</Text>
+              </View>
+              <View style={styles.levelInfo}>
+                <Text style={styles.levelTitle}>Level {currentLevel}</Text>
+                <Text style={styles.levelSubtitle}>{xpInLevel} / {xpNeeded} XP</Text>
+              </View>
+              <View style={styles.xpBadge}>
+                <Ionicons name="flash" size={14} color={THEME.accent2} />
+                <Text style={styles.xpBadgeText}>+100 XP</Text>
               </View>
             </View>
             <View style={styles.xpBarTrack}>
-              <LinearGradient
-                colors={[THEME.primary, THEME.primaryLight]}
-                style={[styles.xpBarFill, { width: `${(xpInLevel / xpNeeded) * 100}%` }]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              />
-            </View>
-            <View style={styles.xpRewardRow}>
-              <Text style={styles.xpRewardLabel}>Next level reward:</Text>
-              <View style={styles.xpRewardBadge}>
-                <Text style={styles.xpRewardEmoji}>🎁</Text>
-                <Text style={styles.xpRewardText}>₹50 Bonus</Text>
-              </View>
+              <View style={[styles.xpBarFill, { width: `${(xpInLevel / xpNeeded) * 100}%` }]} />
             </View>
           </View>
 
-          {/* Vehicle Card */}
+          {/* Vehicle Info */}
           <View style={styles.vehicleCard}>
-            <View style={styles.vehicleHeader}>
-              <View style={styles.vehicleIconBg}>
+            <View style={styles.vehicleRow}>
+              <View style={styles.vehicleIcon}>
                 <Text style={styles.vehicleEmoji}>
                   {user?.agent_vehicle === 'car' ? '🚗' : user?.agent_vehicle === 'motorbike' ? '🏍️' : '🛵'}
                 </Text>
@@ -588,130 +428,70 @@ export default function HomeScreen() {
               </View>
               {user?.agent_is_electric && (
                 <View style={styles.evBadge}>
-                  <Text style={styles.evEmoji}>⚡</Text>
+                  <Ionicons name="leaf" size={12} color={THEME.success} />
                   <Text style={styles.evText}>EV</Text>
                 </View>
               )}
             </View>
           </View>
 
-          {/* Services */}
-          <Text style={styles.sectionTitle}>🎯 Your Services</Text>
-          <View style={styles.servicesRow}>
-            {(user?.agent_services || []).map((service: string) => (
-              <View key={service} style={[styles.serviceChip, { backgroundColor: getServiceColor(service) + '20', borderColor: getServiceColor(service) + '40' }]}>
-                <Text style={styles.serviceEmoji}>{getServiceEmoji(service)}</Text>
-                <Text style={[styles.serviceChipText, { color: getServiceColor(service) }]}>
-                  {service.charAt(0).toUpperCase() + service.slice(1)}
-                </Text>
-              </View>
-            ))}
-            {(!user?.agent_services || user.agent_services.length === 0) && (
-              <Text style={styles.noServicesText}>No services selected</Text>
-            )}
-          </View>
-
           {/* Quick Actions */}
-          <Text style={styles.sectionTitle}>⚡ Quick Actions</Text>
-          <View style={styles.actionsGrid}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.actionsRow}>
             <TouchableOpacity 
               style={styles.actionCard}
               onPress={() => router.push('/(main)/orders')}
-              activeOpacity={0.7}
             >
-              <View style={[styles.actionIconBg, { backgroundColor: THEME.primary + '20' }]}>
-                <Text style={styles.actionEmoji}>📦</Text>
+              <View style={[styles.actionIcon, { backgroundColor: THEME.accent3 + '20' }]}>
+                <Ionicons name="cube-outline" size={24} color={THEME.accent3} />
               </View>
               <Text style={styles.actionLabel}>Tasks</Text>
-              <View style={styles.actionBadge}>
-                <Text style={styles.actionBadgeText}>3</Text>
-              </View>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.actionCard}
               onPress={() => router.push('/(main)/wishes')}
-              activeOpacity={0.7}
             >
-              <View style={[styles.actionIconBg, { backgroundColor: THEME.secondary + '20' }]}>
-                <Text style={styles.actionEmoji}>⭐</Text>
+              <View style={[styles.actionIcon, { backgroundColor: THEME.secondary + '20' }]}>
+                <Ionicons name="sparkles-outline" size={24} color={THEME.secondary} />
               </View>
               <Text style={styles.actionLabel}>Wishes</Text>
-              <View style={[styles.actionBadge, { backgroundColor: THEME.secondary }]}>
-                <Text style={styles.actionBadgeText}>5</Text>
-              </View>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.actionCard}
               onPress={() => router.push('/(main)/deliveries')}
-              activeOpacity={0.7}
             >
-              <View style={[styles.actionIconBg, { backgroundColor: THEME.accent2 + '20' }]}>
-                <Text style={styles.actionEmoji}>🚀</Text>
+              <View style={[styles.actionIcon, { backgroundColor: THEME.accent2 + '20' }]}>
+                <Ionicons name="rocket-outline" size={24} color={THEME.accent2} />
               </View>
               <Text style={styles.actionLabel}>Active</Text>
             </TouchableOpacity>
-          </View>
-
-          {/* Daily Challenge */}
-          <View style={styles.challengeCard}>
-            <LinearGradient
-              colors={[THEME.accent2 + '25', THEME.accent2 + '10']}
-              style={styles.challengeGradient}
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={() => router.push('/(main)/profile')}
             >
-              <View style={styles.challengeHeader}>
-                <Text style={styles.challengeEmoji}>🏆</Text>
-                <Text style={styles.challengeTitle}>Daily Challenge</Text>
-                <View style={styles.challengeTimer}>
-                  <Ionicons name="time-outline" size={14} color={THEME.accent2} />
-                  <Text style={styles.challengeTimerText}>8h left</Text>
-                </View>
+              <View style={[styles.actionIcon, { backgroundColor: THEME.accent1 + '20' }]}>
+                <Ionicons name="wallet-outline" size={24} color={THEME.accent1} />
               </View>
-              <Text style={styles.challengeDesc}>Complete 5 deliveries today</Text>
-              <View style={styles.challengeProgress}>
-                <View style={styles.challengeBarTrack}>
-                  <LinearGradient
-                    colors={[THEME.accent2, '#FFD700']}
-                    style={[styles.challengeBarFill, { width: '40%' }]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                  />
-                </View>
-                <Text style={styles.challengeCount}>2/5</Text>
-              </View>
-              <View style={styles.challengeRewardRow}>
-                <Text style={styles.challengeRewardLabel}>Rewards:</Text>
-                <View style={styles.challengeRewards}>
-                  <View style={styles.rewardItem}>
-                    <Text style={styles.rewardEmoji}>⚡</Text>
-                    <Text style={styles.rewardText}>+50 XP</Text>
-                  </View>
-                  <View style={styles.rewardItem}>
-                    <Text style={styles.rewardEmoji}>💰</Text>
-                    <Text style={styles.rewardText}>₹100</Text>
-                  </View>
-                </View>
-              </View>
-            </LinearGradient>
+              <Text style={styles.actionLabel}>Earnings</Text>
+            </TouchableOpacity>
           </View>
 
-          {/* Streak Card */}
-          <View style={styles.streakCard}>
-            <View style={styles.streakLeft}>
-              <Text style={styles.streakEmoji}>🔥</Text>
-              <View>
-                <Text style={styles.streakTitle}>3 Day Streak!</Text>
-                <Text style={styles.streakSubtitle}>You're on fire! Keep going!</Text>
+          {/* Services */}
+          {(user?.agent_services && user.agent_services.length > 0) && (
+            <>
+              <Text style={styles.sectionTitle}>Your Services</Text>
+              <View style={styles.servicesRow}>
+                {user.agent_services.map((service: string) => (
+                  <View key={service} style={styles.serviceChip}>
+                    <Text style={styles.serviceEmoji}>{getServiceEmoji(service)}</Text>
+                    <Text style={styles.serviceText}>
+                      {service.charAt(0).toUpperCase() + service.slice(1)}
+                    </Text>
+                  </View>
+                ))}
               </View>
-            </View>
-            <View style={styles.streakDays}>
-              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => (
-                <View key={index} style={[styles.streakDay, index < 3 && styles.streakDayActive]}>
-                  <Text style={[styles.streakDayText, index < 3 && styles.streakDayTextActive]}>{day}</Text>
-                  {index < 3 && <Text style={styles.streakDayCheck}>✓</Text>}
-                </View>
-              ))}
-            </View>
-          </View>
+            </>
+          )}
 
           {/* Bottom spacer */}
           <View style={{ height: 30 }} />
@@ -732,7 +512,7 @@ export default function HomeScreen() {
   );
 }
 
-// Helper functions
+// Helper function
 function getServiceEmoji(service: string): string {
   switch (service) {
     case 'delivery': return '🛒';
@@ -741,17 +521,6 @@ function getServiceEmoji(service: string): string {
     case 'errands': return '📋';
     case 'surprise': return '🎁';
     default: return '⭐';
-  }
-}
-
-function getServiceColor(service: string): string {
-  switch (service) {
-    case 'delivery': return THEME.primary;
-    case 'courier': return THEME.accent3;
-    case 'rides': return THEME.secondary;
-    case 'errands': return THEME.accent2;
-    case 'surprise': return THEME.accent1;
-    default: return THEME.primary;
   }
 }
 
@@ -766,12 +535,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingEmoji: {
-    fontSize: 60,
-    marginBottom: 16,
+    fontSize: 48,
+    marginBottom: 12,
   },
   loadingText: {
     color: THEME.textSecondary,
-    marginTop: 8,
     fontSize: 15,
   },
   content: {
@@ -783,540 +551,319 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 20,
   },
-  headerLeft: {},
   greeting: {
-    fontSize: 26,
-    fontWeight: '800',
+    fontSize: 24,
+    fontWeight: '700',
     color: THEME.text,
   },
-  levelTitle: {
-    fontSize: 14,
-    color: THEME.primary,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  profileBtn: {
-    position: 'relative',
-  },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 2,
-    borderColor: THEME.primary,
-  },
-  avatarPlaceholder: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    justifyContent: 'center',
+  statusBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 4,
+    gap: 6,
   },
-  avatarText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: THEME.white,
-  },
-  statusIndicator: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: THEME.background,
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   statusOnline: {
     backgroundColor: THEME.success,
   },
   statusOffline: {
-    backgroundColor: THEME.error,
+    backgroundColor: THEME.textMuted,
   },
-  // Level Bar
-  levelBar: {
-    flexDirection: 'row',
+  statusText: {
+    fontSize: 13,
+    color: THEME.textSecondary,
+  },
+  profileBtn: {},
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: THEME.cardBorder,
+  },
+  avatarPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: THEME.cardBg,
+    borderWidth: 2,
+    borderColor: THEME.cardBorder,
+    justifyContent: 'center',
     alignItems: 'center',
+  },
+  avatarText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: THEME.text,
+  },
+  // Map Card
+  mapCard: {
+    backgroundColor: THEME.cardBg,
+    borderRadius: 20,
+    overflow: 'hidden',
     marginBottom: 16,
-    gap: 10,
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
   },
-  levelBadge: {
+  mapContainer: {
+    height: 180,
+    position: 'relative',
+  },
+  map: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  mapOverlay: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+  },
+  locationBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.accent2 + '20',
-    paddingHorizontal: 12,
+    backgroundColor: THEME.cardBg + 'E6',
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 12,
     gap: 4,
   },
-  levelIcon: {
-    fontSize: 14,
+  locationText: {
+    fontSize: 11,
+    color: THEME.text,
+    fontWeight: '500',
   },
-  levelBadgeText: {
+  markerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  markerPulse: {
+    position: 'absolute',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: THEME.success,
+  },
+  markerDot: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: THEME.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: THEME.cardBg,
+  },
+  markerDotOnline: {
+    backgroundColor: THEME.success,
+  },
+  // Online Button
+  onlineButtonWrapper: {
+    margin: 12,
+  },
+  onlineButton: {
+    borderRadius: 16,
+    paddingVertical: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  onlineIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  onlineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FFF',
+  },
+  onlineButtonText: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFF',
+    letterSpacing: 2,
+  },
+  onlineSubtext: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 2,
+  },
+  offlineButtonText: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFF',
+    marginTop: 8,
+    letterSpacing: 1,
+  },
+  offlineSubtext: {
     fontSize: 13,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 4,
+  },
+  // Quick Stats
+  quickStats: {
+    flexDirection: 'row',
+    backgroundColor: THEME.cardBg,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
+  },
+  quickStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  quickStatDivider: {
+    width: 1,
+    backgroundColor: THEME.cardBorder,
+  },
+  quickStatValue: {
+    fontSize: 22,
     fontWeight: '700',
+    color: THEME.text,
+  },
+  quickStatLabel: {
+    fontSize: 12,
+    color: THEME.textMuted,
+    marginTop: 2,
+  },
+  // Level Card
+  levelCard: {
+    backgroundColor: THEME.cardBg,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
+  },
+  levelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  levelBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: THEME.secondary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  levelNumber: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: THEME.secondary,
+  },
+  levelInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  levelTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.text,
+  },
+  levelSubtitle: {
+    fontSize: 12,
+    color: THEME.textMuted,
+    marginTop: 2,
+  },
+  xpBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.accent2 + '15',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    gap: 4,
+  },
+  xpBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
     color: THEME.accent2,
   },
-  xpMiniBar: {
-    flex: 1,
+  xpBarTrack: {
     height: 6,
     backgroundColor: THEME.cardBorder,
     borderRadius: 3,
     overflow: 'hidden',
   },
-  xpMiniFill: {
-    height: '100%',
-    backgroundColor: THEME.primary,
-    borderRadius: 3,
-  },
-  coinBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: THEME.cardBg,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: THEME.cardBorder,
-    gap: 4,
-  },
-  coinIcon: {
-    fontSize: 14,
-  },
-  coinText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: THEME.text,
-  },
-  // Radar Card
-  radarCard: {
-    backgroundColor: THEME.cardBg,
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: THEME.cardBorder,
-    overflow: 'hidden',
-  },
-  radarGlow: {
-    position: 'absolute',
-    top: -50,
-    left: -50,
-    right: -50,
-    bottom: -50,
-    backgroundColor: THEME.primary,
-    opacity: 0.05,
-    borderRadius: 200,
-  },
-  radarContainer: {
-    width: '100%',
-    aspectRatio: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-    marginBottom: 16,
-  },
-  radarGrid: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-  },
-  gridLineH: {
-    position: 'absolute',
-    top: '50%',
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: THEME.primary + '15',
-  },
-  gridLineV: {
-    position: 'absolute',
-    left: '50%',
-    top: 0,
-    bottom: 0,
-    width: 1,
-    backgroundColor: THEME.primary + '15',
-  },
-  radarRing: {
-    position: 'absolute',
-    borderRadius: 1000,
-    borderWidth: 1,
-    borderColor: THEME.primary + '25',
-  },
-  radarPulse: {
-    position: 'absolute',
-    borderRadius: 1000,
-    borderWidth: 2,
-    borderColor: THEME.primary,
-  },
-  radarSweep: {
-    position: 'absolute',
-    width: '50%',
-    height: 4,
-    right: '50%',
-    overflow: 'visible',
-  },
-  sweepGradient: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 2,
-  },
-  centerDotOuter: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: THEME.primary + '30',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  centerDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: THEME.primary + '60',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  centerDotInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: THEME.primary,
-  },
-  wishDot: {
-    position: 'absolute',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: THEME.cardBg,
-    borderWidth: 2,
-    borderColor: THEME.cardBorder,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: THEME.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  wishDotEmoji: {
-    fontSize: 16,
-  },
-  radarInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  radarStatusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  radarStatusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusOnlineSmall: {
-    backgroundColor: THEME.success,
-  },
-  statusOfflineSmall: {
-    backgroundColor: THEME.error,
-  },
-  radarStatusText: {
-    fontSize: 13,
-    color: THEME.textSecondary,
-  },
-  locationBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: THEME.cardBorder,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    gap: 4,
-  },
-  locationIcon: {
-    fontSize: 10,
-  },
-  locationText: {
-    fontSize: 11,
-    color: THEME.textMuted,
-    fontWeight: '600',
-  },
-  onlineButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: THEME.cardBorder,
-    paddingVertical: 16,
-    borderRadius: 16,
-    gap: 10,
-    overflow: 'hidden',
-  },
-  onlineButtonActive: {
-    padding: 0,
-  },
-  onlineButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    width: '100%',
-    gap: 10,
-  },
-  onlineEmoji: {
-    fontSize: 18,
-  },
-  offlineEmoji: {
-    fontSize: 18,
-  },
-  onlineButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: THEME.textSecondary,
-  },
-  onlineButtonTextActive: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: THEME.white,
-  },
-  // Quote Card
-  quoteCard: {
-    backgroundColor: THEME.primary + '10',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: THEME.primary,
-  },
-  quoteText: {
-    fontSize: 14,
-    color: THEME.textSecondary,
-    fontStyle: 'italic',
-    lineHeight: 20,
-  },
-  // Stats Grid
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 20,
-  },
-  statCard: {
-    width: '48%',
-    backgroundColor: THEME.cardBg,
-    borderRadius: 20,
-    padding: 18,
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  statCardGreen: {
-    borderColor: THEME.primary + '40',
-  },
-  statCardBlue: {
-    borderColor: THEME.accent3 + '40',
-  },
-  statCardGold: {
-    borderColor: THEME.accent2 + '40',
-  },
-  statCardPink: {
-    borderColor: THEME.accent1 + '40',
-  },
-  statEmoji: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: THEME.text,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: THEME.textSecondary,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  // XP Card
-  xpCard: {
-    backgroundColor: THEME.cardBg,
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: THEME.cardBorder,
-  },
-  xpHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  xpTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  xpLevelEmoji: {
-    fontSize: 28,
-  },
-  xpTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: THEME.text,
-  },
-  xpSubtitle: {
-    fontSize: 12,
-    color: THEME.textSecondary,
-    marginTop: 2,
-  },
-  xpValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  xpAmount: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: THEME.primary,
-  },
-  xpTotal: {
-    fontSize: 14,
-    color: THEME.textMuted,
-    fontWeight: '600',
-  },
-  xpBarTrack: {
-    height: 12,
-    backgroundColor: THEME.cardBorder,
-    borderRadius: 6,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
   xpBarFill: {
     height: '100%',
-    borderRadius: 6,
-  },
-  xpRewardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  xpRewardLabel: {
-    fontSize: 12,
-    color: THEME.textMuted,
-  },
-  xpRewardBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: THEME.accent2 + '20',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  xpRewardEmoji: {
-    fontSize: 12,
-  },
-  xpRewardText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: THEME.accent2,
+    backgroundColor: THEME.secondary,
+    borderRadius: 3,
   },
   // Vehicle Card
   vehicleCard: {
     backgroundColor: THEME.cardBg,
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: 16,
+    padding: 14,
     marginBottom: 20,
     borderWidth: 1,
     borderColor: THEME.cardBorder,
   },
-  vehicleHeader: {
+  vehicleRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  vehicleIconBg: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+  vehicleIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: THEME.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
   },
   vehicleEmoji: {
-    fontSize: 28,
+    fontSize: 22,
   },
   vehicleInfo: {
     flex: 1,
-    marginLeft: 14,
+    marginLeft: 12,
   },
   vehicleName: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600',
     color: THEME.text,
   },
   vehicleReg: {
-    fontSize: 14,
-    color: THEME.textSecondary,
-    marginTop: 2,
+    fontSize: 13,
+    color: THEME.textMuted,
+    marginTop: 1,
   },
   evBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: THEME.success + '15',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
     gap: 4,
   },
-  evEmoji: {
-    fontSize: 14,
-  },
   evText: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
     color: THEME.success,
   },
   // Section
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: THEME.text,
+    fontSize: 15,
+    fontWeight: '600',
+    color: THEME.textSecondary,
     marginBottom: 12,
   },
-  // Services
-  servicesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 20,
-  },
-  serviceChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 20,
-    gap: 6,
-    borderWidth: 1,
-  },
-  serviceEmoji: {
-    fontSize: 16,
-  },
-  serviceChipText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  noServicesText: {
-    fontSize: 14,
-    color: THEME.textMuted,
-    fontStyle: 'italic',
-  },
   // Actions
-  actionsGrid: {
+  actionsRow: {
     flexDirection: 'row',
     gap: 10,
     marginBottom: 20,
@@ -1324,190 +871,49 @@ const styles = StyleSheet.create({
   actionCard: {
     flex: 1,
     backgroundColor: THEME.cardBg,
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: 14,
+    paddingVertical: 14,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: THEME.cardBorder,
-    position: 'relative',
   },
-  actionIconBg: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+  actionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
-  },
-  actionEmoji: {
-    fontSize: 26,
+    marginBottom: 6,
   },
   actionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: THEME.text,
+    fontSize: 12,
+    fontWeight: '500',
+    color: THEME.textSecondary,
   },
-  actionBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: THEME.primary,
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-  },
-  actionBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: THEME.white,
-  },
-  // Challenge
-  challengeCard: {
-    borderRadius: 20,
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  challengeGradient: {
-    padding: 18,
-  },
-  challengeHeader: {
+  // Services
+  servicesRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
   },
-  challengeEmoji: {
-    fontSize: 22,
-    marginRight: 10,
-  },
-  challengeTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: THEME.accent2,
-    flex: 1,
-  },
-  challengeTimer: {
+  serviceChip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: THEME.cardBg,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
+    gap: 6,
   },
-  challengeTimerText: {
-    fontSize: 12,
-    color: THEME.accent2,
-    fontWeight: '600',
-  },
-  challengeDesc: {
-    fontSize: 15,
-    color: THEME.text,
-    marginBottom: 14,
-  },
-  challengeProgress: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 14,
-  },
-  challengeBarTrack: {
-    flex: 1,
-    height: 10,
-    backgroundColor: THEME.cardBorder,
-    borderRadius: 5,
-    overflow: 'hidden',
-  },
-  challengeBarFill: {
-    height: '100%',
-    borderRadius: 5,
-  },
-  challengeCount: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: THEME.accent2,
-  },
-  challengeRewardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  challengeRewardLabel: {
-    fontSize: 13,
-    color: THEME.textSecondary,
-    marginRight: 10,
-  },
-  challengeRewards: {
-    flexDirection: 'row',
-    gap: 14,
-  },
-  rewardItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  rewardEmoji: {
+  serviceEmoji: {
     fontSize: 14,
   },
-  rewardText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: THEME.text,
-  },
-  // Streak
-  streakCard: {
-    backgroundColor: THEME.accent1 + '12',
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: THEME.accent1 + '25',
-  },
-  streakLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
-  },
-  streakEmoji: {
-    fontSize: 36,
-  },
-  streakTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: THEME.accent1,
-  },
-  streakSubtitle: {
+  serviceText: {
     fontSize: 13,
     color: THEME.textSecondary,
-    marginTop: 2,
-  },
-  streakDays: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  streakDay: {
-    width: 36,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: THEME.cardBorder,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  streakDayActive: {
-    backgroundColor: THEME.accent1,
-  },
-  streakDayText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: THEME.textMuted,
-  },
-  streakDayTextActive: {
-    color: THEME.white,
-  },
-  streakDayCheck: {
-    fontSize: 10,
-    color: THEME.white,
-    marginTop: 2,
+    fontWeight: '500',
   },
 });
