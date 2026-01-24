@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
@@ -13,37 +13,36 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as api from '../../src/api';
-import type { Wish } from '../../src/types';
 
 const COLORS = {
   primary: '#7C3AED',
   secondary: '#0EA5E9',
-  amber: '#F59E0B',
   background: '#F8F9FA',
   white: '#FFFFFF',
   text: '#212529',
   textSecondary: '#6C757D',
   success: '#22C55E',
-  blue: '#D0E9F7',
+  amber: '#F59E0B',
+  border: '#E5E7EB',
 };
 
-const WISH_TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  delivery: 'cube',
-  medicine_delivery: 'medical',
-  errands: 'clipboard',
-  ride_request: 'car',
-  food_delivery: 'restaurant',
-  home_maintenance: 'hammer',
-};
-
-const WISH_TYPE_COLORS: Record<string, string> = {
-  delivery: '#7C3AED',
-  medicine_delivery: '#EF4444',
-  errands: '#F59E0B',
-  ride_request: '#0EA5E9',
-  food_delivery: '#22C55E',
-  home_maintenance: '#6366F1',
-};
+interface Wish {
+  wish_id: string;
+  user_id: string;
+  wish_type: string;
+  title: string;
+  description?: string;
+  location: {
+    address: string;
+    lat: number;
+    lng: number;
+  };
+  remuneration: number;
+  is_immediate: boolean;
+  status: string;
+  wisher_name?: string;
+  wisher_picture?: string;
+}
 
 export default function WishesScreen() {
   const router = useRouter();
@@ -77,8 +76,18 @@ export default function WishesScreen() {
     setAccepting(wishId);
     try {
       const response = await api.acceptWish(wishId);
-      Alert.alert('Success', 'Wish accepted! Chat room created.');
-      router.push(`/chat/${response.data.room_id}`);
+      Alert.alert(
+        'Wish Accepted!',
+        'You can now chat with the wisher to discuss details.',
+        [
+          {
+            text: 'Open Chat',
+            onPress: () => router.push(`/(main)/chat/${response.data.room_id}`),
+          },
+          { text: 'OK' },
+        ]
+      );
+      fetchWishes();
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.detail || 'Failed to accept wish');
     } finally {
@@ -86,71 +95,13 @@ export default function WishesScreen() {
     }
   };
 
-  const renderWish = ({ item }: { item: Wish }) => (
-    <View style={styles.wishCard}>
-      <View style={styles.wishHeader}>
-        <View
-          style={[
-            styles.wishTypeBadge,
-            { backgroundColor: WISH_TYPE_COLORS[item.wish_type] || COLORS.primary },
-          ]}
-        >
-          <Ionicons
-            name={WISH_TYPE_ICONS[item.wish_type] || 'star'}
-            size={16}
-            color={COLORS.white}
-          />
-          <Text style={styles.wishTypeText}>
-            {item.wish_type.replace('_', ' ').toUpperCase()}
-          </Text>
-        </View>
-        {item.is_immediate && (
-          <View style={styles.urgentBadge}>
-            <Ionicons name="flash" size={12} color={COLORS.white} />
-            <Text style={styles.urgentText}>URGENT</Text>
-          </View>
-        )}
-      </View>
-
-      <Text style={styles.wishTitle}>{item.title}</Text>
-      {item.description && (
-        <Text style={styles.wishDescription} numberOfLines={2}>
-          {item.description}
-        </Text>
-      )}
-
-      <View style={styles.locationInfo}>
-        <Ionicons name="location" size={16} color={COLORS.textSecondary} />
-        <Text style={styles.locationText} numberOfLines={1}>
-          {item.location?.address || 'Location not specified'}
-        </Text>
-      </View>
-
-      <View style={styles.wishFooter}>
-        <View style={styles.remunerationBadge}>
-          <Ionicons name="cash" size={18} color={COLORS.success} />
-          <Text style={styles.remunerationText}>₹{item.remuneration}</Text>
-        </View>
-        <TouchableOpacity
-          style={[
-            styles.makeOfferButton,
-            accepting === item.wish_id && styles.makeOfferButtonDisabled,
-          ]}
-          onPress={() => handleAcceptWish(item.wish_id)}
-          disabled={accepting === item.wish_id}
-        >
-          {accepting === item.wish_id ? (
-            <ActivityIndicator size="small" color={COLORS.white} />
-          ) : (
-            <>
-              <Ionicons name="chatbubble" size={16} color={COLORS.white} />
-              <Text style={styles.makeOfferText}>Make Offer</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+  const getWishTypeIcon = (type: string): keyof typeof Ionicons.glyphMap => {
+    if (type.includes('delivery') || type.includes('food') || type.includes('grocery')) return 'fast-food';
+    if (type.includes('courier') || type.includes('document')) return 'document-text';
+    if (type.includes('ride') || type.includes('airport')) return 'car';
+    if (type.includes('errand') || type.includes('bill') || type.includes('pickup')) return 'clipboard';
+    return 'star';
+  };
 
   if (loading) {
     return (
@@ -164,32 +115,86 @@ export default function WishesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Available Wishes</Text>
-        <TouchableOpacity onPress={() => api.seedWishes().then(fetchWishes)}>
-          <Ionicons name="add-circle" size={28} color={COLORS.primary} />
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Available Wishes</Text>
+        <View style={styles.countBadge}>
+          <Text style={styles.countText}>{wishes.length}</Text>
+        </View>
       </View>
 
-      <FlatList
-        data={wishes}
-        keyExtractor={(item) => item.wish_id}
-        renderItem={renderWish}
-        contentContainerStyle={styles.listContent}
+      <ScrollView
+        contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
+      >
+        {wishes.length === 0 ? (
+          <View style={styles.emptyState}>
             <Ionicons name="star-outline" size={64} color={COLORS.textSecondary} />
             <Text style={styles.emptyTitle}>No Wishes Available</Text>
-            <Text style={styles.emptyText}>Customer wishes will appear here</Text>
-            <TouchableOpacity style={styles.seedButton} onPress={() => api.seedWishes().then(fetchWishes)}>
-              <Text style={styles.seedButtonText}>Add Test Wishes</Text>
-            </TouchableOpacity>
+            <Text style={styles.emptyText}>
+              New wishes from customers will appear here
+            </Text>
           </View>
-        }
-      />
+        ) : (
+          wishes.map((wish) => (
+            <View key={wish.wish_id} style={styles.wishCard}>
+              <View style={styles.wishHeader}>
+                <View style={styles.wishIconBg}>
+                  <Ionicons name={getWishTypeIcon(wish.wish_type)} size={24} color={COLORS.primary} />
+                </View>
+                <View style={styles.wishInfo}>
+                  <Text style={styles.wishTitle}>{wish.title}</Text>
+                  <Text style={styles.wishType}>{wish.wish_type.replace(/_/g, ' ')}</Text>
+                </View>
+                {wish.is_immediate && (
+                  <View style={styles.urgentBadge}>
+                    <Ionicons name="flash" size={12} color={COLORS.white} />
+                    <Text style={styles.urgentText}>Urgent</Text>
+                  </View>
+                )}
+              </View>
+
+              {wish.description && (
+                <Text style={styles.wishDescription} numberOfLines={2}>
+                  {wish.description}
+                </Text>
+              )}
+
+              <View style={styles.wishDetails}>
+                <View style={styles.detailItem}>
+                  <Ionicons name="location" size={16} color={COLORS.textSecondary} />
+                  <Text style={styles.detailText} numberOfLines={1}>
+                    {wish.location.address}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.wishFooter}>
+                <View style={styles.remunerationBadge}>
+                  <Ionicons name="cash" size={18} color={COLORS.success} />
+                  <Text style={styles.remunerationText}>₹{wish.remuneration}</Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.acceptButton, accepting === wish.wish_id && styles.acceptButtonDisabled]}
+                  onPress={() => handleAcceptWish(wish.wish_id)}
+                  disabled={accepting === wish.wish_id}
+                >
+                  {accepting === wish.wish_id ? (
+                    <ActivityIndicator size="small" color={COLORS.white} />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark-circle" size={18} color={COLORS.white} />
+                      <Text style={styles.acceptButtonText}>Accept</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -211,122 +216,30 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: COLORS.border,
   },
-  title: {
-    fontSize: 24,
+  headerTitle: {
+    fontSize: 20,
     fontWeight: '700',
     color: COLORS.text,
   },
-  listContent: {
-    padding: 16,
-  },
-  wishCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  wishHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  wishTypeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  wishTypeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: COLORS.white,
-  },
-  urgentBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  urgentText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: COLORS.white,
-  },
-  wishTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 6,
-  },
-  wishDescription: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  locationInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 16,
-  },
-  locationText: {
-    flex: 1,
-    fontSize: 13,
-    color: COLORS.textSecondary,
-  },
-  wishFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  remunerationBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#F0FDF4',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  remunerationText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.success,
-  },
-  makeOfferButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  countBadge: {
     backgroundColor: COLORS.secondary,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  makeOfferButtonDisabled: {
-    opacity: 0.7,
-  },
-  makeOfferText: {
-    fontSize: 14,
-    fontWeight: '600',
+  countText: {
     color: COLORS.white,
+    fontWeight: '600',
+    fontSize: 14,
   },
-  emptyContainer: {
+  content: {
+    padding: 16,
+  },
+  emptyState: {
     alignItems: 'center',
-    paddingTop: 60,
+    paddingVertical: 48,
   },
   emptyTitle: {
     fontSize: 18,
@@ -338,16 +251,117 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
     marginTop: 8,
+    textAlign: 'center',
   },
-  seedButton: {
-    marginTop: 20,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+  wishCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  wishHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  wishIconBg: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  wishInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  wishTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  wishType: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+    textTransform: 'capitalize',
+  },
+  urgentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.amber,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  urgentText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  wishDescription: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  wishDetails: {
+    marginBottom: 12,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  detailText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    flex: 1,
+  },
+  wishFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  remunerationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 8,
+    gap: 6,
   },
-  seedButtonText: {
+  remunerationText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.success,
+  },
+  acceptButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+  },
+  acceptButtonDisabled: {
+    opacity: 0.7,
+  },
+  acceptButtonText: {
     color: COLORS.white,
     fontWeight: '600',
+    fontSize: 14,
   },
 });
