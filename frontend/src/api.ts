@@ -20,7 +20,14 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Auth
+// Auth - Phone OTP
+export const sendOTP = (phone: string) =>
+  api.post('/auth/send-otp', { phone });
+
+export const verifyOTP = (phone: string, otp: string) =>
+  api.post('/auth/verify-otp', { phone, otp });
+
+// Auth - Legacy (Google)
 export const createSession = (sessionId: string) =>
   api.post('/auth/session', {}, { headers: { 'X-Session-ID': sessionId } });
 
