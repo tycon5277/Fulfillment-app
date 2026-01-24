@@ -541,6 +541,10 @@ async def register_as_agent(data: AgentRegistration, current_user: User = Depend
         "agent_type": data.agent_type,  # 'mobile' or 'skilled'
         "agent_vehicle": data.vehicle_type,
         "agent_is_electric": data.is_electric,
+        "agent_vehicle_registration": data.vehicle_registration,
+        "agent_vehicle_make": data.vehicle_make,
+        "agent_vehicle_model": data.vehicle_model,
+        "agent_vehicle_color": data.vehicle_color,
         "agent_services": data.services,
         "agent_skills": data.skills,
         "agent_has_vehicle": data.has_vehicle,
