@@ -42,12 +42,17 @@ export default function Index() {
         
         // Check if user has completed profile setup
         const user = response.data;
-        const needsProfile = !user.name || !user.partner_type;
         
-        if (needsProfile) {
+        if (!user.name) {
+          // User needs to complete basic profile first
           console.log('User needs to complete profile, redirecting to register');
           router.replace('/register');
+        } else if (!user.partner_type) {
+          // User has profile but needs to select role
+          console.log('User needs to select role, redirecting to role-select');
+          router.replace('/role-select');
         } else {
+          // User is fully registered
           console.log('User is fully registered, redirecting to home');
           router.replace('/(main)/home');
         }
