@@ -41,6 +41,10 @@ export const registerAsAgent = (data: {
   agent_type?: string;  // 'mobile' or 'skilled'
   vehicle_type?: string | null; 
   is_electric?: boolean;
+  vehicle_registration?: string;
+  vehicle_make?: string;
+  vehicle_model?: string;
+  vehicle_color?: string;
   services?: string[];
   skills?: string[];
   has_vehicle?: boolean;
