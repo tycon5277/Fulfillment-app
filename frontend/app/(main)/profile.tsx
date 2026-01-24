@@ -9,28 +9,16 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store';
 import * as api from '../../src/api';
+import THEME from '../../src/theme';
 import type { EarningsSummary, Earning, ChatRoom } from '../../src/types';
-
-const COLORS = {
-  primary: '#7C3AED',
-  secondary: '#0EA5E9',
-  amber: '#F59E0B',
-  background: '#F8F9FA',
-  white: '#FFFFFF',
-  text: '#212529',
-  textSecondary: '#6C757D',
-  success: '#22C55E',
-  offline: '#9CA3AF',
-  lavender: '#E8D9F4',
-  blue: '#D0E9F7',
-  yellow: '#FCE9C6',
-};
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -41,6 +29,33 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'earnings' | 'chats'>('earnings');
+  
+  // Animations
+  const pulseAnim = React.useRef(new Animated.Value(1)).current;
+  
+  const isMobileGenie = user?.partner_type === 'agent' && user?.agent_type === 'mobile';
+
+  // Pulse animation for online indicator
+  useEffect(() => {
+    if (isMobileGenie) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.2,
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, [isMobileGenie]);
 
   const fetchData = async () => {
     try {
@@ -90,16 +105,256 @@ export default function ProfileScreen() {
     ]);
   };
 
+  // Get vehicle display
+  const getVehicleDisplay = () => {
+    const make = user?.agent_vehicle_make || '';
+    const model = user?.agent_vehicle_model || '';
+    if (make && model) return `${make} ${model}`;
+    if (make) return make;
+    if (model) return model;
+    return (user?.agent_vehicle || 'Vehicle').charAt(0).toUpperCase() + (user?.agent_vehicle || '').slice(1);
+  };
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, isMobileGenie && styles.containerDark]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={isMobileGenie ? THEME.primary : '#7C3AED'} />
         </View>
       </SafeAreaView>
     );
   }
 
+  // Calculate level and XP
+  const totalTasks = user?.agent_total_deliveries || 0;
+  const currentLevel = Math.floor(totalTasks / 10) + 1;
+  const xpInLevel = (totalTasks % 10) * 100;
+  const xpNeeded = 1000;
+
+  // Mobile Genie Dark Theme Profile
+  if (isMobileGenie) {
+    return (
+      <SafeAreaView style={styles.containerDark}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh}
+              tintColor={THEME.primary}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.headerDark}>
+            <Text style={styles.headerTitle}>Profile</Text>
+            <TouchableOpacity style={styles.settingsBtn}>
+              <Ionicons name="settings-outline" size={24} color={THEME.text} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Profile Card */}
+          <View style={styles.profileCardDark}>
+            <View style={styles.avatarContainer}>
+              {user?.picture ? (
+                <Image source={{ uri: user.picture }} style={styles.avatarDark} />
+              ) : (
+                <View style={styles.avatarPlaceholderDark}>
+                  <Text style={styles.avatarTextDark}>{user?.name?.charAt(0) || 'G'}</Text>
+                </View>
+              )}
+              <Animated.View style={[styles.onlineIndicator, { transform: [{ scale: pulseAnim }] }]} />
+            </View>
+            
+            <Text style={styles.userNameDark}>{user?.name || 'Genie'}</Text>
+            <Text style={styles.userPhoneDark}>{user?.phone || 'Mobile Genie'}</Text>
+            
+            {/* Level Badge */}
+            <View style={styles.levelBadgeLarge}>
+              <Ionicons name="flash" size={16} color={THEME.accent2} />
+              <Text style={styles.levelBadgeLargeText}>Level {currentLevel}</Text>
+            </View>
+
+            {/* XP Progress */}
+            <View style={styles.xpSection}>
+              <View style={styles.xpHeaderRow}>
+                <Text style={styles.xpLabel}>Experience</Text>
+                <Text style={styles.xpValue}>{xpInLevel} / {xpNeeded} XP</Text>
+              </View>
+              <View style={styles.xpBarTrackDark}>
+                <View style={[styles.xpBarFillDark, { width: `${(xpInLevel / xpNeeded) * 100}%` }]} />
+              </View>
+            </View>
+          </View>
+
+          {/* Stats Row */}
+          <View style={styles.statsRowDark}>
+            <View style={styles.statItemDark}>
+              <Text style={styles.statEmojiDark}>⭐</Text>
+              <Text style={styles.statValueDark}>{user?.agent_rating?.toFixed(1) || '5.0'}</Text>
+              <Text style={styles.statLabelDark}>Rating</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItemDark}>
+              <Text style={styles.statEmojiDark}>🚀</Text>
+              <Text style={styles.statValueDark}>{totalTasks}</Text>
+              <Text style={styles.statLabelDark}>Deliveries</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItemDark}>
+              <Text style={styles.statEmojiDark}>🔥</Text>
+              <Text style={styles.statValueDark}>3</Text>
+              <Text style={styles.statLabelDark}>Streak</Text>
+            </View>
+          </View>
+
+          {/* Vehicle Card */}
+          <View style={styles.vehicleCardDark}>
+            <View style={styles.vehicleHeaderDark}>
+              <View style={styles.vehicleIconBgDark}>
+                <Text style={styles.vehicleEmojiDark}>
+                  {user?.agent_vehicle === 'car' ? '🚗' : user?.agent_vehicle === 'motorbike' ? '🏍️' : '🛵'}
+                </Text>
+              </View>
+              <View style={styles.vehicleInfoDark}>
+                <Text style={styles.vehicleNameDark}>{getVehicleDisplay()}</Text>
+                <Text style={styles.vehicleRegDark}>{user?.agent_vehicle_registration || 'N/A'}</Text>
+              </View>
+              {user?.agent_is_electric && (
+                <View style={styles.evBadgeDark}>
+                  <Text style={styles.evEmojiDark}>⚡</Text>
+                  <Text style={styles.evTextDark}>EV</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Earnings Summary */}
+          <Text style={styles.sectionTitleDark}>💰 Earnings</Text>
+          <View style={styles.earningsGridDark}>
+            <View style={[styles.earningsCardDark, { borderColor: THEME.primary + '40' }]}>
+              <Text style={styles.earningsLabelDark}>Today</Text>
+              <Text style={[styles.earningsValueDark, { color: THEME.primary }]}>₹{earnings?.today?.toFixed(0) || '0'}</Text>
+            </View>
+            <View style={[styles.earningsCardDark, { borderColor: THEME.accent3 + '40' }]}>
+              <Text style={styles.earningsLabelDark}>This Week</Text>
+              <Text style={[styles.earningsValueDark, { color: THEME.accent3 }]}>₹{earnings?.week?.toFixed(0) || '0'}</Text>
+            </View>
+            <View style={[styles.earningsCardDark, { borderColor: THEME.accent2 + '40' }]}>
+              <Text style={styles.earningsLabelDark}>This Month</Text>
+              <Text style={[styles.earningsValueDark, { color: THEME.accent2 }]}>₹{earnings?.month?.toFixed(0) || '0'}</Text>
+            </View>
+            <View style={[styles.earningsCardDark, { borderColor: THEME.success + '40' }]}>
+              <Text style={styles.earningsLabelDark}>Total</Text>
+              <Text style={[styles.earningsValueDark, { color: THEME.success }]}>₹{earnings?.total?.toFixed(0) || '0'}</Text>
+            </View>
+          </View>
+
+          {/* Tabs */}
+          <View style={styles.tabContainerDark}>
+            <TouchableOpacity
+              style={[styles.tabDark, activeTab === 'earnings' && styles.tabActiveDark]}
+              onPress={() => setActiveTab('earnings')}
+            >
+              <Ionicons 
+                name="wallet-outline" 
+                size={18} 
+                color={activeTab === 'earnings' ? THEME.primary : THEME.textMuted} 
+              />
+              <Text style={[styles.tabTextDark, activeTab === 'earnings' && styles.tabTextActiveDark]}>
+                History
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabDark, activeTab === 'chats' && styles.tabActiveDark]}
+              onPress={() => setActiveTab('chats')}
+            >
+              <Ionicons 
+                name="chatbubbles-outline" 
+                size={18} 
+                color={activeTab === 'chats' ? THEME.primary : THEME.textMuted} 
+              />
+              <Text style={[styles.tabTextDark, activeTab === 'chats' && styles.tabTextActiveDark]}>
+                Chats ({chatRooms.length})
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Tab Content */}
+          {activeTab === 'earnings' ? (
+            <View style={styles.historyListDark}>
+              {earningsHistory.length === 0 ? (
+                <View style={styles.emptyHistoryDark}>
+                  <Text style={styles.emptyEmojiDark}>💸</Text>
+                  <Text style={styles.emptyTextDark}>No earnings yet</Text>
+                  <Text style={styles.emptySubtextDark}>Complete deliveries to earn!</Text>
+                </View>
+              ) : (
+                earningsHistory.map((item) => (
+                  <View key={item.earning_id} style={styles.historyItemDark}>
+                    <View style={styles.historyIconBgDark}>
+                      <Ionicons
+                        name={item.type === 'delivery' ? 'cube' : 'star'}
+                        size={16}
+                        color={THEME.primary}
+                      />
+                    </View>
+                    <View style={styles.historyInfoDark}>
+                      <Text style={styles.historyTitleDark}>{item.description}</Text>
+                      <Text style={styles.historyDateDark}>
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <Text style={styles.historyAmountDark}>+₹{item.amount}</Text>
+                  </View>
+                ))
+              )}
+            </View>
+          ) : (
+            <View style={styles.chatListDark}>
+              {chatRooms.length === 0 ? (
+                <View style={styles.emptyHistoryDark}>
+                  <Text style={styles.emptyEmojiDark}>💬</Text>
+                  <Text style={styles.emptyTextDark}>No chats yet</Text>
+                  <Text style={styles.emptySubtextDark}>Accept a wish to start chatting!</Text>
+                </View>
+              ) : (
+                chatRooms.map((room) => (
+                  <TouchableOpacity
+                    key={room.room_id}
+                    style={styles.chatItemDark}
+                    onPress={() => router.push(`/chat/${room.room_id}`)}
+                  >
+                    <View style={styles.chatAvatarDark}>
+                      <Ionicons name="person" size={20} color={THEME.background} />
+                    </View>
+                    <View style={styles.chatInfoDark}>
+                      <Text style={styles.chatNameDark}>{room.wisher?.name || 'Customer'}</Text>
+                      <Text style={styles.chatPreviewDark} numberOfLines={1}>
+                        {room.wish_title || 'Wish request'}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={THEME.textMuted} />
+                  </TouchableOpacity>
+                ))
+              )}
+            </View>
+          )}
+
+          {/* Logout Button */}
+          <TouchableOpacity style={styles.logoutButtonDark} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={20} color={THEME.error} />
+            <Text style={styles.logoutTextDark}>Logout</Text>
+          </TouchableOpacity>
+
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // Default Light Theme Profile (for non-Mobile Genies)
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -114,23 +369,19 @@ export default function ProfileScreen() {
             <Image source={{ uri: user.picture }} style={styles.avatar} />
           ) : (
             <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person" size={40} color={COLORS.white} />
+              <Ionicons name="person" size={40} color="#FFFFFF" />
             </View>
           )}
           <Text style={styles.userName}>{user?.name || 'Agent'}</Text>
-          <Text style={styles.userEmail}>{user?.email}</Text>
+          <Text style={styles.userEmail}>{user?.email || user?.phone}</Text>
           <View style={styles.badgeRow}>
             <View style={styles.badge}>
-              <Ionicons name="star" size={14} color={COLORS.amber} />
+              <Ionicons name="star" size={14} color="#F59E0B" />
               <Text style={styles.badgeText}>{user?.agent_rating?.toFixed(1) || '5.0'}</Text>
             </View>
             <View style={styles.badge}>
-              <Ionicons name="bicycle" size={14} color={COLORS.primary} />
+              <Ionicons name="bicycle" size={14} color="#7C3AED" />
               <Text style={styles.badgeText}>{user?.agent_total_deliveries || 0} deliveries</Text>
-            </View>
-            <View style={styles.badge}>
-              <Ionicons name="car" size={14} color={COLORS.secondary} />
-              <Text style={styles.badgeText}>{user?.agent_vehicle || 'Not set'}</Text>
             </View>
           </View>
         </View>
@@ -139,105 +390,26 @@ export default function ProfileScreen() {
         <View style={styles.earningsSummary}>
           <Text style={styles.sectionTitle}>Earnings</Text>
           <View style={styles.earningsGrid}>
-            <View style={[styles.earningsCard, { backgroundColor: COLORS.lavender }]}>
+            <View style={[styles.earningsCard, { backgroundColor: '#E8D9F4' }]}>
               <Text style={styles.earningsLabel}>Today</Text>
               <Text style={styles.earningsValue}>₹{earnings?.today?.toFixed(2) || '0.00'}</Text>
             </View>
-            <View style={[styles.earningsCard, { backgroundColor: COLORS.blue }]}>
+            <View style={[styles.earningsCard, { backgroundColor: '#D0E9F7' }]}>
               <Text style={styles.earningsLabel}>This Week</Text>
               <Text style={styles.earningsValue}>₹{earnings?.week?.toFixed(2) || '0.00'}</Text>
             </View>
-            <View style={[styles.earningsCard, { backgroundColor: COLORS.yellow }]}>
+            <View style={[styles.earningsCard, { backgroundColor: '#FCE9C6' }]}>
               <Text style={styles.earningsLabel}>This Month</Text>
               <Text style={styles.earningsValue}>₹{earnings?.month?.toFixed(2) || '0.00'}</Text>
             </View>
             <View style={[styles.earningsCard, { backgroundColor: '#F0FDF4' }]}>
               <Text style={styles.earningsLabel}>Total</Text>
-              <Text style={[styles.earningsValue, { color: COLORS.success }]}>
+              <Text style={[styles.earningsValue, { color: '#22C55E' }]}>
                 ₹{earnings?.total?.toFixed(2) || '0.00'}
               </Text>
             </View>
           </View>
         </View>
-
-        {/* Tabs */}
-        <View style={styles.tabContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'earnings' && styles.tabActive]}
-            onPress={() => setActiveTab('earnings')}
-          >
-            <Text style={[styles.tabText, activeTab === 'earnings' && styles.tabTextActive]}>
-              Earnings History
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'chats' && styles.tabActive]}
-            onPress={() => setActiveTab('chats')}
-          >
-            <Text style={[styles.tabText, activeTab === 'chats' && styles.tabTextActive]}>
-              Chats ({chatRooms.length})
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Tab Content */}
-        {activeTab === 'earnings' ? (
-          <View style={styles.historyList}>
-            {earningsHistory.length === 0 ? (
-              <View style={styles.emptyHistory}>
-                <Ionicons name="wallet-outline" size={48} color={COLORS.textSecondary} />
-                <Text style={styles.emptyText}>No earnings yet</Text>
-              </View>
-            ) : (
-              earningsHistory.map((item) => (
-                <View key={item.earning_id} style={styles.historyItem}>
-                  <View style={styles.historyIconBg}>
-                    <Ionicons
-                      name={item.type === 'delivery' ? 'cube' : 'star'}
-                      size={16}
-                      color={COLORS.primary}
-                    />
-                  </View>
-                  <View style={styles.historyInfo}>
-                    <Text style={styles.historyTitle}>{item.description}</Text>
-                    <Text style={styles.historyDate}>
-                      {new Date(item.created_at).toLocaleDateString()}
-                    </Text>
-                  </View>
-                  <Text style={styles.historyAmount}>+₹{item.amount}</Text>
-                </View>
-              ))
-            )}
-          </View>
-        ) : (
-          <View style={styles.chatList}>
-            {chatRooms.length === 0 ? (
-              <View style={styles.emptyHistory}>
-                <Ionicons name="chatbubbles-outline" size={48} color={COLORS.textSecondary} />
-                <Text style={styles.emptyText}>No chats yet</Text>
-              </View>
-            ) : (
-              chatRooms.map((room) => (
-                <TouchableOpacity
-                  key={room.room_id}
-                  style={styles.chatItem}
-                  onPress={() => router.push(`/chat/${room.room_id}`)}
-                >
-                  <View style={styles.chatAvatar}>
-                    <Ionicons name="person" size={20} color={COLORS.white} />
-                  </View>
-                  <View style={styles.chatInfo}>
-                    <Text style={styles.chatName}>{room.wisher?.name || 'Customer'}</Text>
-                    <Text style={styles.chatPreview} numberOfLines={1}>
-                      {room.wish_title || 'Wish request'}
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-                </TouchableOpacity>
-              ))
-            )}
-          </View>
-        )}
 
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -250,9 +422,10 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Light theme styles
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F8F9FA',
   },
   loadingContainer: {
     flex: 1,
@@ -261,10 +434,11 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+    paddingBottom: 100,
   },
   profileHeader: {
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 24,
     marginBottom: 16,
@@ -279,7 +453,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#7C3AED',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -287,12 +461,12 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 22,
     fontWeight: '700',
-    color: COLORS.text,
+    color: '#212529',
     marginBottom: 4,
   },
   userEmail: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: '#6C757D',
     marginBottom: 12,
   },
   badgeRow: {
@@ -303,14 +477,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F8F9FA',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
   },
   badgeText: {
     fontSize: 12,
-    color: COLORS.text,
+    color: '#212529',
     fontWeight: '500',
   },
   earningsSummary: {
@@ -319,7 +493,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.text,
+    color: '#212529',
     marginBottom: 12,
   },
   earningsGrid: {
@@ -334,118 +508,13 @@ const styles = StyleSheet.create({
   },
   earningsLabel: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: '#6C757D',
     marginBottom: 4,
   },
   earningsValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: COLORS.text,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 8,
-    backgroundColor: COLORS.white,
-  },
-  tabActive: {
-    backgroundColor: COLORS.primary,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  tabTextActive: {
-    color: COLORS.white,
-  },
-  historyList: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-  },
-  emptyHistory: {
-    alignItems: 'center',
-    padding: 32,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginTop: 8,
-  },
-  historyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  historyIconBg: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.lavender,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  historyInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  historyTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.text,
-  },
-  historyDate: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-  },
-  historyAmount: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.success,
-  },
-  chatList: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-  },
-  chatItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  chatAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chatInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  chatName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  chatPreview: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
+    color: '#212529',
   },
   logoutButton: {
     flexDirection: 'row',
@@ -461,5 +530,383 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#EF4444',
+  },
+
+  // Dark theme styles (Mobile Genie)
+  containerDark: {
+    flex: 1,
+    backgroundColor: THEME.background,
+  },
+  headerDark: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: THEME.text,
+  },
+  settingsBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: THEME.cardBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileCardDark: {
+    backgroundColor: THEME.cardBg,
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  avatarDark: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: THEME.primary,
+  },
+  avatarPlaceholderDark: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: THEME.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarTextDark: {
+    fontSize: 40,
+    fontWeight: '700',
+    color: THEME.background,
+  },
+  onlineIndicator: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: THEME.success,
+    borderWidth: 3,
+    borderColor: THEME.cardBg,
+  },
+  userNameDark: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: THEME.text,
+    marginBottom: 4,
+  },
+  userPhoneDark: {
+    fontSize: 14,
+    color: THEME.textSecondary,
+    marginBottom: 16,
+  },
+  levelBadgeLarge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.accent2 + '25',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+    marginBottom: 20,
+  },
+  levelBadgeLargeText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: THEME.accent2,
+  },
+  xpSection: {
+    width: '100%',
+  },
+  xpHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  xpLabel: {
+    fontSize: 13,
+    color: THEME.textSecondary,
+  },
+  xpValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: THEME.primary,
+  },
+  xpBarTrackDark: {
+    height: 8,
+    backgroundColor: THEME.cardBorder,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  xpBarFillDark: {
+    height: '100%',
+    backgroundColor: THEME.primary,
+    borderRadius: 4,
+  },
+  statsRowDark: {
+    flexDirection: 'row',
+    backgroundColor: THEME.cardBg,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
+  },
+  statItemDark: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: THEME.cardBorder,
+  },
+  statEmojiDark: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  statValueDark: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: THEME.text,
+  },
+  statLabelDark: {
+    fontSize: 12,
+    color: THEME.textSecondary,
+    marginTop: 4,
+  },
+  vehicleCardDark: {
+    backgroundColor: THEME.cardBg,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
+  },
+  vehicleHeaderDark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  vehicleIconBgDark: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: THEME.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  vehicleEmojiDark: {
+    fontSize: 24,
+  },
+  vehicleInfoDark: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  vehicleNameDark: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: THEME.text,
+  },
+  vehicleRegDark: {
+    fontSize: 13,
+    color: THEME.textSecondary,
+    marginTop: 2,
+  },
+  evBadgeDark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.success + '20',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  evEmojiDark: {
+    fontSize: 12,
+  },
+  evTextDark: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: THEME.success,
+  },
+  sectionTitleDark: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: THEME.text,
+    marginBottom: 12,
+  },
+  earningsGridDark: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 20,
+  },
+  earningsCardDark: {
+    width: '48%',
+    backgroundColor: THEME.cardBg,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+  },
+  earningsLabelDark: {
+    fontSize: 12,
+    color: THEME.textSecondary,
+    marginBottom: 4,
+  },
+  earningsValueDark: {
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  tabContainerDark: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  tabDark: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: THEME.cardBg,
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
+  },
+  tabActiveDark: {
+    backgroundColor: THEME.primary + '20',
+    borderColor: THEME.primary + '50',
+  },
+  tabTextDark: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: THEME.textMuted,
+  },
+  tabTextActiveDark: {
+    color: THEME.primary,
+  },
+  historyListDark: {
+    backgroundColor: THEME.cardBg,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
+  },
+  emptyHistoryDark: {
+    alignItems: 'center',
+    padding: 32,
+  },
+  emptyEmojiDark: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  emptyTextDark: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.text,
+  },
+  emptySubtextDark: {
+    fontSize: 14,
+    color: THEME.textMuted,
+    marginTop: 4,
+  },
+  historyItemDark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.cardBorder,
+  },
+  historyIconBgDark: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: THEME.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historyInfoDark: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  historyTitleDark: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: THEME.text,
+  },
+  historyDateDark: {
+    fontSize: 12,
+    color: THEME.textMuted,
+    marginTop: 2,
+  },
+  historyAmountDark: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: THEME.success,
+  },
+  chatListDark: {
+    backgroundColor: THEME.cardBg,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
+  },
+  chatItemDark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.cardBorder,
+  },
+  chatAvatarDark: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: THEME.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chatInfoDark: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  chatNameDark: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: THEME.text,
+  },
+  chatPreviewDark: {
+    fontSize: 13,
+    color: THEME.textSecondary,
+    marginTop: 2,
+  },
+  logoutButtonDark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: THEME.error + '15',
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: THEME.error + '30',
+  },
+  logoutTextDark: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.error,
   },
 });

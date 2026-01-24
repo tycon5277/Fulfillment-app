@@ -1,51 +1,69 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet, View, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/store';
-
-const COLORS = {
-  primary: '#7C3AED',
-  secondary: '#0EA5E9',
-  amber: '#F59E0B',
-  inactive: '#9CA3AF',
-  background: '#FFFFFF',
-};
+import THEME from '../../src/theme';
 
 export default function MainLayout() {
   const { user } = useAuthStore();
   const partnerType = user?.partner_type;
+  const agentType = user?.agent_type;
+  const isMobileGenie = partnerType === 'agent' && agentType === 'mobile';
   const insets = useSafeAreaInsets();
 
-  // Get role-specific primary color
-  const getPrimaryColor = () => {
-    switch (partnerType) {
-      case 'agent': return COLORS.primary;
-      case 'vendor': return COLORS.secondary;
-      case 'promoter': return COLORS.amber;
-      default: return COLORS.primary;
+  // Get role-specific colors
+  const getThemeColors = () => {
+    if (isMobileGenie) {
+      return {
+        background: THEME.background,
+        border: THEME.cardBorder,
+        active: THEME.primary,
+        inactive: THEME.textMuted,
+      };
     }
+    // Default light theme for other types
+    return {
+      background: '#FFFFFF',
+      border: '#E5E7EB',
+      active: '#7C3AED',
+      inactive: '#9CA3AF',
+    };
   };
 
-  // Calculate tab bar height with safe area
-  const tabBarHeight = 60 + insets.bottom;
+  const colors = getThemeColors();
+  const tabBarHeight = 70 + insets.bottom;
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: COLORS.background,
+          backgroundColor: colors.background,
           borderTopWidth: 1,
-          borderTopColor: '#E5E7EB',
+          borderTopColor: colors.border,
           height: tabBarHeight,
           paddingBottom: insets.bottom + 8,
-          paddingTop: 8,
+          paddingTop: 10,
+          ...(isMobileGenie && {
+            shadowColor: THEME.primary,
+            shadowOffset: { width: 0, height: -4 },
+            shadowOpacity: 0.1,
+            shadowRadius: 12,
+            elevation: 10,
+          }),
         },
-        tabBarActiveTintColor: getPrimaryColor(),
-        tabBarInactiveTintColor: COLORS.inactive,
-        tabBarLabelStyle: styles.tabLabel,
+        tabBarActiveTintColor: colors.active,
+        tabBarInactiveTintColor: colors.inactive,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          marginTop: 4,
+        },
+        tabBarIconStyle: {
+          marginBottom: -2,
+        },
       }}
     >
       {/* Home - All partners */}
@@ -53,8 +71,10 @@ export default function MainLayout() {
         name="home"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
+              <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
+            </View>
           ),
         }}
       />
@@ -63,9 +83,11 @@ export default function MainLayout() {
       <Tabs.Screen
         name="orders"
         options={{
-          title: partnerType === 'vendor' ? 'Orders' : 'Available',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name={partnerType === 'vendor' ? 'receipt' : 'cube'} size={size} color={color} />
+          title: partnerType === 'vendor' ? 'Orders' : 'Tasks',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
+              <Ionicons name={focused ? "cube" : "cube-outline"} size={24} color={color} />
+            </View>
           ),
           href: partnerType === 'promoter' ? null : '/(main)/orders',
         }}
@@ -76,8 +98,10 @@ export default function MainLayout() {
         name="wishes"
         options={{
           title: 'Wishes',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="star" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
+              <Ionicons name={focused ? "sparkles" : "sparkles-outline"} size={24} color={color} />
+            </View>
           ),
           href: partnerType === 'agent' ? '/(main)/wishes' : null,
         }}
@@ -88,8 +112,10 @@ export default function MainLayout() {
         name="deliveries"
         options={{
           title: 'Deliveries',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="bicycle" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
+              <Ionicons name={focused ? "rocket" : "rocket-outline"} size={24} color={color} />
+            </View>
           ),
           href: partnerType === 'agent' ? '/(main)/deliveries' : null,
         }}
@@ -100,8 +126,10 @@ export default function MainLayout() {
         name="products"
         options={{
           title: 'Products',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="pricetags" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
+              <Ionicons name={focused ? "pricetags" : "pricetags-outline"} size={24} color={color} />
+            </View>
           ),
           href: partnerType === 'vendor' ? '/(main)/products' : null,
         }}
@@ -112,8 +140,10 @@ export default function MainLayout() {
         name="events"
         options={{
           title: 'Events',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
+              <Ionicons name={focused ? "calendar" : "calendar-outline"} size={24} color={color} />
+            </View>
           ),
           href: partnerType === 'promoter' ? '/(main)/events' : null,
         }}
@@ -124,8 +154,10 @@ export default function MainLayout() {
         name="bookings"
         options={{
           title: 'Bookings',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="ticket" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
+              <Ionicons name={focused ? "ticket" : "ticket-outline"} size={24} color={color} />
+            </View>
           ),
           href: partnerType === 'promoter' ? '/(main)/bookings' : null,
         }}
@@ -136,8 +168,10 @@ export default function MainLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
+              <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
+            </View>
           ),
         }}
       />
@@ -154,8 +188,14 @@ export default function MainLayout() {
 }
 
 const styles = StyleSheet.create({
-  tabLabel: {
-    fontSize: 11,
-    fontWeight: '500',
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 40,
+    height: 28,
+  },
+  iconContainerActive: {
+    backgroundColor: THEME.primary + '20',
+    borderRadius: 14,
   },
 });
