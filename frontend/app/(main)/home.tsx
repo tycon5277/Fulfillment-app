@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,45 +9,24 @@ import {
   Switch,
   ActivityIndicator,
   Image,
+  Animated,
+  Easing,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useAuthStore, PartnerStats, User } from '../../src/store';
+import * as Location from 'expo-location';
+import { useAuthStore, PartnerStats } from '../../src/store';
 import * as api from '../../src/api';
+import THEME from '../../src/theme';
 
-// Mobile Genie Theme - Dark with Neon Green (inspired by Fly screenshot)
-const COLORS = {
-  background: '#0A0A0A',
-  cardBg: '#1A1A1A',
-  cardBorder: '#2A2A2A',
-  primary: '#10B981',      // Neon Green
-  primaryLight: '#34D399',
-  primaryDark: '#059669',
-  secondary: '#8B5CF6',    // Purple
-  accent1: '#EC4899',      // Pink
-  accent2: '#F59E0B',      // Yellow/Amber
-  accent3: '#3B82F6',      // Blue
-  accent4: '#06B6D4',      // Cyan
-  white: '#FFFFFF',
-  text: '#FFFFFF',
-  textSecondary: '#9CA3AF',
-  textMuted: '#6B7280',
-  success: '#22C55E',
-  error: '#EF4444',
-  offline: '#EF4444',
-  online: '#10B981',
-};
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Skilled Genie Theme - Teal
-const SKILLED_COLORS = {
-  background: '#F0FDFA',
-  cardBg: '#FFFFFF',
-  cardBorder: '#CCFBF1',
-  primary: '#0D9488',
-  primaryLight: '#14B8A6',
-  text: '#134E4A',
-  textSecondary: '#5EEAD4',
+// Mock location for when GPS is not available
+const MOCK_LOCATION = {
+  latitude: 9.9312,
+  longitude: 76.2673,
 };
 
 export default function HomeScreen() {
@@ -58,9 +37,92 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [statusLoading, setStatusLoading] = useState(false);
+  const [location, setLocation] = useState(MOCK_LOCATION);
+  const [locationError, setLocationError] = useState(false);
+  
+  // Animation refs
+  const radarPulse1 = useRef(new Animated.Value(0)).current;
+  const radarPulse2 = useRef(new Animated.Value(0)).current;
+  const radarPulse3 = useRef(new Animated.Value(0)).current;
+  const dotPulse = useRef(new Animated.Value(1)).current;
 
   const isMobileGenie = user?.agent_type === 'mobile';
-  const isSkilledGenie = user?.agent_type === 'skilled';
+
+  // Radar animation
+  useEffect(() => {
+    const createPulseAnimation = (value: Animated.Value, delay: number) => {
+      return Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(value, {
+            toValue: 1,
+            duration: 2000,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(value, {
+            toValue: 0,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+    };
+
+    const pulse1 = createPulseAnimation(radarPulse1, 0);
+    const pulse2 = createPulseAnimation(radarPulse2, 666);
+    const pulse3 = createPulseAnimation(radarPulse3, 1333);
+    
+    const dotAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(dotPulse, {
+          toValue: 1.3,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(dotPulse, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    if (isOnline) {
+      pulse1.start();
+      pulse2.start();
+      pulse3.start();
+      dotAnimation.start();
+    }
+
+    return () => {
+      pulse1.stop();
+      pulse2.stop();
+      pulse3.stop();
+      dotAnimation.stop();
+    };
+  }, [isOnline]);
+
+  // Get location
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setLocationError(true);
+          return;
+        }
+        const loc = await Location.getCurrentPositionAsync({});
+        setLocation({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+        });
+      } catch (error) {
+        console.log('Location error, using mock:', error);
+        setLocationError(true);
+      }
+    })();
+  }, []);
 
   const fetchStats = async () => {
     try {
@@ -112,21 +174,28 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={THEME.primary} />
+          <Text style={styles.loadingText}>Loading your dashboard...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  // Get vehicle display name
+  // Calculate level and XP
+  const totalTasks = stats?.total_tasks || 0;
+  const currentLevel = Math.floor(totalTasks / 10) + 1;
+  const xpInLevel = (totalTasks % 10) * 100;
+  const xpNeeded = 1000;
+  const tasksToNextLevel = 10 - (totalTasks % 10);
+
+  // Get vehicle display
   const getVehicleDisplay = () => {
     const make = user?.agent_vehicle_make || '';
     const model = user?.agent_vehicle_model || '';
-    const type = user?.agent_vehicle || '';
     if (make && model) return `${make} ${model}`;
     if (make) return make;
     if (model) return model;
-    return type.charAt(0).toUpperCase() + type.slice(1);
+    return (user?.agent_vehicle || 'Vehicle').charAt(0).toUpperCase() + (user?.agent_vehicle || '').slice(1);
   };
 
   // Mobile Genie Dashboard
@@ -139,7 +208,7 @@ export default function HomeScreen() {
             <RefreshControl 
               refreshing={refreshing} 
               onRefresh={onRefresh}
-              tintColor={COLORS.primary}
+              tintColor={THEME.primary}
             />
           }
           showsVerticalScrollIndicator={false}
@@ -148,7 +217,16 @@ export default function HomeScreen() {
           <View style={styles.header}>
             <View>
               <Text style={styles.greeting}>Hey, {user?.name?.split(' ')[0]} 👋</Text>
-              <Text style={styles.subtitle}>Ready to fulfill wishes?</Text>
+              <View style={styles.levelRow}>
+                <View style={styles.levelBadge}>
+                  <Ionicons name="flash" size={12} color={THEME.accent2} />
+                  <Text style={styles.levelBadgeText}>Lvl {currentLevel}</Text>
+                </View>
+                <View style={styles.coinBadge}>
+                  <Text style={styles.coinIcon}>🪙</Text>
+                  <Text style={styles.coinText}>{Math.floor((stats?.total_earnings || 0))}</Text>
+                </View>
+              </View>
             </View>
             <TouchableOpacity 
               style={styles.profileBtn}
@@ -158,78 +236,153 @@ export default function HomeScreen() {
                 <Image source={{ uri: user.picture }} style={styles.avatar} />
               ) : (
                 <View style={styles.avatarPlaceholder}>
-                  <Ionicons name="person" size={20} color={COLORS.primary} />
+                  <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'G'}</Text>
                 </View>
+              )}
+              <View style={[styles.statusIndicator, isOnline ? styles.statusOnline : styles.statusOffline]} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Radar Map Card */}
+          <View style={styles.radarCard}>
+            <View style={styles.radarContainer}>
+              {/* Radar rings */}
+              <View style={styles.radarRing} />
+              <View style={[styles.radarRing, styles.radarRing2]} />
+              <View style={[styles.radarRing, styles.radarRing3]} />
+              
+              {/* Animated pulse rings */}
+              {isOnline && (
+                <>
+                  <Animated.View style={[
+                    styles.radarPulse,
+                    {
+                      transform: [{ scale: radarPulse1.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1.2] }) }],
+                      opacity: radarPulse1.interpolate({ inputRange: [0, 1], outputRange: [0.8, 0] }),
+                    }
+                  ]} />
+                  <Animated.View style={[
+                    styles.radarPulse,
+                    {
+                      transform: [{ scale: radarPulse2.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1.2] }) }],
+                      opacity: radarPulse2.interpolate({ inputRange: [0, 1], outputRange: [0.8, 0] }),
+                    }
+                  ]} />
+                  <Animated.View style={[
+                    styles.radarPulse,
+                    {
+                      transform: [{ scale: radarPulse3.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1.2] }) }],
+                      opacity: radarPulse3.interpolate({ inputRange: [0, 1], outputRange: [0.8, 0] }),
+                    }
+                  ]} />
+                </>
+              )}
+              
+              {/* Center dot (you) */}
+              <Animated.View style={[
+                styles.centerDot,
+                isOnline && { transform: [{ scale: dotPulse }] }
+              ]}>
+                <View style={styles.centerDotInner} />
+              </Animated.View>
+
+              {/* Nearby wishes indicators */}
+              {isOnline && (
+                <>
+                  <View style={[styles.wishDot, { top: '25%', left: '30%' }]}>
+                    <Ionicons name="basket" size={10} color={THEME.primary} />
+                  </View>
+                  <View style={[styles.wishDot, { top: '35%', right: '25%' }]}>
+                    <Ionicons name="gift" size={10} color={THEME.accent1} />
+                  </View>
+                  <View style={[styles.wishDot, { bottom: '30%', left: '20%' }]}>
+                    <Ionicons name="car" size={10} color={THEME.secondary} />
+                  </View>
+                </>
+              )}
+            </View>
+            
+            <View style={styles.radarInfo}>
+              <View style={styles.radarStatus}>
+                <View style={[styles.radarStatusDot, isOnline ? styles.radarStatusOnline : styles.radarStatusOffline]} />
+                <Text style={styles.radarStatusText}>
+                  {isOnline ? 'Scanning for wishes...' : 'Go online to scan'}
+                </Text>
+              </View>
+              <Text style={styles.locationText}>
+                📍 {locationError ? 'Mock Location' : 'Live GPS'}
+              </Text>
+            </View>
+
+            {/* Online Toggle */}
+            <TouchableOpacity 
+              style={[styles.onlineButton, isOnline && styles.onlineButtonActive]}
+              onPress={toggleOnlineStatus}
+              disabled={statusLoading}
+            >
+              {statusLoading ? (
+                <ActivityIndicator color={isOnline ? THEME.background : THEME.primary} size="small" />
+              ) : (
+                <>
+                  <Ionicons 
+                    name={isOnline ? "radio" : "radio-outline"} 
+                    size={20} 
+                    color={isOnline ? THEME.background : THEME.primary} 
+                  />
+                  <Text style={[styles.onlineButtonText, isOnline && styles.onlineButtonTextActive]}>
+                    {isOnline ? "ONLINE" : "GO ONLINE"}
+                  </Text>
+                </>
               )}
             </TouchableOpacity>
           </View>
 
-          {/* Online Status Card */}
-          <View style={[styles.statusCard, isOnline && styles.statusCardOnline]}>
-            <View style={styles.statusLeft}>
-              <View style={[styles.statusDot, isOnline ? styles.statusDotOnline : styles.statusDotOffline]} />
-              <View>
-                <Text style={styles.statusTitle}>
-                  {isOnline ? "You're Online" : "You're Offline"}
-                </Text>
-                <Text style={styles.statusSubtext}>
-                  {isOnline ? 'Wishes coming your way!' : 'Go online to receive wishes'}
-                </Text>
-              </View>
-            </View>
-            {statusLoading ? (
-              <ActivityIndicator color={isOnline ? COLORS.primary : COLORS.textMuted} />
-            ) : (
-              <Switch
-                value={isOnline}
-                onValueChange={toggleOnlineStatus}
-                trackColor={{ false: COLORS.cardBorder, true: COLORS.primary + '50' }}
-                thumbColor={isOnline ? COLORS.primary : COLORS.textMuted}
-              />
-            )}
-          </View>
-
-          {/* XP & Level Card (Gamification) */}
+          {/* XP Progress Card */}
           <View style={styles.xpCard}>
             <View style={styles.xpHeader}>
-              <View style={styles.levelBadge}>
-                <Ionicons name="star" size={14} color={COLORS.accent2} />
-                <Text style={styles.levelText}>Level {Math.floor((stats?.total_tasks || 0) / 10) + 1}</Text>
+              <View style={styles.xpLeft}>
+                <Text style={styles.xpTitle}>⚡ Level {currentLevel}</Text>
+                <Text style={styles.xpSubtitle}>{tasksToNextLevel} tasks to level up!</Text>
               </View>
-              <Text style={styles.xpText}>{((stats?.total_tasks || 0) % 10) * 100} / 1000 XP</Text>
+              <View style={styles.xpRight}>
+                <Text style={styles.xpAmount}>{xpInLevel}</Text>
+                <Text style={styles.xpTotal}>/ {xpNeeded} XP</Text>
+              </View>
             </View>
-            <View style={styles.xpBarTrack}>
-              <View style={[styles.xpBarFill, { width: `${((stats?.total_tasks || 0) % 10) * 10}%` }]} />
+            <View style={styles.xpBarContainer}>
+              <View style={styles.xpBarTrack}>
+                <View style={[styles.xpBarFill, { width: `${(xpInLevel / xpNeeded) * 100}%` }]} />
+                <View style={[styles.xpBarGlow, { width: `${(xpInLevel / xpNeeded) * 100}%` }]} />
+              </View>
             </View>
-            <Text style={styles.xpHint}>{10 - ((stats?.total_tasks || 0) % 10)} more tasks to level up!</Text>
           </View>
 
           {/* Stats Grid */}
           <View style={styles.statsGrid}>
-            <View style={[styles.statCard, { backgroundColor: COLORS.primary + '15' }]}>
-              <View style={[styles.statIconBg, { backgroundColor: COLORS.primary + '30' }]}>
-                <Ionicons name="wallet" size={22} color={COLORS.primary} />
+            <View style={[styles.statCard, styles.statCardPrimary]}>
+              <View style={styles.statIconContainer}>
+                <Text style={styles.statEmoji}>💰</Text>
               </View>
               <Text style={styles.statValue}>₹{stats?.today_earnings?.toFixed(0) || '0'}</Text>
               <Text style={styles.statLabel}>Today</Text>
             </View>
-            <View style={[styles.statCard, { backgroundColor: COLORS.accent3 + '15' }]}>
-              <View style={[styles.statIconBg, { backgroundColor: COLORS.accent3 + '30' }]}>
-                <Ionicons name="checkmark-done" size={22} color={COLORS.accent3} />
+            <View style={[styles.statCard, styles.statCardBlue]}>
+              <View style={styles.statIconContainer}>
+                <Text style={styles.statEmoji}>✅</Text>
               </View>
-              <Text style={styles.statValue}>{stats?.total_tasks || 0}</Text>
+              <Text style={styles.statValue}>{totalTasks}</Text>
               <Text style={styles.statLabel}>Completed</Text>
             </View>
-            <View style={[styles.statCard, { backgroundColor: COLORS.accent2 + '15' }]}>
-              <View style={[styles.statIconBg, { backgroundColor: COLORS.accent2 + '30' }]}>
-                <Ionicons name="star" size={22} color={COLORS.accent2} />
+            <View style={[styles.statCard, styles.statCardAmber]}>
+              <View style={styles.statIconContainer}>
+                <Text style={styles.statEmoji}>⭐</Text>
               </View>
               <Text style={styles.statValue}>{stats?.rating?.toFixed(1) || '5.0'}</Text>
               <Text style={styles.statLabel}>Rating</Text>
             </View>
-            <View style={[styles.statCard, { backgroundColor: COLORS.accent1 + '15' }]}>
-              <View style={[styles.statIconBg, { backgroundColor: COLORS.accent1 + '30' }]}>
-                <Ionicons name="flame" size={22} color={COLORS.accent1} />
+            <View style={[styles.statCard, styles.statCardPink]}>
+              <View style={styles.statIconContainer}>
+                <Text style={styles.statEmoji}>🔥</Text>
               </View>
               <Text style={styles.statValue}>{stats?.active_count || 0}</Text>
               <Text style={styles.statLabel}>Active</Text>
@@ -240,11 +393,9 @@ export default function HomeScreen() {
           <View style={styles.vehicleCard}>
             <View style={styles.vehicleHeader}>
               <View style={styles.vehicleIconBg}>
-                <Ionicons 
-                  name={user?.agent_vehicle === 'car' ? 'car' : user?.agent_vehicle === 'motorbike' ? 'bicycle' : 'speedometer'} 
-                  size={24} 
-                  color={COLORS.primary} 
-                />
+                <Text style={styles.vehicleEmoji}>
+                  {user?.agent_vehicle === 'car' ? '🚗' : user?.agent_vehicle === 'motorbike' ? '🏍️' : '🛵'}
+                </Text>
               </View>
               <View style={styles.vehicleInfo}>
                 <Text style={styles.vehicleName}>{getVehicleDisplay()}</Text>
@@ -252,27 +403,19 @@ export default function HomeScreen() {
               </View>
               {user?.agent_is_electric && (
                 <View style={styles.evBadge}>
-                  <Ionicons name="flash" size={12} color={COLORS.success} />
+                  <Text style={styles.evEmoji}>⚡</Text>
                   <Text style={styles.evText}>EV</Text>
-                </View>
-              )}
-            </View>
-            <View style={styles.vehicleDetails}>
-              {user?.agent_vehicle_color && (
-                <View style={styles.vehicleDetail}>
-                  <View style={[styles.colorDot, { backgroundColor: getColorHex(user.agent_vehicle_color) }]} />
-                  <Text style={styles.vehicleDetailText}>{user.agent_vehicle_color}</Text>
                 </View>
               )}
             </View>
           </View>
 
           {/* Services */}
-          <Text style={styles.sectionTitle}>Your Services</Text>
+          <Text style={styles.sectionTitle}>🎯 Your Services</Text>
           <View style={styles.servicesRow}>
             {(user?.agent_services || []).map((service: string) => (
-              <View key={service} style={[styles.serviceChip, { backgroundColor: getServiceColor(service) + '20' }]}>
-                <Ionicons name={getServiceIcon(service)} size={14} color={getServiceColor(service)} />
+              <View key={service} style={[styles.serviceChip, { backgroundColor: getServiceColor(service) + '25' }]}>
+                <Text style={styles.serviceEmoji}>{getServiceEmoji(service)}</Text>
                 <Text style={[styles.serviceChipText, { color: getServiceColor(service) }]}>
                   {service.charAt(0).toUpperCase() + service.slice(1)}
                 </Text>
@@ -281,45 +424,52 @@ export default function HomeScreen() {
           </View>
 
           {/* Quick Actions */}
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Text style={styles.sectionTitle}>⚡ Quick Actions</Text>
           <View style={styles.actionsGrid}>
             <TouchableOpacity 
               style={styles.actionCard}
               onPress={() => router.push('/(main)/orders')}
             >
-              <View style={[styles.actionIconBg, { backgroundColor: COLORS.primary + '20' }]}>
-                <Ionicons name="cube" size={26} color={COLORS.primary} />
+              <View style={[styles.actionIconBg, { backgroundColor: THEME.primary + '25' }]}>
+                <Text style={styles.actionEmoji}>📦</Text>
               </View>
-              <Text style={styles.actionLabel}>Available</Text>
-              <Text style={styles.actionSubtext}>Orders</Text>
+              <Text style={styles.actionLabel}>Orders</Text>
+              <View style={styles.actionBadge}>
+                <Text style={styles.actionBadgeText}>3</Text>
+              </View>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.actionCard}
               onPress={() => router.push('/(main)/wishes')}
             >
-              <View style={[styles.actionIconBg, { backgroundColor: COLORS.secondary + '20' }]}>
-                <Ionicons name="star" size={26} color={COLORS.secondary} />
+              <View style={[styles.actionIconBg, { backgroundColor: THEME.secondary + '25' }]}>
+                <Text style={styles.actionEmoji}>⭐</Text>
               </View>
-              <Text style={styles.actionLabel}>Browse</Text>
-              <Text style={styles.actionSubtext}>Wishes</Text>
+              <Text style={styles.actionLabel}>Wishes</Text>
+              <View style={[styles.actionBadge, { backgroundColor: THEME.secondary }]}>
+                <Text style={styles.actionBadgeText}>5</Text>
+              </View>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.actionCard}
               onPress={() => router.push('/(main)/deliveries')}
             >
-              <View style={[styles.actionIconBg, { backgroundColor: COLORS.accent2 + '20' }]}>
-                <Ionicons name="navigate" size={26} color={COLORS.accent2} />
+              <View style={[styles.actionIconBg, { backgroundColor: THEME.accent2 + '25' }]}>
+                <Text style={styles.actionEmoji}>🚀</Text>
               </View>
               <Text style={styles.actionLabel}>Active</Text>
-              <Text style={styles.actionSubtext}>Deliveries</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Daily Challenge Card (Gamification) */}
+          {/* Daily Challenge */}
           <View style={styles.challengeCard}>
             <View style={styles.challengeHeader}>
-              <Ionicons name="trophy" size={20} color={COLORS.accent2} />
+              <Text style={styles.challengeEmoji}>🏆</Text>
               <Text style={styles.challengeTitle}>Daily Challenge</Text>
+              <View style={styles.challengeTimer}>
+                <Ionicons name="time-outline" size={12} color={THEME.accent2} />
+                <Text style={styles.challengeTimerText}>8h left</Text>
+              </View>
             </View>
             <Text style={styles.challengeDesc}>Complete 5 deliveries today</Text>
             <View style={styles.challengeProgress}>
@@ -328,7 +478,37 @@ export default function HomeScreen() {
               </View>
               <Text style={styles.challengeCount}>2/5</Text>
             </View>
-            <Text style={styles.challengeReward}>🎁 Reward: +50 XP & ₹100 bonus</Text>
+            <View style={styles.challengeRewardRow}>
+              <Text style={styles.challengeRewardLabel}>Reward:</Text>
+              <View style={styles.challengeRewards}>
+                <View style={styles.rewardItem}>
+                  <Text style={styles.rewardEmoji}>⚡</Text>
+                  <Text style={styles.rewardText}>+50 XP</Text>
+                </View>
+                <View style={styles.rewardItem}>
+                  <Text style={styles.rewardEmoji}>💰</Text>
+                  <Text style={styles.rewardText}>₹100</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Streak Card */}
+          <View style={styles.streakCard}>
+            <View style={styles.streakLeft}>
+              <Text style={styles.streakEmoji}>🔥</Text>
+              <View>
+                <Text style={styles.streakTitle}>3 Day Streak!</Text>
+                <Text style={styles.streakSubtitle}>Keep it going!</Text>
+              </View>
+            </View>
+            <View style={styles.streakDays}>
+              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => (
+                <View key={index} style={[styles.streakDay, index < 3 && styles.streakDayActive]}>
+                  <Text style={[styles.streakDayText, index < 3 && styles.streakDayTextActive]}>{day}</Text>
+                </View>
+              ))}
+            </View>
           </View>
 
         </ScrollView>
@@ -336,69 +516,54 @@ export default function HomeScreen() {
     );
   }
 
-  // Skilled Genie Dashboard (Basic for now - will be expanded later)
+  // Skilled Genie placeholder
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: SKILLED_COLORS.background }]}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.greeting, { color: SKILLED_COLORS.text }]}>
-          Skilled Genie Dashboard
-        </Text>
-        <Text style={[styles.subtitle, { color: SKILLED_COLORS.primary }]}>
-          Coming soon with work planner & appointments!
-        </Text>
-      </ScrollView>
+    <SafeAreaView style={[styles.container, { backgroundColor: '#F0FDFA' }]}>
+      <View style={styles.loadingContainer}>
+        <Text style={[styles.greeting, { color: '#134E4A' }]}>Skilled Genie Dashboard</Text>
+        <Text style={[styles.loadingText, { color: '#0D9488' }]}>Coming soon!</Text>
+      </View>
     </SafeAreaView>
   );
 }
 
 // Helper functions
-function getServiceIcon(service: string): keyof typeof Ionicons.glyphMap {
+function getServiceEmoji(service: string): string {
   switch (service) {
-    case 'delivery': return 'basket';
-    case 'courier': return 'document-text';
-    case 'rides': return 'car';
-    case 'errands': return 'clipboard';
-    case 'surprise': return 'gift';
-    default: return 'star';
+    case 'delivery': return '🛒';
+    case 'courier': return '📦';
+    case 'rides': return '🚗';
+    case 'errands': return '📋';
+    case 'surprise': return '🎁';
+    default: return '⭐';
   }
 }
 
 function getServiceColor(service: string): string {
   switch (service) {
-    case 'delivery': return COLORS.primary;
-    case 'courier': return COLORS.accent3;
-    case 'rides': return COLORS.secondary;
-    case 'errands': return COLORS.accent2;
-    case 'surprise': return COLORS.accent1;
-    default: return COLORS.primary;
+    case 'delivery': return THEME.primary;
+    case 'courier': return THEME.accent3;
+    case 'rides': return THEME.secondary;
+    case 'errands': return THEME.accent2;
+    case 'surprise': return THEME.accent1;
+    default: return THEME.primary;
   }
-}
-
-function getColorHex(colorName: string): string {
-  const colors: Record<string, string> = {
-    white: '#FFFFFF',
-    black: '#1F2937',
-    silver: '#9CA3AF',
-    red: '#EF4444',
-    blue: '#3B82F6',
-    green: '#22C55E',
-    yellow: '#F59E0B',
-    orange: '#F97316',
-    brown: '#92400E',
-    grey: '#6B7280',
-  };
-  return colors[colorName] || '#9CA3AF';
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: THEME.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingText: {
+    color: THEME.textSecondary,
+    marginTop: 12,
+    fontSize: 14,
   },
   content: {
     padding: 16,
@@ -407,130 +572,265 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 20,
   },
   greeting: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: COLORS.text,
+    fontSize: 28,
+    fontWeight: '800',
+    color: THEME.text,
   },
-  subtitle: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-  },
-  profileBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    overflow: 'hidden',
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-  },
-  avatarPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.cardBg,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-  },
-  statusCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  statusCardOnline: {
-    borderColor: COLORS.primary + '50',
-    backgroundColor: COLORS.primary + '10',
-  },
-  statusLeft: {
+  levelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-  },
-  statusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  statusDotOnline: {
-    backgroundColor: COLORS.online,
-  },
-  statusDotOffline: {
-    backgroundColor: COLORS.offline,
-  },
-  statusTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  statusSubtext: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  xpCard: {
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  xpHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
+    gap: 8,
+    marginTop: 6,
   },
   levelBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.accent2 + '20',
+    backgroundColor: THEME.accent2 + '25',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     gap: 4,
   },
-  levelText: {
+  levelBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.accent2,
+    fontWeight: '700',
+    color: THEME.accent2,
   },
-  xpText: {
+  coinBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.cardBg,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  coinIcon: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+  },
+  coinText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: THEME.text,
+  },
+  profileBtn: {
+    position: 'relative',
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: THEME.primary,
+  },
+  avatarPlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: THEME.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: THEME.background,
+  },
+  statusIndicator: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: THEME.background,
+  },
+  statusOnline: {
+    backgroundColor: THEME.online,
+  },
+  statusOffline: {
+    backgroundColor: THEME.offline,
+  },
+  // Radar styles
+  radarCard: {
+    backgroundColor: THEME.cardBg,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
+  },
+  radarContainer: {
+    width: '100%',
+    aspectRatio: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    marginBottom: 12,
+  },
+  radarRing: {
+    position: 'absolute',
+    width: '60%',
+    aspectRatio: 1,
+    borderRadius: 1000,
+    borderWidth: 1,
+    borderColor: THEME.primary + '30',
+  },
+  radarRing2: {
+    width: '80%',
+  },
+  radarRing3: {
+    width: '100%',
+  },
+  radarPulse: {
+    position: 'absolute',
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 1000,
+    borderWidth: 2,
+    borderColor: THEME.primary,
+  },
+  centerDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: THEME.primary + '40',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  centerDotInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: THEME.primary,
+  },
+  wishDot: {
+    position: 'absolute',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: THEME.cardBg,
+    borderWidth: 2,
+    borderColor: THEME.cardBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radarInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  radarStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  radarStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  radarStatusOnline: {
+    backgroundColor: THEME.online,
+  },
+  radarStatusOffline: {
+    backgroundColor: THEME.offline,
+  },
+  radarStatusText: {
+    fontSize: 13,
+    color: THEME.textSecondary,
+  },
+  locationText: {
+    fontSize: 12,
+    color: THEME.textMuted,
+  },
+  onlineButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.cardBorder,
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  onlineButtonActive: {
+    backgroundColor: THEME.primary,
+  },
+  onlineButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: THEME.primary,
+  },
+  onlineButtonTextActive: {
+    color: THEME.background,
+  },
+  // XP Card
+  xpCard: {
+    backgroundColor: THEME.cardBg,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
+  },
+  xpHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  xpLeft: {},
+  xpTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: THEME.text,
+  },
+  xpSubtitle: {
+    fontSize: 12,
+    color: THEME.textSecondary,
+    marginTop: 2,
+  },
+  xpRight: {
+    alignItems: 'flex-end',
+  },
+  xpAmount: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: THEME.primary,
+  },
+  xpTotal: {
+    fontSize: 12,
+    color: THEME.textMuted,
+  },
+  xpBarContainer: {
+    position: 'relative',
   },
   xpBarTrack: {
-    height: 8,
-    backgroundColor: COLORS.cardBorder,
-    borderRadius: 4,
+    height: 10,
+    backgroundColor: THEME.cardBorder,
+    borderRadius: 5,
     overflow: 'hidden',
   },
   xpBarFill: {
     height: '100%',
-    backgroundColor: COLORS.primary,
-    borderRadius: 4,
+    backgroundColor: THEME.primary,
+    borderRadius: 5,
   },
-  xpHint: {
-    fontSize: 11,
-    color: COLORS.textMuted,
-    marginTop: 8,
-    textAlign: 'center',
+  xpBarGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: '100%',
+    backgroundColor: THEME.primary + '50',
+    borderRadius: 5,
   },
+  // Stats Grid
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -539,48 +839,64 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: '48%',
-    backgroundColor: COLORS.cardBg,
+    backgroundColor: THEME.cardBg,
     borderRadius: 16,
-    padding: 14,
+    padding: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
   },
-  statIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+  statCardPrimary: {
+    borderColor: THEME.primary + '30',
+  },
+  statCardBlue: {
+    borderColor: THEME.accent3 + '30',
+  },
+  statCardAmber: {
+    borderColor: THEME.accent2 + '30',
+  },
+  statCardPink: {
+    borderColor: THEME.accent1 + '30',
+  },
+  statIconContainer: {
     marginBottom: 8,
   },
+  statEmoji: {
+    fontSize: 28,
+  },
   statValue: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: COLORS.text,
+    fontSize: 26,
+    fontWeight: '800',
+    color: THEME.text,
   },
   statLabel: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: THEME.textSecondary,
     marginTop: 2,
   },
+  // Vehicle Card
   vehicleCard: {
-    backgroundColor: COLORS.cardBg,
+    backgroundColor: THEME.cardBg,
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: THEME.cardBorder,
   },
   vehicleHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   vehicleIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.primary + '20',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: THEME.primary + '20',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  vehicleEmoji: {
+    fontSize: 24,
   },
   vehicleInfo: {
     flex: 1,
@@ -588,58 +904,39 @@ const styles = StyleSheet.create({
   },
   vehicleName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
+    fontWeight: '700',
+    color: THEME.text,
   },
   vehicleReg: {
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: THEME.textSecondary,
     marginTop: 2,
   },
   evBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.success + '20',
-    paddingHorizontal: 8,
+    backgroundColor: THEME.success + '20',
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 10,
+    borderRadius: 12,
     gap: 4,
   },
+  evEmoji: {
+    fontSize: 12,
+  },
   evText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.success,
+    fontSize: 12,
+    fontWeight: '700',
+    color: THEME.success,
   },
-  vehicleDetails: {
-    flexDirection: 'row',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.cardBorder,
-  },
-  vehicleDetail: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  colorDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  vehicleDetailText: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    textTransform: 'capitalize',
-  },
+  // Section
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
+    fontWeight: '700',
+    color: THEME.text,
     marginBottom: 12,
   },
+  // Services
   servicesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -649,94 +946,202 @@ const styles = StyleSheet.create({
   serviceChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
     gap: 6,
   },
-  serviceChipText: {
-    fontSize: 12,
-    fontWeight: '500',
+  serviceEmoji: {
+    fontSize: 14,
   },
+  serviceChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  // Actions
   actionsGrid: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     marginBottom: 20,
   },
   actionCard: {
     flex: 1,
-    backgroundColor: COLORS.cardBg,
+    backgroundColor: THEME.cardBg,
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: THEME.cardBorder,
+    position: 'relative',
   },
   actionIconBg: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
+  },
+  actionEmoji: {
+    fontSize: 24,
   },
   actionLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: COLORS.text,
+    color: THEME.text,
   },
-  actionSubtext: {
+  actionBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: THEME.primary,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionBadgeText: {
     fontSize: 11,
-    color: COLORS.textSecondary,
+    fontWeight: '700',
+    color: THEME.background,
   },
+  // Challenge
   challengeCard: {
-    backgroundColor: COLORS.accent2 + '15',
+    backgroundColor: THEME.accent2 + '15',
     borderRadius: 16,
     padding: 16,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: COLORS.accent2 + '30',
+    borderColor: THEME.accent2 + '30',
   },
   challengeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
     marginBottom: 8,
   },
+  challengeEmoji: {
+    fontSize: 20,
+    marginRight: 8,
+  },
   challengeTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.accent2,
+    fontSize: 16,
+    fontWeight: '700',
+    color: THEME.accent2,
+    flex: 1,
+  },
+  challengeTimer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  challengeTimerText: {
+    fontSize: 12,
+    color: THEME.accent2,
   },
   challengeDesc: {
     fontSize: 15,
-    color: COLORS.text,
+    color: THEME.text,
     marginBottom: 12,
   },
   challengeProgress: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 10,
+    gap: 12,
+    marginBottom: 12,
   },
   challengeBarTrack: {
     flex: 1,
     height: 8,
-    backgroundColor: COLORS.cardBorder,
+    backgroundColor: THEME.cardBorder,
     borderRadius: 4,
     overflow: 'hidden',
   },
   challengeBarFill: {
     height: '100%',
-    backgroundColor: COLORS.accent2,
+    backgroundColor: THEME.accent2,
     borderRadius: 4,
   },
   challengeCount: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: THEME.accent2,
+  },
+  challengeRewardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  challengeRewardLabel: {
+    fontSize: 12,
+    color: THEME.textSecondary,
+    marginRight: 8,
+  },
+  challengeRewards: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  rewardItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  rewardEmoji: {
+    fontSize: 14,
+  },
+  rewardText: {
     fontSize: 13,
     fontWeight: '600',
-    color: COLORS.accent2,
+    color: THEME.text,
   },
-  challengeReward: {
+  // Streak
+  streakCard: {
+    backgroundColor: THEME.accent1 + '15',
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: THEME.accent1 + '30',
+  },
+  streakLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  streakEmoji: {
+    fontSize: 28,
+  },
+  streakTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: THEME.accent1,
+  },
+  streakSubtitle: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: THEME.textSecondary,
+  },
+  streakDays: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  streakDay: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: THEME.cardBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  streakDayActive: {
+    backgroundColor: THEME.accent1,
+  },
+  streakDayText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: THEME.textMuted,
+  },
+  streakDayTextActive: {
+    color: THEME.white,
   },
 });
