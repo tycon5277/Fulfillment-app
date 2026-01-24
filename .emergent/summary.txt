@@ -1,75 +1,89 @@
 <analysis>
 
-**original_problem_statement**: The user wants to build a mobile fulfillment app for their existing Quickwish consumer application. The fulfillment app should share the same backend and database.
+**original_problem_statement**: The user wants to build a Quickwish Genie mobile fulfillment app. The initial concept of a simple delivery app has been massively expanded. The app must now support a complex onboarding flow and provide distinct experiences for different types of fulfillment partners or Genies.
+
+The primary user journey is now:
+1.  **Phone & OTP Login**: Replaces the old Google OAuth system.
+2.  **Profile Setup**: A basic profile with name, DOB, etc.
+3.  **Role Selection**: The user chooses to be an **Agent**, **Vendor**, or **Promoter**.
+4.  **Role-Specific Onboarding**:
+    *   **Agent**: This is the current focus. The user must choose between being a Mobile Genie (vehicle-based tasks) or a Skilled Genie (trade/skill-based tasks). They then fill out detailed information relevant to their choice (e.g., vehicle details, list of services/skills).
+    *   **Vendor/Promoter**: These flows are currently on hold.
+5.  **Role-Specific Dashboard**: After registration, the user lands on a dashboard tailored to their role.
 
 **PRODUCT REQUIREMENTS**:
-Initially, the app was conceived as a standard delivery agent app. However, the requirements have been significantly expanded. The app must now support three distinct types of fulfillment partners:
-1.  **Agent**: A mobile partner for on-demand services like food/grocery delivery, courier services, or rides. They have a vehicle (bike, scooter, car).
-2.  **Vendor**: An owner of an existing offline business (e.g., grocery store, farm, restaurant) who wants to bring their business online through the platform. They may handle their own deliveries or have an Agent assigned to them.
-3.  **Promoter**: An organizer for events or services. Examples include a tour operator selling seats for a trip or a local sports club selling tickets and merchandise for a match.
-
-The user's first interaction after a successful login should be a registration screen where they select one of these three roles. The rest of the app's functionality and UI should be tailored to the selected partner type.
+- **Mobile Genie Dashboard**: The user provided a screenshot for a gamified, dark-themed UI with neon green accents. It should include stats (XP, levels, streaks), a rewards section, and a radar-style map showing the agent's location.
+- **Skilled Genie Dashboard**: The user approved a Deep Teal professional theme. It should be a portfolio-style dashboard focusing on a job queue, scheduling, and reputation.
+- **Vehicle Details**: For Mobile Genies, the app must capture the vehicle's registration number, make, model, color, and whether it's electric. Registration number is a required field.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The project has been set up as a full-stack application using Expo for the frontend and FastAPI for the backend with a MongoDB database.
-- A functional Google OAuth login flow has been implemented and debugged for the Expo Go development environment. It correctly handles redirects and session management.
-- The backend  model has been updated to include a  field (an enum of 'agent', 'vendor', 'promoter') and an optional .
-- A new registration screen () has been created. After a new user logs in via Google for the first time, they are correctly redirected to this screen to choose their partner type.
-- The initial app entry point () correctly checks if a user is registered (i.e., has a ) and routes them to either the registration screen or the main app.
+- A full-stack Expo (frontend) and FastAPI (backend) application.
+- The entire authentication and registration flow has been rebuilt to support phone/OTP login and a multi-step registration process: Phone Login -> OTP -> Profile Setup -> Role Selection -> Agent-Specific Setup.
+- A new, detailed Agent registration screen () has been created, which captures whether an agent is a Mobile Genie or Skilled Genie and collects relevant data (vehicle details, skills, services).
+- The backend  model and API endpoints have been updated to store this new, detailed agent information.
+- A first version of the gamified, dark-themed Mobile Genie dashboard () has been implemented, based on a screenshot provided by the user.
+- The  package has been installed.
+- A central theme file () has been created to standardize the new dark theme.
 
 **Last working item**:
-- **Last item agent was working**: The agent was implementing the new, expanded fulfillment partner feature. After updating the backend and creating the new registration screen, the agent started modifying the frontend to handle the different user roles. The very last action was preparing to edit  to display a dynamic UI based on the logged-in user's .
+- **Last item agent was working**: The user requested further enhancements to the Mobile Genie experience. The agent was in the process of:
+    1.  Applying the new dark theme (inspired by the user's screenshot) globally across all screens for a Mobile Genie.
+    2.  Adding more gamification elements and higher-resolution icons.
+    3.  Implementing a radar-style map on the home screen to show the agent's location (using mock data if GPS is unavailable).
+    The agent had just installed , created a  file, and was about to start modifying  to include the radar map.
 - **Status**: IN PROGRESS
 - **Agent Testing Done**: N
-- **Which testing method agent to use?**: both. Once the feature is complete, use the backend testing agent to verify the new registration logic and user model updates. Then, use the frontend testing agent to test the entire registration flow and ensure the home screen displays correctly for each partner type.
+- **Which testing method agent to use?**: frontend testing agent. After implementing the theme and map, use the screenshot tool to verify the UI on , , and  to ensure the new theme is applied correctly and the map displays.
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-- **Issue 1**:  (P0) The main application screens (Home, Deliveries, etc.) are currently static placeholders and do not adapt to the user's selected partner type (Agent, Vendor, or Promoter).
+- **Issue 1**:  (P0) The Mobile Genie UI is incomplete and doesn't fully match the user's vision.
 
   **Issues Detail**:
   - **Issue 1**: 
-     - **Attempted fixes**: None. This is the current active task.
+     - **Attempted fixes**: A first version of the dashboard was created. The user requested further enhancements.
      - **Next debug checklist**:
-       1.  Modify  to fetch the current user's profile from the  store.
-       2.  Implement conditional rendering within  to display a unique dashboard UI for each  ('agent', 'vendor', 'promoter').
-       3.  Review the other tabbed screens (, , ) and determine if their content or visibility should also change based on the partner type. For example, 'deliveries' might only be for 'agents'.
-     - **Why fix this issue and what will be achieved with the fix?**: This is the core requirement provided by the user in their last message. Fixing this will make the app functional and align it with the product vision of a multi-role fulfillment platform.
+       1.  In , integrate  to create the radar-style map component. Use mock location data for now.
+       2.  Create HOCs or context providers using  to apply the dark theme and neon green color scheme across all Mobile Genie-related screens (, , , etc.).
+       3.  Source and integrate higher-resolution, more gamified icons for the dashboard stats and actions.
+       4.  Refactor the  layout to better match the user-provided screenshot, focusing on the placement of XP, levels, and streaks.
+     - **Why fix this issue and what will be achieved with the fix?**: This will complete the user's most recent and explicit request, delivering the desired look and feel for the primary user type (Mobile Genie) and making the app feel more polished and aligned with the target demographic.
      - **Status**:  IN PROGRESS
      - **Is recurring issue?** N
-     - **Should Test frontend/backend/both after fix?**: both
+     - **Should Test frontend/backend/both after fix?**: frontend
      - **Blocked on other issue**: None
 
 **In progress Task List**:
-- **Task 1**: (P0) Make Home Screen and Main App experience dynamic based on Partner Type
-  - **Where to resume**: .
-  - **What will be achieved with this?**: The app will provide a tailored user experience, showing relevant dashboards, tools, and information specific to whether the user is an Agent, Vendor, or Promoter. This completes the user's latest and most critical feature request.
+- **Task 1**: (P0) Finalize Mobile Genie UI/UX
+  - **Where to resume**:  and .
+  - **What will be achieved with this?**: A polished, gamified, dark-themed UI for Mobile Genies, including a radar map, that matches the user's vision and screenshot reference. The theme will be consistently applied across the app for this user type.
   - **Status**: IN PROGRESS
-  - **Should Test frontend/backend/both after fix?**: both
+  - **Should Test frontend/backend/both after fix?**: frontend
   - **Blocked on something**: None
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks**:
-    - **P0**: **Implement Agent Dashboard UI**: In , create the UI for agents, including an online/offline status toggle and key performance stats.
-    - **P1**: **Implement Vendor & Promoter Dashboards**: In , design and implement the initial dashboard UIs for Vendors (e.g., manage store, view orders) and Promoters (e.g., manage events, view bookings).
-    - **P1**: **Implement 'Available Orders/Wishes' Screen**: Create the functionality for Agents to view and accept incoming delivery jobs and wishes. This involves fetching data from  and  and creating the corresponding 'accept' API calls.
-    - **P1**: **Implement 'My Deliveries' Screen**: Build the screen for Agents to manage their active deliveries, including updating status (e.g., 'picked_up', 'on_the_way', 'delivered') and viewing delivery details.
-    - **P1**: **Implement Chat**: Build out the chat interface in  to allow real-time communication between partners and consumers.
+    - **P1**: **Implement Skilled Genie Dashboard**: Create the UI for the Skilled Genie home screen using the approved Deep Teal color scheme. This should be a professional, portfolio-style dashboard with a job queue, scheduling features, and a focus on skills and ratings.
+    - **P1**: **Implement Full Vehicle Details Form**: In , activate the placeholder UI for uploading vehicle photos. This will require backend changes to handle file storage.
+    - **P2**: **Build out Skilled Genie Features**: Implement the backend logic and UI for the work planner, appointment booker, and job workflow tracking (Negotiation, Approved, etc.) for Skilled Genies.
+    - **P2**: **Build Live Wish/Job Feeds**: Implement the API endpoints and frontend UI to show Mobile Genies a live feed of nearby wishes and Skilled Genies a queue of skill-matched jobs.
 
 - **Future Tasks**:
-    - **P2**: **Implement Vendor Product/Store Management**: Create dedicated screens for Vendors to add/edit products, manage inventory, and configure their online store.
-    - **P2**: **Implement Promoter Event Management**: Create screens for Promoters to create/edit events, manage ticket inventory, and view attendee lists.
-    - **P2**: **Implement Earnings Screen**: Build the UI to display earnings history and payout information for all partner types.
-    - **P2**: **Push Notifications**: Integrate push notifications to alert partners of new orders, messages, or other important events.
+    - **Implement Vendor Onboarding & Dashboard**: Create the registration flow and main dashboard for the Vendor partner type.
+    - **Implement Promoter Onboarding & Dashboard**: Create the registration flow and main dashboard for the Promoter partner type.
+    - **Implement Chat/Communication**: Build the real-time communication channel between Genies and Wishers.
+    - **Implement Earnings/Payouts Screen**: Create a detailed screen for all Genie types to track their earnings and manage payouts.
 
 **Completed work in this session**
-- **Google OAuth Login Flow**: Implemented and thoroughly debugged a cross-platform Google login for the Expo Go environment. This involved using  and a custom redirect flow to handle authentication.
-- **Backend User Model Refactor**: Updated the FastAPI backend and MongoDB schema to support three distinct partner types (, , ).
-- **New User Registration Flow**: Created a dedicated registration screen () that new users are forced to visit after their first login to select their partner role.
-- **Mobile Environment Debugging**: Resolved several critical mobile-specific issues, including React version mismatches, incorrect  usage,  incompatibility, and OAuth deep-link redirection challenges in Expo Go.
-- **Initial App Scaffolding**: Created the complete file-based routing structure for the app using Expo Router, including layouts for authentication and the main tab-based navigation.
+- **Replaced Google Auth with Phone/OTP Login**: The entire authentication system was pivoted from Google OAuth to a mock phone number and OTP verification flow.
+- **Created a Multi-Step Registration Flow**: A new, logical onboarding process was built: Phone Login -> Profile Setup -> Role Selection -> Agent-Specific Setup.
+- **Designed & Implemented Detailed Agent Onboarding**: A new screen () was created to handle the bifurcation of Agents into Mobile Genie and Skilled Genie, collecting detailed, role-specific information.
+- **Added Granular Vehicle Details**: The Mobile Genie registration now captures vehicle type (Motor Bike, Scooter, Car), registration number, make, model, color, and an is electric flag.
+- **Designed & Implemented Gamified Mobile Genie Dashboard**: A new dark-themed, gamified dashboard was created for Mobile Genies, based on a user-provided screenshot.
+- **Fixed Critical Backend Registration Bug**: Resolved an issue where registration failed because  and  were required in the User model, by making them optional.
+- **Fixed Tab Bar UI Bug**: Corrected an issue where the bottom tab bar was hidden by using .
 
 **Earlier issues found/mentioned but not fixed**
    - **Issue 1**: Frontend linting errors.
@@ -80,21 +94,28 @@ env: export EXPO_TUNNEL_SUBDOMAIN EXPO_PACKAGER_HOSTNAME EXPO_PUBLIC_BACKEND_URL
 $ /app/frontend/node_modules/.bin/eslint /app/frontend/src /app/frontend/app --fix=false --cache=true --cache-location=/app/frontend/.expo/cache/eslint/
 
 /app/frontend/app/(auth)/login.tsx
-   14:8  warning  'Constants' is defined but never used                                                                                     @typescript-eslint/no-unused-vars
-  122:6  warning  React Hook useEffect has a missing dependency: 'handleSessionExchange'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-  145:6  warning  React Hook useEffect has a missing dependency: 'handleSessionExchange'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-  163:6  warning  React Hook useEffect has a missing dependency: 'handleSessionExchange'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  175:19  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  285:53  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
 
 /app/frontend/app/(main)/_layout.tsx
-  4:10  warning  'View' is defined but never used  @typescript-eslint/no-unused-vars
+  4:22  warning  'Platform' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/frontend/app/(main)/events.tsx
+  101:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  118:20  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
 
 /app/frontend/app/(main)/home.tsx
-   19:11  warning  'PartnerStats' is defined but never used                                                                        @typescript-eslint/no-unused-vars
-   55:34  error    'getAgentStats' not found in imported namespace 'api'                                                           import/namespace
-   77:6   warning  React Hook useEffect has a missing dependency: 'fetchUser'. Either include it or remove the dependency array    react-hooks/exhaustive-deps
-   83:6   warning  React Hook useCallback has a missing dependency: 'fetchUser'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-   89:17  error    'updateAgentStatus' not found in imported namespace 'api'                                                       import/namespace
-  163:53  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                 react/no-unescaped-entities
+    9:3   warning  'Switch' is defined but never used                                                                                                                              @typescript-eslint/no-unused-vars
+   24:16  warning  'SCREEN_WIDTH' is assigned a value but never used                                                                                                               @typescript-eslint/no-unused-vars
+   40:10  warning  'location' is assigned a value but never used                                                                                                                   @typescript-eslint/no-unused-vars
+  104:6   warning  React Hook useEffect has missing dependencies: 'dotPulse', 'radarPulse1', 'radarPulse2', and 'radarPulse3'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  151:6   warning  React Hook useEffect has a missing dependency: 'fetchUser'. Either include it or remove the dependency array                                                    react-hooks/exhaustive-deps
+  157:6   warning  React Hook useCallback has a missing dependency: 'fetchUser'. Either include it or remove the dependency array                                                  react-hooks/exhaustive-deps
+
+/app/frontend/app/(main)/products.tsx
+   10:3   warning  'Image' is defined but never used  @typescript-eslint/no-unused-vars
+   94:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  111:20  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
 
 /app/frontend/app/(main)/profile.tsx
   66:6  warning  React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array    react-hooks/exhaustive-deps
@@ -102,6 +123,13 @@ $ /app/frontend/node_modules/.bin/eslint /app/frontend/src /app/frontend/app --f
 
 /app/frontend/app/_layout.tsx
   12:6  warning  React Hook useEffect has a missing dependency: 'loadStoredAuth'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/app/frontend/app/agent-setup.tsx
+   12:3   warning  'Image' is defined but never used                                @typescript-eslint/no-unused-vars
+   87:10  warning  'vehiclePhotos' is assigned a value but never used               @typescript-eslint/no-unused-vars
+   87:25  warning  'setVehiclePhotos' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  163:42  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  409:61  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
 
 /app/frontend/app/chat/[roomId].tsx
   77:6   warning  React Hook useEffect has missing dependencies: 'fetchMessages' and 'fetchRoom'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
@@ -112,91 +140,93 @@ $ /app/frontend/node_modules/.bin/eslint /app/frontend/src /app/frontend/app --f
   68:6   warning  React Hook useEffect has a missing dependency: 'fetchOrder'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
 /app/frontend/app/index.tsx
-   17:10  warning  'checking' is assigned a value but never used                                                                                                                    @typescript-eslint/no-unused-vars
-   74:6   warning  React Hook useEffect has missing dependencies: 'loadStoredAuth', 'router', 'setSessionToken', and 'setUser'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
-  112:6   warning  React Hook useEffect has missing dependencies: 'router' and 'setUser'. Either include them or remove the dependency array                                        react-hooks/exhaustive-deps
+  16:10  warning  'checking' is assigned a value but never used                                                                              @typescript-eslint/no-unused-vars
+  21:6   warning  React Hook useEffect has a missing dependency: 'loadStoredAuth'. Either include it or remove the dependency array          react-hooks/exhaustive-deps
+  68:6   warning  React Hook useEffect has missing dependencies: 'router' and 'setUser'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
 
-/app/frontend/app/register.tsx
-  425:59  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+/app/frontend/app/role-select.tsx
+   8:3   warning  'ActivityIndicator' is defined but never used      @typescript-eslint/no-unused-vars
+  11:3   warning  'Alert' is defined but never used                  @typescript-eslint/no-unused-vars
+  67:10  warning  'isLoading' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  67:21  warning  'setIsLoading' is assigned a value but never used  @typescript-eslint/no-unused-vars
 
-✖ 22 problems (4 errors, 18 warnings)
+✖ 33 problems (4 errors, 29 warnings)
 
 info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.
-info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. in . The agent previously encountered parsing errors and warnings related to component definitions inside render functions (a common pattern for Expo Router tab icons).
-     - **Why to solve this issue and what will be achieved with this?**: While the agent assessed these as non-blocking, resolving them would improve code quality and prevent potential hidden bugs. It may require tweaking the ESLint configuration file ().
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. in . Errors are related to ESLint's parser and the common Expo Router pattern of defining components for .
+     - **Why to solve this issue and what will be achieved with this?**: Resolving these would improve code quality and prevent potential hidden bugs. It may require tweaking the ESLint configuration.
      - **Should Test frontend/backend/both after fix**: frontend
      - **Is recurring issue?** Y
 
 **Known issue recurrence from previous fork**
-- None.
+  - None.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Frontend**: React Native, Expo (with Expo Router for file-based routing), Zustand (for global state management),  &  (for OAuth).
+- **Frontend**: React Native, Expo (with Expo Router), Zustand, .
 - **Backend**: FastAPI, Python.
 - **Database**: MongoDB.
-- **Authentication**: Google Social Login provided by Emergent, with a custom redirect flow to work within the Expo Go development environment.
+- **Authentication**: Custom Phone/OTP mock authentication flow. No more Google Auth.
 
 **key DB schema**
 - **database**: 
   - **users**: 
-  - **shop_orders**: 
-  - **wishes**: 
 
 **changes in tech stack**
-- None.
+- Added  and .
 
 **All files of reference**
-- : Updated to handle new user registration with  and .
-- : Newly created screen for users to select their role.
-- : Updated to route new users to .
-- : Updated multiple times to fix OAuth flow and to check for  after login.
-- : Updated with the new  endpoint definition.
-- : The next file to be modified to implement the dynamic UI.
-- : Updated to include .
+- : **Actively being modified**. Needs the radar map and further UI polish.
+- : **Newly created**. Contains color constants for the new dark theme.
+- : **Newly created**. Contains the complex logic for Mobile vs. Skilled Genie registration.
+- : **Newly created**. The second step in the registration funnel.
+- : **Heavily modified**. Now the first step of registration (profile info).
+- : **Heavily modified**. Now a phone/OTP login screen.
+- : **Heavily modified** to manage the new multi-step registration flow.
+- : **Heavily modified** to support OTP auth and store all new agent and vehicle details.
 
 **Critical Info for New Agent**
-- **OAuth in Expo Go**: The current login flow is a workaround for the Expo Go environment. It uses the app's web preview URL as the redirect URI. The  page then detects the  in the URL params, stores it, and navigates to the home screen within the browser view. The user has confirmed this is acceptable for now, but be aware this is not a true native deep link.
-- **Partner Type is Central**: All new feature development must consider the three partner types (Agent, Vendor, Promoter). The immediate priority is to make the home screen dynamic. Do not build generic features; tailor them to the specific roles.
+- **FOCUS ON MOBILE GENIE**: The user's immediate priority is to perfect the Mobile Genie experience. Do not work on Skilled Genie, Vendor, or Promoter features until the Mobile Genie UI is approved.
+- **DESIGN IS KEY**: The design direction is dictated by the user's screenshot: a **dark, gamified theme with neon green accents**. This aesthetic must be applied consistently across the Mobile Genie user journey.
+- **NEW AUTH FLOW**: The app no longer uses Google OAuth. It uses a custom, multi-step Phone/OTP flow. A user is only fully registered after completing Profile -> Role -> Role-Specific setup. Use  as the reference for this navigation logic.
+- **MOCK OTP**: The OTP is hardcoded to 123456 for testing purposes. This is defined in .
 
 **documents created in this job**
 - None.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (LATEST)**: Explained the app is for 3 partner types (Agent, Vendor, Promoter), not just delivery. Requested changes to the registration flow and app concept. (IN PROGRESS)
-2.  **User**: Confirmed the stuck in browser issue is resolved. (RESOLVED)
-3.  **User**: Reported the app is stuck in a web browser view after login, with the URL bar visible. (RESOLVED)
-4.  **User**: Confirmed the previous fix worked. (RESOLVED)
-5.  **User**: Provided a screenshot of an error, and requested comprehensive testing. (RESOLVED by troubleshoot agent)
-6.  **User**: Provided screenshots of iOS (cross-origin error) and Android (Not Found error) issues during login. (RESOLVED)
-7.  **User**: Provided a screenshot showing the auth URL returning Not Found. (RESOLVED)
-8.  **User**: Provided screenshots showing a WebView does not support this platform error and the recurring Not Found error. (RESOLVED)
-9.  **User**: Provided a screenshot of a red box error: Invariant Violation: ...colliding keys: styles. (RESOLVED)
-10. **User**: Provided a screenshot showing a  error after the black screen was fixed. (RESOLVED)
+1.  **User (LATEST)**: Requested applying the dark theme globally for Mobile Genies, adding more gamification/icons, and a radar-style map on the home screen. (IN PROGRESS)
+2.  **User**: Provided a screenshot to be used as the design inspiration for the Mobile Genie dashboard. (RESOLVED)
+3.  **User**: Confirmed color choice for Skilled Genie (Deep Teal), agreed with dashboard philosophy differences, and confirmed to implement Mobile Genie first. (RESOLVED)
+4.  **User**: Responded to design suggestions: preferred a different color for Mobile Genie (prompted agent to wait for screenshot), confirmed vehicle registration should be required, and asked for dashboard opinions. (RESOLVED)
+5.  **User**: Requested adding vehicle details (reg number, make, model, color), different color schemes/dashboards for Mobile vs. Skilled Genies, and cleared all accounts. (RESOLVED)
+6.  **User**: Requested adding an is electric option for vehicles and changing scooter to Motor bike. (RESOLVED)
+7.  **User**: Approved agent registration flow and asked to proceed with Vendor/Promoter setup. (SUPERSEDED by later requests)
+8.  **User**: Confirmed agent can't be both Mobile & Skilled for now, Surprise is a service under Mobile Genie, 18+ is required, and detailed subcategories are needed. (RESOLVED)
+9.  **User**: Provided a detailed breakdown of the Agent role, splitting it into Mobile Agent and Skilled Worker, and requested focusing on this section first. (RESOLVED)
+10. **User**: Requested to make logout work and split registration into two separate pages (Profile, then Role Selection). (RESOLVED)
 
 **Project Health Check:**
-- **Broken**: The main application screens are placeholders and not functional for any user role.
-- **Mocked**: No mocked data is being used.
+- **Broken**: The dashboards for Skilled Genie, Vendor, and Promoter are either non-existent or placeholders. The global theming for Mobile Genie is not yet implemented.
+- **Mocked**: The OTP system is mocked (123456). Agent location for the map will also be mocked initially.
 
 **3rd Party Integrations**
-- Emergent Google Social Login — uses Emergent LLM Key.
+- Emergent Google Social Login — No longer used.
+-  — Installed for profile/vehicle photos, but not fully implemented.
+-  — Installed for the radar map feature, not yet implemented.
 
 **Testing status**
-- **Testing agent used after significant changes**: YES (Frontend testing agent was run, but the context has since changed with the new partner type feature).
-- **Troubleshoot agent used after agent stuck in loop**: YES (Successfully used to diagnose the OAuth redirect issue).
+- **Testing agent used after significant changes**: NO (since the last major UI pivot).
+- **Troubleshoot agent used after agent stuck in loop**: NO.
 - **Test files created**: []
 - **Known regressions**: None.
 
 **Credentials to test flow:**
-- N/A (Uses Google OAuth).
+- Phone/OTP based. Enter any phone number, then use OTP: .
 
 **What agent forgot to execute**
-- The agent has not yet implemented the majority of the original MVP features (Dashboard UI, Order/Wish acceptance, Chat, Earnings) because it has been focused on fixing the login flow and then pivoting to the new partner-type requirement. The current work on partner types is a necessary prerequisite for implementing those features correctly.
+- The agent has been highly responsive to user pivots. All forgotten tasks (like building Vendor/Promoter flows) were explicitly de-prioritized by the user in favor of focusing on the detailed Agent flow.
 
 </analysis>
-<SYS_PROMPT_SEPARATOR>
-<workspace_dir>
-/app
-</workspace_dir>
