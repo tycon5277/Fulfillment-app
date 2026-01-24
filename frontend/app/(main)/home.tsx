@@ -16,12 +16,22 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import MapView, { Marker, Circle, PROVIDER_DEFAULT } from 'react-native-maps';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { useAuthStore, PartnerStats } from '../../src/store';
 import * as api from '../../src/api';
 import THEME from '../../src/theme';
+
+// Conditionally import MapView for native only
+let MapView: any = null;
+let Marker: any = null;
+let Circle: any = null;
+if (Platform.OS !== 'web') {
+  const Maps = require('react-native-maps');
+  MapView = Maps.default;
+  Marker = Maps.Marker;
+  Circle = Maps.Circle;
+}
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
