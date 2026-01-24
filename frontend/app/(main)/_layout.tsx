@@ -17,7 +17,7 @@ export default function MainLayout() {
   const getThemeColors = () => {
     if (isMobileGenie) {
       return {
-        background: THEME.background,
+        background: THEME.backgroundSecondary,
         border: THEME.cardBorder,
         active: THEME.primary,
         inactive: THEME.textMuted,
@@ -33,7 +33,7 @@ export default function MainLayout() {
   };
 
   const colors = getThemeColors();
-  const tabBarHeight = 70 + insets.bottom;
+  const tabBarHeight = 65 + insets.bottom;
 
   return (
     <Tabs
