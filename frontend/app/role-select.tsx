@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   ScrollView,
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -15,7 +14,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../src/store';
-import * as api from '../src/api';
 
 const COLORS = {
   primary: '#7C3AED',
@@ -28,18 +26,19 @@ const COLORS = {
   success: '#22C55E',
   border: '#E0E0E0',
   error: '#EF4444',
+  pink: '#EC4899',
 };
 
 type PartnerType = 'agent' | 'vendor' | 'promoter' | null;
-type VehicleType = 'bike' | 'scooter' | 'car';
 
 const PARTNER_TYPES = [
   {
     type: 'agent' as PartnerType,
-    title: 'Agent',
-    icon: 'bicycle' as const,
+    title: 'Genie',
+    icon: 'flash' as const,
     color: COLORS.primary,
-    description: 'Deliveries, rides, errands & services',
+    description: 'Fulfill wishes & earn money',
+    subtext: 'Mobile services or skilled work',
   },
   {
     type: 'vendor' as PartnerType,
@@ -47,6 +46,7 @@ const PARTNER_TYPES = [
     icon: 'storefront' as const,
     color: COLORS.secondary,
     description: 'Bring your shop online',
+    subtext: 'Sell products locally',
   },
   {
     type: 'promoter' as PartnerType,
@@ -54,145 +54,38 @@ const PARTNER_TYPES = [
     icon: 'megaphone' as const,
     color: COLORS.amber,
     description: 'Organize trips & events',
+    subtext: 'Sell tickets & bookings',
   },
-];
-
-const VEHICLES = [
-  { type: 'bike' as VehicleType, label: 'Bike', icon: 'bicycle' as const },
-  { type: 'scooter' as VehicleType, label: 'Scooter', icon: 'speedometer' as const },
-  { type: 'car' as VehicleType, label: 'Car', icon: 'car' as const },
-];
-
-const AGENT_SERVICES = [
-  { id: 'delivery', label: 'Delivery', icon: 'fast-food' as const },
-  { id: 'courier', label: 'Courier', icon: 'document-text' as const },
-  { id: 'rides', label: 'Rides', icon: 'car' as const },
-  { id: 'errands', label: 'Errands', icon: 'clipboard' as const },
-];
-
-const SHOP_TYPES = [
-  'Grocery', 'Restaurant', 'Pharmacy', 'Supermarket', 'Bakery',
-  'Farm Produce', 'Fish & Seafood', 'Plant Nursery', 'Spare Parts', 'Other'
-];
-
-const PROMOTER_TYPES = [
-  { id: 'trip_organizer', label: 'Trip Organizer' },
-  { id: 'event_organizer', label: 'Event Organizer' },
-  { id: 'service_provider', label: 'Service Provider' },
 ];
 
 export default function RoleSelectScreen() {
   const router = useRouter();
-  const { user, setUser } = useAuthStore();
+  const { user } = useAuthStore();
   
-  // Partner type
   const [partnerType, setPartnerType] = useState<PartnerType>(null);
-  
-  // Agent fields
-  const [vehicleType, setVehicleType] = useState<VehicleType>('scooter');
-  const [selectedServices, setSelectedServices] = useState<string[]>(['delivery']);
-  
-  // Vendor fields
-  const [shopName, setShopName] = useState('');
-  const [shopType, setShopType] = useState('');
-  const [shopAddress, setShopAddress] = useState('');
-  const [canDeliver, setCanDeliver] = useState(false);
-  
-  // Promoter fields
-  const [businessName, setBusinessName] = useState('');
-  const [promoterType, setPromoterType] = useState('');
-  const [promoterDescription, setPromoterDescription] = useState('');
-  
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const toggleService = (serviceId: string) => {
-    setSelectedServices(prev => 
-      prev.includes(serviceId) 
-        ? prev.filter(s => s !== serviceId)
-        : [...prev, serviceId]
-    );
-  };
-
-  const validateAndSubmit = async () => {
-    setError('');
+  const handleContinue = () => {
+    if (!ageConfirmed) {
+      setError('You must be 18 or older to register as a Genie');
+      return;
+    }
     
     if (!partnerType) {
-      setError('Please select your role');
+      setError('Please select how you want to use Quickwish');
       return;
     }
 
-    // Validate role-specific fields
+    setError('');
+
     if (partnerType === 'agent') {
-      if (selectedServices.length === 0) {
-        setError('Please select at least one service');
-        return;
-      }
+      router.push('/agent-setup');
     } else if (partnerType === 'vendor') {
-      if (!shopName.trim()) {
-        setError('Please enter your shop name');
-        return;
-      }
-      if (!shopType) {
-        setError('Please select your shop type');
-        return;
-      }
+      router.push('/vendor-setup');
     } else if (partnerType === 'promoter') {
-      if (!businessName.trim()) {
-        setError('Please enter your business name');
-        return;
-      }
-      if (!promoterType) {
-        setError('Please select your promoter type');
-        return;
-      }
-    }
-
-    setIsLoading(true);
-
-    try {
-      let response;
-      if (partnerType === 'agent') {
-        response = await api.registerAsAgent({
-          phone: user?.phone || '',
-          vehicle_type: vehicleType,
-          services: selectedServices,
-        });
-      } else if (partnerType === 'vendor') {
-        response = await api.registerAsVendor({
-          phone: user?.phone || '',
-          shop_name: shopName.trim(),
-          shop_type: shopType,
-          shop_address: shopAddress.trim() || user?.address || '',
-          can_deliver: canDeliver,
-          categories: [],
-        });
-      } else if (partnerType === 'promoter') {
-        response = await api.registerAsPromoter({
-          phone: user?.phone || '',
-          business_name: businessName.trim(),
-          promoter_type: promoterType,
-          description: promoterDescription.trim(),
-        });
-      }
-
-      if (response?.data?.user) {
-        setUser(response.data.user);
-        router.replace('/(main)/home');
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Registration failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getRoleColor = () => {
-    switch (partnerType) {
-      case 'agent': return COLORS.primary;
-      case 'vendor': return COLORS.secondary;
-      case 'promoter': return COLORS.amber;
-      default: return COLORS.primary;
+      router.push('/promoter-setup');
     }
   };
 
@@ -205,7 +98,6 @@ export default function RoleSelectScreen() {
         <ScrollView 
           contentContainerStyle={styles.content} 
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
         >
           {/* Header */}
           <View style={styles.header}>
@@ -215,210 +107,66 @@ export default function RoleSelectScreen() {
             >
               <Ionicons name="arrow-back" size={24} color={COLORS.text} />
             </TouchableOpacity>
-            <Text style={styles.title}>Choose Your Role</Text>
+            <Text style={styles.title}>Choose Your Path</Text>
             <Text style={styles.subtitle}>
-              How do you want to use Quickwish Genie?
+              Welcome {user?.name}! How do you want to earn with Quickwish?
             </Text>
           </View>
+
+          {/* Age Confirmation */}
+          <TouchableOpacity 
+            style={styles.ageConfirmCard}
+            onPress={() => setAgeConfirmed(!ageConfirmed)}
+          >
+            <View style={[styles.checkbox, ageConfirmed && styles.checkboxChecked]}>
+              {ageConfirmed && <Ionicons name="checkmark" size={16} color={COLORS.white} />}
+            </View>
+            <View style={styles.ageConfirmText}>
+              <Text style={styles.ageConfirmTitle}>I confirm I am 18 years or older</Text>
+              <Text style={styles.ageConfirmSubtext}>Required to become a Quickwish partner</Text>
+            </View>
+          </TouchableOpacity>
 
           {/* Partner Type Selection */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>I want to be a...</Text>
-            <View style={styles.partnerTypeGrid}>
-              {PARTNER_TYPES.map((type) => (
-                <TouchableOpacity
-                  key={type.type}
-                  style={[
-                    styles.partnerTypeCard,
-                    partnerType === type.type && { borderColor: type.color, backgroundColor: type.color + '10' },
-                  ]}
-                  onPress={() => setPartnerType(type.type)}
-                >
-                  <View style={[styles.partnerTypeIcon, { backgroundColor: type.color + '20' }]}>
-                    <Ionicons name={type.icon} size={28} color={type.color} />
-                  </View>
+            
+            {PARTNER_TYPES.map((type) => (
+              <TouchableOpacity
+                key={type.type}
+                style={[
+                  styles.partnerTypeCard,
+                  partnerType === type.type && { borderColor: type.color, backgroundColor: type.color + '08' },
+                ]}
+                onPress={() => setPartnerType(type.type)}
+              >
+                <View style={[styles.partnerTypeIcon, { backgroundColor: type.color + '15' }]}>
+                  <Ionicons name={type.icon} size={32} color={type.color} />
+                </View>
+                <View style={styles.partnerTypeContent}>
                   <Text style={[styles.partnerTypeTitle, partnerType === type.type && { color: type.color }]}>
                     {type.title}
                   </Text>
                   <Text style={styles.partnerTypeDesc}>{type.description}</Text>
+                  <Text style={styles.partnerTypeSubtext}>{type.subtext}</Text>
+                </View>
+                <View style={[styles.radioOuter, partnerType === type.type && { borderColor: type.color }]}>
                   {partnerType === type.type && (
-                    <View style={[styles.checkCircle, { backgroundColor: type.color }]}>
-                      <Ionicons name="checkmark" size={14} color={COLORS.white} />
-                    </View>
+                    <View style={[styles.radioInner, { backgroundColor: type.color }]} />
                   )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Role-specific fields */}
-          {partnerType === 'agent' && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Agent Details</Text>
-              
-              <Text style={styles.inputLabel}>Your Vehicle *</Text>
-              <View style={styles.vehicleGrid}>
-                {VEHICLES.map((vehicle) => (
-                  <TouchableOpacity
-                    key={vehicle.type}
-                    style={[
-                      styles.vehicleCard,
-                      vehicleType === vehicle.type && { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-                    ]}
-                    onPress={() => setVehicleType(vehicle.type)}
-                  >
-                    <Ionicons
-                      name={vehicle.icon}
-                      size={24}
-                      color={vehicleType === vehicle.type ? COLORS.white : COLORS.primary}
-                    />
-                    <Text style={[
-                      styles.vehicleLabel,
-                      vehicleType === vehicle.type && { color: COLORS.white },
-                    ]}>
-                      {vehicle.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={styles.inputLabel}>Services You Offer *</Text>
-              <View style={styles.servicesGrid}>
-                {AGENT_SERVICES.map((service) => (
-                  <TouchableOpacity
-                    key={service.id}
-                    style={[
-                      styles.serviceCard,
-                      selectedServices.includes(service.id) && { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-                    ]}
-                    onPress={() => toggleService(service.id)}
-                  >
-                    <Ionicons
-                      name={service.icon}
-                      size={20}
-                      color={selectedServices.includes(service.id) ? COLORS.white : COLORS.primary}
-                    />
-                    <Text style={[
-                      styles.serviceLabel,
-                      selectedServices.includes(service.id) && { color: COLORS.white },
-                    ]}>
-                      {service.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {partnerType === 'vendor' && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Shop Details</Text>
-              
-              <Text style={styles.inputLabel}>Shop Name *</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="storefront-outline" size={20} color={COLORS.textSecondary} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your shop name"
-                  placeholderTextColor={COLORS.textSecondary}
-                  value={shopName}
-                  onChangeText={setShopName}
-                />
-              </View>
-
-              <Text style={styles.inputLabel}>Shop Type *</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.chipsRow}>
-                  {SHOP_TYPES.map((type) => (
-                    <TouchableOpacity
-                      key={type}
-                      style={[styles.chip, shopType === type && { backgroundColor: COLORS.secondary, borderColor: COLORS.secondary }]}
-                      onPress={() => setShopType(type)}
-                    >
-                      <Text style={[styles.chipText, shopType === type && { color: COLORS.white }]}>
-                        {type}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-
-              <Text style={styles.inputLabel}>Shop Address</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="location-outline" size={20} color={COLORS.textSecondary} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter shop address (or same as profile)"
-                  placeholderTextColor={COLORS.textSecondary}
-                  value={shopAddress}
-                  onChangeText={setShopAddress}
-                />
-              </View>
-
-              <TouchableOpacity 
-                style={styles.toggleRow}
-                onPress={() => setCanDeliver(!canDeliver)}
-              >
-                <View style={styles.toggleInfo}>
-                  <Ionicons name="bicycle-outline" size={22} color={COLORS.secondary} />
-                  <Text style={styles.toggleTitle}>I can deliver orders myself</Text>
-                </View>
-                <View style={[styles.toggle, canDeliver && { backgroundColor: COLORS.success }]}>
-                  <View style={[styles.toggleDot, canDeliver && { transform: [{ translateX: 20 }] }]} />
                 </View>
               </TouchableOpacity>
-            </View>
-          )}
+            ))}
+          </View>
 
-          {partnerType === 'promoter' && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Business Details</Text>
-              
-              <Text style={styles.inputLabel}>Business Name *</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="business-outline" size={20} color={COLORS.textSecondary} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your business name"
-                  placeholderTextColor={COLORS.textSecondary}
-                  value={businessName}
-                  onChangeText={setBusinessName}
-                />
-              </View>
-
-              <Text style={styles.inputLabel}>What do you promote? *</Text>
-              <View style={styles.promoterTypeGrid}>
-                {PROMOTER_TYPES.map((type) => (
-                  <TouchableOpacity
-                    key={type.id}
-                    style={[
-                      styles.promoterTypeCard,
-                      promoterType === type.id && { backgroundColor: COLORS.amber, borderColor: COLORS.amber },
-                    ]}
-                    onPress={() => setPromoterType(type.id)}
-                  >
-                    <Text style={[
-                      styles.promoterTypeText,
-                      promoterType === type.id && { color: COLORS.white },
-                    ]}>
-                      {type.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={styles.inputLabel}>Describe Your Services</Text>
-              <View style={[styles.inputContainer, { alignItems: 'flex-start', paddingTop: 12 }]}>
-                <TextInput
-                  style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]}
-                  placeholder="Tell us about what you offer..."
-                  placeholderTextColor={COLORS.textSecondary}
-                  value={promoterDescription}
-                  onChangeText={setPromoterDescription}
-                  multiline
-                  numberOfLines={3}
-                />
-              </View>
+          {/* Agent Info Card */}
+          {partnerType === 'agent' && (
+            <View style={styles.infoCard}>
+              <Ionicons name="information-circle" size={20} color={COLORS.primary} />
+              <Text style={styles.infoText}>
+                As a Genie, you can be a <Text style={styles.infoBold}>Mobile Genie</Text> (deliveries, rides, errands) 
+                or a <Text style={styles.infoBold}>Skilled Genie</Text> (electrician, plumber, painter, etc.)
+              </Text>
             </View>
           )}
 
@@ -430,32 +178,24 @@ export default function RoleSelectScreen() {
             </View>
           ) : null}
 
-          {/* Submit Button */}
-          {partnerType && (
-            <TouchableOpacity
-              style={[
-                styles.submitButton, 
-                { backgroundColor: getRoleColor() },
-                isLoading && styles.submitButtonDisabled
-              ]}
-              onPress={validateAndSubmit}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color={COLORS.white} />
-              ) : (
-                <>
-                  <Text style={styles.submitButtonText}>Complete Registration</Text>
-                  <Ionicons name="checkmark-circle" size={20} color={COLORS.white} />
-                </>
-              )}
-            </TouchableOpacity>
-          )}
+          {/* Continue Button */}
+          <TouchableOpacity
+            style={[
+              styles.continueButton,
+              (!partnerType || !ageConfirmed) && styles.buttonDisabled,
+            ]}
+            onPress={handleContinue}
+            disabled={!partnerType || !ageConfirmed}
+          >
+            <Text style={styles.continueButtonText}>Continue</Text>
+            <Ionicons name="arrow-forward" size={20} color={COLORS.white} />
+          </TouchableOpacity>
 
           {/* Progress indicator */}
           <View style={styles.progressContainer}>
             <View style={styles.progressDot} />
             <View style={[styles.progressDot, styles.progressDotActive]} />
+            <View style={styles.progressDot} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -488,7 +228,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: 8,
@@ -498,8 +238,45 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     lineHeight: 22,
   },
-  section: {
+  ageConfirmCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  checkboxChecked: {
+    backgroundColor: COLORS.success,
+    borderColor: COLORS.success,
+  },
+  ageConfirmText: {
+    flex: 1,
+  },
+  ageConfirmTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  ageConfirmSubtext: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  section: {
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 16,
@@ -507,183 +284,73 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: 16,
   },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.text,
-    marginBottom: 8,
-  },
-  inputContainer: {
+  partnerTypeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    gap: 10,
-    marginBottom: 16,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 14,
-    fontSize: 15,
-    color: COLORS.text,
-  },
-  partnerTypeGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  partnerTypeCard: {
-    flex: 1,
     backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 16,
-    alignItems: 'center',
+    marginBottom: 12,
     borderWidth: 2,
     borderColor: COLORS.border,
-    position: 'relative',
   },
   partnerTypeIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+  },
+  partnerTypeContent: {
+    flex: 1,
+    marginLeft: 16,
   },
   partnerTypeTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 4,
   },
   partnerTypeDesc: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-  },
-  checkCircle: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  vehicleGrid: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
-  vehicleCard: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 14,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.border,
-  },
-  vehicleLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: COLORS.text,
-    marginTop: 6,
-  },
-  servicesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  serviceCard: {
-    width: '48%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    gap: 8,
-  },
-  serviceLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: COLORS.text,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingRight: 20,
-    marginBottom: 16,
-  },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  chipText: {
-    fontSize: 13,
-    color: COLORS.text,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 14,
-    marginTop: 8,
-  },
-  toggleInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  toggleTitle: {
     fontSize: 14,
-    fontWeight: '500',
     color: COLORS.text,
+    marginTop: 2,
   },
-  toggle: {
-    width: 48,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#E5E7EB',
-    padding: 2,
+  partnerTypeSubtext: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
-  toggleDot: {
+  radioOuter: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: COLORS.white,
-  },
-  promoterTypeGrid: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
-  promoterTypeCard: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
     borderWidth: 2,
     borderColor: COLORS.border,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  promoterTypeText: {
-    fontSize: 12,
-    fontWeight: '500',
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  infoCard: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.primary + '10',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    gap: 10,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 13,
     color: COLORS.text,
-    textAlign: 'center',
+    lineHeight: 20,
+  },
+  infoBold: {
+    fontWeight: '600',
+    color: COLORS.primary,
   },
   errorContainer: {
     flexDirection: 'row',
@@ -699,19 +366,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
   },
-  submitButton: {
+  continueButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: COLORS.primary,
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
-    marginTop: 8,
   },
-  submitButtonDisabled: {
-    opacity: 0.7,
+  buttonDisabled: {
+    opacity: 0.5,
   },
-  submitButtonText: {
+  continueButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.white,
