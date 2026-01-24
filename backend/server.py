@@ -36,10 +36,12 @@ logger = logging.getLogger(__name__)
 
 class User(BaseModel):
     user_id: str
-    email: str
-    name: str
+    email: Optional[str] = None
+    name: Optional[str] = None
     picture: Optional[str] = None
     phone: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    address: Optional[str] = None
     addresses: List[dict] = []
     
     # Partner type: agent, vendor, promoter, or None (not registered)
