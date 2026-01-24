@@ -224,6 +224,7 @@ export default function AgentSetupScreen() {
         phone: user?.phone || '',
         agent_type: agentType || 'mobile',
         vehicle_type: agentType === 'mobile' ? vehicleType : (hasVehicle ? skilledVehicleType : null),
+        is_electric: agentType === 'mobile' ? isElectric : false,
         services: agentType === 'mobile' ? selectedServices : [],
         skills: agentType === 'skilled' ? selectedSkills : [],
         has_vehicle: agentType === 'skilled' ? hasVehicle : true,
