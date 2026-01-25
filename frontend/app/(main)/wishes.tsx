@@ -687,6 +687,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
+    minHeight: 400,
   },
   incomingHeader: {
     paddingVertical: 14,
