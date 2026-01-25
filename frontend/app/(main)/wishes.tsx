@@ -235,8 +235,28 @@ export default function WishesScreen() {
   const handleAcceptWish = async (wishId: string) => {
     setAccepting(wishId);
     try {
+      // Simulate API call to accept wish
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Get the wish details
+      const acceptedWish = wishes.find(w => w.wish_id === wishId);
+      
+      // Close modal
       setSelectedWish(null);
+      
+      // Navigate to navigation screen with wish details
+      if (acceptedWish) {
+        router.push({
+          pathname: '/navigation',
+          params: {
+            type: 'wish',
+            orderId: acceptedWish.wish_id,
+            title: acceptedWish.title,
+          }
+        });
+      }
+      
+      // Remove from available wishes
       setWishes(prev => prev.filter(w => w.wish_id !== wishId));
     } catch (err) {
       console.error('Failed to accept wish:', err);
