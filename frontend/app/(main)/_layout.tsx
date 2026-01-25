@@ -253,7 +253,7 @@ export default function MainLayout() {
         options={{
           title: 'Products',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
+            <View style={[styles.iconContainer, focused && isAgent && styles.iconContainerActive]}>
               <Ionicons name={focused ? "pricetags" : "pricetags-outline"} size={24} color={color} />
             </View>
           ),
@@ -267,7 +267,7 @@ export default function MainLayout() {
         options={{
           title: 'Events',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
+            <View style={[styles.iconContainer]}>
               <Ionicons name={focused ? "calendar" : "calendar-outline"} size={24} color={color} />
             </View>
           ),
