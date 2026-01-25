@@ -94,24 +94,42 @@ export default function MainLayout() {
         }}
       />
 
-      {/* Wishes - Agent only - PROMINENT TAB */}
+      {/* Wishes - Agent only - MAGICAL FLOATING BUTTON */}
       <Tabs.Screen
         name="wishes"
         options={{
           title: 'Wishes',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[
-              styles.wishesIconContainer,
-              focused && styles.wishesIconContainerActive,
-              isMobileGenie && styles.wishesIconMobileGenie
-            ]}>
-              <Ionicons name={focused ? "sparkles" : "sparkles-outline"} size={28} color={focused ? '#FBBF24' : color} />
+            <View style={styles.wishesFloatingContainer}>
+              {/* Outer gradient ring - Blue to Cyan */}
+              <LinearGradient
+                colors={['#3B82F6', '#06B6D4', '#22D3EE']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.wishesOuterRing}
+              >
+                {/* Inner gradient ring - Yellow to Orange */}
+                <LinearGradient
+                  colors={['#F59E0B', '#FBBF24', '#FCD34D']}
+                  start={{ x: 0, y: 1 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.wishesInnerRing}
+                >
+                  {/* Center button */}
+                  <View style={[styles.wishesCenterButton, focused && styles.wishesCenterButtonActive]}>
+                    <Ionicons 
+                      name={focused ? "sparkles" : "sparkles-outline"} 
+                      size={24} 
+                      color={focused ? '#FBBF24' : '#FFF'} 
+                    />
+                  </View>
+                </LinearGradient>
+              </LinearGradient>
+              {/* Glow effect */}
+              <View style={styles.wishesGlow} />
             </View>
           ),
-          tabBarLabelStyle: {
-            fontSize: 12,
-            fontWeight: '700',
-          },
+          tabBarLabel: () => null, // Hide label for floating button
           href: partnerType === 'agent' ? '/(main)/wishes' : null,
         }}
       />
