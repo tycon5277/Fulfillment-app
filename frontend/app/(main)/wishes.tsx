@@ -243,7 +243,7 @@ export default function WishesScreen() {
         contentContainerStyle={styles.incomingContainer}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.incomingCard, { transform: [{ scale: 1 }] }]}>
+        <View style={styles.incomingCard}>
           <LinearGradient
             colors={[COLORS.primary, COLORS.magenta]}
             start={{ x: 0, y: 0 }}
@@ -254,29 +254,10 @@ export default function WishesScreen() {
           </LinearGradient>
           
           <View style={styles.incomingBody}>
-            {/* Wisher Info - Simplified */}
-            <View style={styles.wisherInfoRow}>
-              <View style={styles.wisherAvatar}>
-                <Text style={styles.wisherAvatarText}>P</Text>
-              </View>
-              <View style={styles.wisherTextContainer}>
-                <Text style={styles.wisherName}>Priya Sharma</Text>
-                <Text style={styles.wisherRatingText}>⭐ 4.8 • 12 wishes</Text>
-              </View>
-            </View>
+            <Text style={{ fontSize: 20, color: '#FF0000', marginBottom: 10 }}>TEST RED TEXT</Text>
+            <Text style={{ fontSize: 18, color: '#00FF00', marginBottom: 10 }}>Test Wisher Name</Text>
+            <Text style={{ fontSize: 16, color: '#FFFFFF', marginBottom: 10 }}>This is a test wish description</Text>
             
-            {/* Wish Details */}
-            <Text style={styles.wishTitle}>Monthly Groceries Shopping</Text>
-            <Text style={styles.wishDescription}>Need help buying groceries from Big Bazaar. Will share the list once connected. Approximately 15-20 items.</Text>
-            
-            {/* Quick Stats */}
-            <View style={styles.quickStats}>
-              <Text style={styles.statText}>📍 3.2 km</Text>
-              <Text style={styles.statText}>⏱️ 45-60 mins</Text>
-              <Text style={styles.statText}>⚡ +120 XP</Text>
-            </View>
-            
-            {/* Budget */}
             <View style={styles.budgetRow}>
               <Text style={styles.budgetLabel}>Budget</Text>
               <Text style={styles.budgetValue}>₹200 - ₹400</Text>
@@ -285,8 +266,7 @@ export default function WishesScreen() {
             {/* Action Buttons */}
             <View style={styles.incomingActions}>
               <TouchableOpacity style={styles.declineBtn} onPress={handleDeclineWish}>
-                <Ionicons name="close" size={24} color={COLORS.red} />
-                <Text style={styles.declineBtnText}>Decline</Text>
+                <Text style={{ color: '#FF6B6B', fontSize: 16 }}>Decline</Text>
               </TouchableOpacity>
               
               <TouchableOpacity style={styles.acceptBtn} onPress={handleAcceptWish}>
@@ -294,14 +274,12 @@ export default function WishesScreen() {
                   colors={[COLORS.green, '#16A34A']}
                   style={styles.acceptBtnGradient}
                 >
-                  <Ionicons name="checkmark" size={24} color="#FFF" />
-                  <Text style={styles.acceptBtnText}>Accept Wish</Text>
+                  <Text style={{ color: '#FFFFFF', fontSize: 16 }}>Accept</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
