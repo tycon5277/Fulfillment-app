@@ -83,10 +83,10 @@ export default function MainLayout() {
       <Tabs.Screen
         name="orders"
         options={{
-          title: partnerType === 'vendor' ? 'Orders' : 'Tasks',
+          title: partnerType === 'vendor' ? 'Orders' : 'Hub Order',
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
-              <Ionicons name={focused ? "cube" : "cube-outline"} size={24} color={color} />
+              <Ionicons name={focused ? "storefront" : "storefront-outline"} size={24} color={color} />
             </View>
           ),
           href: partnerType === 'promoter' ? null : '/(main)/orders',
