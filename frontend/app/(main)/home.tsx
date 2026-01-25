@@ -568,8 +568,6 @@ export default function HomeScreen() {
             </>
           )}
 
-          {/* Bottom spacer */}
-          <View style={{ height: 30 }} />
         </ScrollView>
       </SafeAreaView>
     );
