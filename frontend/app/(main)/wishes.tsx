@@ -243,7 +243,7 @@ export default function WishesScreen() {
         contentContainerStyle={styles.incomingContainer}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View style={[styles.incomingCard, { transform: [{ scale: pulseAnim }] }]}>
+        <View style={[styles.incomingCard, { transform: [{ scale: 1 }] }]}>
           <LinearGradient
             colors={[COLORS.primary, COLORS.magenta]}
             start={{ x: 0, y: 0 }}
@@ -254,50 +254,32 @@ export default function WishesScreen() {
           </LinearGradient>
           
           <View style={styles.incomingBody}>
-            {/* Wisher Info */}
-            <View style={styles.wisherInfo}>
+            {/* Wisher Info - Simplified */}
+            <View style={styles.wisherInfoRow}>
               <View style={styles.wisherAvatar}>
-                <Text style={styles.wisherAvatarText}>{MOCK_INCOMING_WISH.wisher.avatar}</Text>
+                <Text style={styles.wisherAvatarText}>P</Text>
               </View>
-              <View style={styles.wisherDetails}>
-                <Text style={styles.wisherName}>{MOCK_INCOMING_WISH.wisher.name}</Text>
-                <View style={styles.wisherRating}>
-                  <Ionicons name="star" size={14} color={COLORS.amber} />
-                  <Text style={styles.wisherRatingText}>{MOCK_INCOMING_WISH.wisher.rating}</Text>
-                  <Text style={styles.wisherWishes}>• {MOCK_INCOMING_WISH.wisher.totalWishes} wishes</Text>
-                </View>
-              </View>
-              <View style={styles.categoryBadge}>
-                <Text style={styles.categoryEmoji}>{MOCK_INCOMING_WISH.emoji}</Text>
-                <Text style={styles.categoryText}>{MOCK_INCOMING_WISH.category}</Text>
+              <View style={styles.wisherTextContainer}>
+                <Text style={styles.wisherName}>Priya Sharma</Text>
+                <Text style={styles.wisherRatingText}>⭐ 4.8 • 12 wishes</Text>
               </View>
             </View>
             
             {/* Wish Details */}
-            <Text style={styles.wishTitle}>{MOCK_INCOMING_WISH.title}</Text>
-            <Text style={styles.wishDescription}>{MOCK_INCOMING_WISH.description}</Text>
+            <Text style={styles.wishTitle}>Monthly Groceries Shopping</Text>
+            <Text style={styles.wishDescription}>Need help buying groceries from Big Bazaar. Will share the list once connected. Approximately 15-20 items.</Text>
             
-            {/* Location & Earnings */}
-            <View style={styles.incomingMeta}>
-              <View style={styles.metaItem}>
-                <Ionicons name="location" size={16} color={COLORS.cyan} />
-                <Text style={styles.metaText}>{MOCK_INCOMING_WISH.location.distance} km</Text>
-              </View>
-              <View style={styles.metaItem}>
-                <Ionicons name="time" size={16} color={COLORS.amber} />
-                <Text style={styles.metaText}>{MOCK_INCOMING_WISH.estimatedTime}</Text>
-              </View>
-              <View style={styles.metaItem}>
-                <Ionicons name="flash" size={16} color={COLORS.magenta} />
-                <Text style={styles.metaText}>+{MOCK_INCOMING_WISH.xpReward} XP</Text>
-              </View>
+            {/* Quick Stats */}
+            <View style={styles.quickStats}>
+              <Text style={styles.statText}>📍 3.2 km</Text>
+              <Text style={styles.statText}>⏱️ 45-60 mins</Text>
+              <Text style={styles.statText}>⚡ +120 XP</Text>
             </View>
             
+            {/* Budget */}
             <View style={styles.budgetRow}>
-              <Text style={styles.budgetLabel}>Wisher's Budget</Text>
-              <Text style={styles.budgetValue}>
-                ₹{MOCK_INCOMING_WISH.budget.min} - ₹{MOCK_INCOMING_WISH.budget.max}
-              </Text>
+              <Text style={styles.budgetLabel}>Budget</Text>
+              <Text style={styles.budgetValue}>₹200 - ₹400</Text>
             </View>
             
             {/* Action Buttons */}
@@ -318,7 +300,7 @@ export default function WishesScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </Animated.View>
+        </View>
         <View style={{ height: 40 }} />
       </ScrollView>
     </View>
