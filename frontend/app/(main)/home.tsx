@@ -61,10 +61,10 @@ export default function HomeScreen() {
 
   const isMobileGenie = user?.agent_type === 'mobile';
 
-  // Generate map tiles for current location
+  // Generate map tiles for current location using Carto (dark theme)
   useEffect(() => {
     const generateMapTiles = () => {
-      const zoom = 16;
+      const zoom = 15;
       const lat = location.latitude;
       const lon = location.longitude;
       
@@ -74,11 +74,12 @@ export default function HomeScreen() {
       const latRad = lat * Math.PI / 180;
       const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
       
-      // Generate 3x3 grid of tiles for better coverage
+      // Generate 3x3 grid of Carto dark matter tiles
       const tiles: string[] = [];
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
-          tiles.push(`https://tile.openstreetmap.org/${zoom}/${x + dx}/${y + dy}.png`);
+          // Using Carto dark_all basemap - free to use with attribution
+          tiles.push(`https://basemaps.cartocdn.com/dark_all/${zoom}/${x + dx}/${y + dy}.png`);
         }
       }
       setMapTiles(tiles);
