@@ -1,694 +1,542 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  RefreshControl,
-  ActivityIndicator,
-  Modal,
   Animated,
   Dimensions,
+  ScrollView,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import GameModal from '../../src/components/GameModal';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Magical Theme - No Red, Using Amber/Gold for Urgency
 const COLORS = {
   background: '#08080C',
   backgroundSecondary: '#0F0F14',
   cardBg: '#16161E',
   cardBorder: '#252530',
-  // Violet/Purple palette
   primary: '#8B5CF6',
   primaryLight: '#A78BFA',
-  primaryDark: '#7C3AED',
+  cyan: '#06B6D4',
+  green: '#34D399',
+  amber: '#F59E0B',
   magenta: '#D946EF',
   pink: '#EC4899',
-  // Urgency - Amber/Gold (positive energy)
-  urgent: '#F59E0B',
-  urgentLight: '#FBBF24',
-  urgentDark: '#D97706',
-  // Other colors
+  blue: '#3B82F6',
+  red: '#F87171',
   text: '#F8FAFC',
   textSecondary: '#94A3B8',
   textMuted: '#64748B',
-  success: '#34D399',
-  cyan: '#06B6D4',
-  blue: '#3B82F6',
+  headerBg: '#1E3A5F',
 };
 
-interface Wish {
-  wish_id: string;
-  title: string;
-  description?: string;
-  wish_type: string;
-  remuneration: number;
-  is_immediate: boolean;
+// Wish states
+type WishState = 'waiting' | 'incoming' | 'connected' | 'in_progress';
+
+// Mock incoming wish request (simulating direct ping)
+const MOCK_INCOMING_WISH = {
+  id: 'wish_001',
+  wisher: {
+    name: 'Priya Sharma',
+    avatar: 'P',
+    rating: 4.8,
+    totalWishes: 12,
+    phone: '+91 98765 43210',
+  },
+  category: 'Groceries',
+  emoji: '🛒',
+  title: 'Monthly Groceries Shopping',
+  description: 'Need help buying groceries from Big Bazaar. Will share the list once connected. Approximately 15-20 items.',
+  budget: { min: 200, max: 400 },
   location: {
-    address: string;
-    coordinates?: { lat: number; lng: number };
-  };
-  created_at: string;
-  distance?: number;
-  xp_reward?: number;
-  wisher?: {
-    name: string;
-    rating: number;
-    total_wishes: number;
-    member_since: string;
-    verified: boolean;
-  };
-}
-
-// Mock wishes data with wisher profiles
-const MOCK_WISHES: Wish[] = [
-  {
-    wish_id: 'w1',
-    title: 'Birthday Cake Delivery',
-    description: 'Need a chocolate cake delivered before 6 PM for a surprise party. Please handle with care and keep it upright.',
-    wish_type: 'surprise',
-    remuneration: 150,
-    is_immediate: true,
-    location: { address: 'MG Road, Bangalore', coordinates: { lat: 12.9716, lng: 77.5946 } },
-    created_at: new Date(Date.now() - 300000).toISOString(),
-    distance: 2.5,
-    xp_reward: 75,
-    wisher: { name: 'Priya S.', rating: 4.8, total_wishes: 23, member_since: 'Mar 2025', verified: true },
-  },
-  {
-    wish_id: 'w2',
-    title: 'Urgent Medicine Pickup',
-    description: 'Need prescription medicines from Apollo Pharmacy. Will share prescription on chat.',
-    wish_type: 'errand',
-    remuneration: 200,
-    is_immediate: true,
-    location: { address: 'Koramangala, Bangalore', coordinates: { lat: 12.9352, lng: 77.6245 } },
-    created_at: new Date(Date.now() - 600000).toISOString(),
-    distance: 1.8,
-    xp_reward: 100,
-    wisher: { name: 'Rahul M.', rating: 4.9, total_wishes: 47, member_since: 'Jan 2025', verified: true },
-  },
-  {
-    wish_id: 'w3',
-    title: 'Grocery Shopping',
-    description: 'Weekly grocery list - approximately 15 items from BigBasket store',
-    wish_type: 'shopping',
-    remuneration: 180,
-    is_immediate: false,
-    location: { address: 'HSR Layout, Bangalore', coordinates: { lat: 12.9081, lng: 77.6476 } },
-    created_at: new Date(Date.now() - 1800000).toISOString(),
+    pickup: 'Big Bazaar, Sector 18',
+    dropoff: 'Tower B, DLF Cyber City',
     distance: 3.2,
-    xp_reward: 60,
-    wisher: { name: 'Ananya K.', rating: 4.6, total_wishes: 12, member_since: 'Nov 2025', verified: false },
   },
-  {
-    wish_id: 'w4',
-    title: 'Document Courier',
-    description: 'Important legal documents to be delivered to law firm. Signature required.',
-    wish_type: 'courier',
-    remuneration: 120,
-    is_immediate: false,
-    location: { address: 'Indiranagar, Bangalore', coordinates: { lat: 12.9784, lng: 77.6408 } },
-    created_at: new Date(Date.now() - 3600000).toISOString(),
-    distance: 4.1,
-    xp_reward: 50,
-    wisher: { name: 'Vikram R.', rating: 5.0, total_wishes: 8, member_since: 'Dec 2025', verified: true },
+  estimatedTime: '45-60 mins',
+  postedAt: '2 min ago',
+  xpReward: 120,
+};
+
+// Mock active wish (when connected)
+const MOCK_ACTIVE_WISH = {
+  id: 'wish_002',
+  wisher: {
+    name: 'Rahul Verma',
+    avatar: 'R',
+    rating: 4.9,
+    phone: '+91 87654 32109',
   },
-  {
-    wish_id: 'w5',
-    title: 'Anniversary Flowers',
-    description: 'Red roses bouquet for anniversary surprise. Please include a small card.',
-    wish_type: 'surprise',
-    remuneration: 250,
-    is_immediate: false,
-    location: { address: 'Whitefield, Bangalore', coordinates: { lat: 12.9698, lng: 77.7500 } },
-    created_at: new Date(Date.now() - 7200000).toISOString(),
-    distance: 8.5,
-    xp_reward: 90,
-    wisher: { name: 'Deepak J.', rating: 4.7, total_wishes: 31, member_since: 'Feb 2025', verified: true },
+  category: 'Surprise',
+  emoji: '🎁',
+  title: 'Birthday Surprise for Wife',
+  description: 'Need a cake from Theobroma and flowers from the nearby florist. It\'s her birthday today!',
+  budget: { min: 500, max: 800 },
+  items: [
+    { name: 'Chocolate Truffle Cake (1kg)', status: 'pending' },
+    { name: 'Red Roses Bouquet (24 stems)', status: 'pending' },
+    { name: 'Birthday Card', status: 'pending' },
+  ],
+  location: {
+    pickup: 'Theobroma, Cyber Hub',
+    dropoff: 'Apt 1204, Palm Springs',
+    distance: 4.5,
   },
+  status: 'shopping', // shopping | picked_up | delivering | delivered
+  earnings: 650,
+  xpReward: 150,
+  connectedAt: '15 min ago',
+};
+
+// Mock chat messages
+const MOCK_MESSAGES = [
+  { id: '1', sender: 'wisher', text: 'Hi! Thanks for accepting my wish 🙏', time: '2:30 PM' },
+  { id: '2', sender: 'genie', text: 'Hello! Happy to help. I\'m heading to Theobroma now.', time: '2:31 PM' },
+  { id: '3', sender: 'wisher', text: 'Great! Please get the chocolate truffle cake. Make sure they write "Happy Birthday Neha" on it', time: '2:32 PM' },
+  { id: '4', sender: 'genie', text: 'Got it! Any specific message style?', time: '2:33 PM' },
+  { id: '5', sender: 'wisher', text: 'Simple cursive would be perfect. Thank you!', time: '2:34 PM' },
 ];
-
-// Area potential data (mock)
-const AREA_POTENTIAL = {
-  radius: '3-10 km',
-  activeWishers: 342,
-  avgWishesPerHour: 28,
-  peakHours: '6 PM - 9 PM',
-  populationDensity: 'High',
-  topCategories: ['Food Delivery', 'Errands', 'Surprise Gifts'],
-  potentialEarnings: {
-    morning: '₹400-600',
-    afternoon: '₹500-800',
-    evening: '₹800-1,500',
-    night: '₹300-500',
-  },
-  historicAvg: '₹1,850/day',
-};
-
-const getWishTypeIcon = (type: string): string => {
-  switch (type) {
-    case 'delivery': return 'cube';
-    case 'courier': return 'document-text';
-    case 'errand': return 'walk';
-    case 'shopping': return 'cart';
-    case 'surprise': return 'gift';
-    case 'ride': return 'car';
-    default: return 'star';
-  }
-};
-
-const getWishTypeColor = (type: string): string => {
-  switch (type) {
-    case 'delivery': return COLORS.cyan;
-    case 'courier': return COLORS.primary;
-    case 'errand': return COLORS.urgentLight;
-    case 'shopping': return COLORS.success;
-    case 'surprise': return COLORS.magenta;
-    case 'ride': return COLORS.pink;
-    default: return COLORS.primaryLight;
-  }
-};
-
-const formatTimeAgo = (dateString: string): string => {
-  const now = new Date();
-  const date = new Date(dateString);
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  return `${Math.floor(diffHours / 24)}d ago`;
-};
 
 export default function WishesScreen() {
   const router = useRouter();
-  const [wishes, setWishes] = useState<Wish[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [accepting, setAccepting] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'urgent' | 'nearby'>('all');
-  const [showEarningsModal, setShowEarningsModal] = useState(false);
-  const [selectedWish, setSelectedWish] = useState<Wish | null>(null);
+  const [wishState, setWishState] = useState<WishState>('waiting');
+  const [showIncomingModal, setShowIncomingModal] = useState(false);
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [showAcceptModal, setShowAcceptModal] = useState(false);
+  const [messages, setMessages] = useState(MOCK_MESSAGES);
+  const [newMessage, setNewMessage] = useState('');
+  const [activeTab, setActiveTab] = useState<'details' | 'chat'>('details');
   
-  // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const ringAnim = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
 
+  // Simulate incoming wish after 3 seconds (for demo)
   useEffect(() => {
-    // Pulse animation for urgent wishes
+    if (wishState === 'waiting') {
+      const timer = setTimeout(() => {
+        setWishState('incoming');
+        startIncomingAnimation();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [wishState]);
+
+  const startIncomingAnimation = () => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.02, duration: 1000, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1.1, duration: 500, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
       ])
     ).start();
-  }, []);
+    
+    Animated.loop(
+      Animated.timing(ringAnim, { toValue: 1, duration: 1500, useNativeDriver: true })
+    ).start();
+  };
 
-  const fetchWishes = useCallback(async () => {
-    try {
-      setWishes(MOCK_WISHES);
-    } catch (err) {
-      console.error('Failed to fetch wishes:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+  const handleAcceptWish = () => {
+    setShowAcceptModal(true);
+  };
+
+  const confirmAccept = () => {
+    setShowAcceptModal(false);
+    setWishState('connected');
+    pulseAnim.stopAnimation();
+    ringAnim.stopAnimation();
+  };
+
+  const handleDeclineWish = () => {
+    setShowDeclineModal(true);
+  };
+
+  const confirmDecline = () => {
+    setShowDeclineModal(false);
+    setWishState('waiting');
+    pulseAnim.setValue(1);
+    ringAnim.setValue(0);
+  };
+
+  const sendMessage = () => {
+    if (newMessage.trim()) {
+      setMessages([...messages, {
+        id: Date.now().toString(),
+        sender: 'genie',
+        text: newMessage.trim(),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }]);
+      setNewMessage('');
+      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    fetchWishes();
-  }, [fetchWishes]);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchWishes();
-  }, [fetchWishes]);
-
-  const handleAcceptWish = async (wishId: string) => {
-    setAccepting(wishId);
-    try {
-      // Simulate API call to accept wish
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Get the wish details
-      const acceptedWish = wishes.find(w => w.wish_id === wishId);
-      
-      // Close modal
-      setSelectedWish(null);
-      
-      // Navigate to navigation screen with wish details
-      if (acceptedWish) {
-        router.push({
-          pathname: '/navigation',
-          params: {
-            type: 'wish',
-            orderId: acceptedWish.wish_id,
-            title: acceptedWish.title,
-          }
-        });
+  const handleNavigate = () => {
+    router.push({
+      pathname: '/navigation',
+      params: { 
+        type: 'wish',
+        orderId: MOCK_ACTIVE_WISH.id,
+        title: MOCK_ACTIVE_WISH.title,
       }
-      
-      // Remove from available wishes
-      setWishes(prev => prev.filter(w => w.wish_id !== wishId));
-    } catch (err) {
-      console.error('Failed to accept wish:', err);
-    } finally {
-      setAccepting(null);
-    }
+    });
   };
 
-  const urgentWishes = wishes.filter(w => w.is_immediate);
-  const nearbyWishes = [...wishes].sort((a, b) => (a.distance || 0) - (b.distance || 0));
-
-  const getFilteredWishes = () => {
-    switch (filter) {
-      case 'urgent': return urgentWishes;
-      case 'nearby': return nearbyWishes;
-      default: return wishes;
-    }
-  };
-
-  const totalEarnings = wishes.reduce((sum, w) => sum + w.remuneration, 0);
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Summoning wishes...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // Earnings Detail Modal - Simplified
-  const EarningsModal = () => (
-    <Modal visible={showEarningsModal} animationType="slide" transparent>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+  // WAITING STATE - No active wish, waiting for incoming request
+  const renderWaitingState = () => (
+    <View style={styles.waitingContainer}>
+      <View style={styles.waitingContent}>
+        <View style={styles.waitingIconContainer}>
           <LinearGradient
-            colors={[COLORS.primaryDark, COLORS.primary]}
-            style={styles.modalHeader}
+            colors={[COLORS.primary + '30', COLORS.magenta + '20']}
+            style={styles.waitingIconGradient}
           >
-            <Text style={styles.modalTitle}>💰 My Earnings</Text>
-            <Text style={styles.modalSubtitle}>Track your magic journey</Text>
-            <TouchableOpacity style={styles.modalClose} onPress={() => setShowEarningsModal(false)}>
-              <Ionicons name="close" size={24} color="#FFF" />
-            </TouchableOpacity>
+            <Text style={styles.waitingEmoji}>✨</Text>
           </LinearGradient>
-
-          <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-            {/* Actual Earnings - Till Now */}
-            <View style={styles.insightCard}>
-              <View style={styles.insightHeader}>
-                <Ionicons name="wallet" size={24} color={COLORS.success} />
-                <Text style={styles.insightTitle}>Earnings Till Now</Text>
-              </View>
-              
-              <View style={styles.earningsGrid}>
-                <View style={styles.earningsBox}>
-                  <Text style={styles.earningsBoxLabel}>Today</Text>
-                  <Text style={styles.earningsBoxValue}>₹450</Text>
-                  <Text style={styles.earningsBoxSub}>3 wishes</Text>
-                </View>
-                <View style={styles.earningsBox}>
-                  <Text style={styles.earningsBoxLabel}>This Week</Text>
-                  <Text style={styles.earningsBoxValue}>₹3,250</Text>
-                  <Text style={styles.earningsBoxSub}>18 wishes</Text>
-                </View>
-                <View style={styles.earningsBox}>
-                  <Text style={styles.earningsBoxLabel}>This Month</Text>
-                  <Text style={styles.earningsBoxValue}>₹12,800</Text>
-                  <Text style={styles.earningsBoxSub}>67 wishes</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Potential Earnings */}
-            <View style={styles.insightCard}>
-              <View style={styles.insightHeader}>
-                <Ionicons name="sparkles" size={24} color={COLORS.magenta} />
-                <Text style={styles.insightTitle}>Potential Earnings</Text>
-              </View>
-              <View style={styles.potentialCard}>
-                <Text style={styles.potentialLabel}>Available wishes near you</Text>
-                <Text style={styles.potentialValue}>₹{totalEarnings}</Text>
-                <Text style={styles.potentialSub}>{wishes.length} wishes within 10 km</Text>
-              </View>
-            </View>
-
-            {/* XP & Level */}
-            <View style={styles.insightCard}>
-              <View style={styles.insightHeader}>
-                <Ionicons name="trophy" size={24} color={COLORS.urgent} />
-                <Text style={styles.insightTitle}>Your Progress</Text>
-              </View>
-              <View style={styles.progressRow}>
-                <View style={styles.xpDisplay}>
-                  <Text style={styles.xpNumber}>2,450</Text>
-                  <Text style={styles.xpUnit}>XP</Text>
-                </View>
-                <View style={styles.levelBadge}>
-                  <Text style={styles.levelText}>Level 5</Text>
-                  <Text style={styles.levelTitle}>Rising Genie ⭐</Text>
-                </View>
-              </View>
-              <View style={styles.xpBarContainer}>
-                <View style={styles.xpBarFill} />
-              </View>
-              <Text style={styles.xpToNext}>550 XP to Level 6</Text>
-            </View>
-
-            {/* Trending Categories - Simple List */}
-            <View style={styles.insightCard}>
-              <View style={styles.insightHeader}>
-                <Ionicons name="flame" size={24} color={COLORS.cyan} />
-                <Text style={styles.insightTitle}>Trending Now</Text>
-              </View>
-              <View style={styles.trendingList}>
-                {['🍔 Food Delivery', '🛒 Errands', '🎁 Surprise Gifts', '📄 Courier', '💊 Pharmacy'].map((cat, i) => (
-                  <View key={cat} style={styles.trendingItem}>
-                    <Text style={styles.trendingText}>{cat}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            <View style={{ height: 30 }} />
-          </ScrollView>
+        </View>
+        <Text style={styles.waitingTitle}>Waiting for Wishes</Text>
+        <Text style={styles.waitingSubtitle}>
+          You'll receive wish requests from nearby wishers.{'\n'}Stay online to get connected!
+        </Text>
+        
+        <View style={styles.waitingStats}>
+          <View style={styles.waitingStat}>
+            <Ionicons name="flash" size={20} color={COLORS.amber} />
+            <Text style={styles.waitingStatValue}>Quick Response</Text>
+            <Text style={styles.waitingStatLabel}>= More Wishes</Text>
+          </View>
+        </View>
+        
+        <View style={styles.tipCard}>
+          <Ionicons name="bulb" size={20} color={COLORS.amber} />
+          <Text style={styles.tipText}>
+            Tip: Stay in high-demand areas like malls and markets to receive more wish requests!
+          </Text>
         </View>
       </View>
-    </Modal>
+    </View>
   );
 
-  // Wish Detail Modal
-  const WishDetailModal = () => {
-    if (!selectedWish) return null;
-    const typeColor = getWishTypeColor(selectedWish.wish_type);
-    
-    return (
-      <Modal visible={!!selectedWish} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.wishModalContent}>
-            {/* Header */}
-            <LinearGradient
-              colors={selectedWish.is_immediate ? [COLORS.urgentDark, COLORS.urgent] : [COLORS.primaryDark, COLORS.primary]}
-              style={styles.wishModalHeader}
-            >
-              {selectedWish.is_immediate && (
-                <View style={styles.urgentTag}>
-                  <Ionicons name="flash" size={14} color="#FFF" />
-                  <Text style={styles.urgentTagText}>TIME SENSITIVE</Text>
-                </View>
-              )}
-              <Text style={styles.wishModalTitle}>{selectedWish.title}</Text>
-              <View style={styles.wishModalMeta}>
-                <View style={[styles.typeBadge, { backgroundColor: typeColor + '30' }]}>
-                  <Ionicons name={getWishTypeIcon(selectedWish.wish_type) as any} size={14} color="#FFF" />
-                  <Text style={styles.typeBadgeText}>{selectedWish.wish_type}</Text>
-                </View>
-                <Text style={styles.wishModalTime}>{formatTimeAgo(selectedWish.created_at)}</Text>
+  // INCOMING STATE - New wish request received (direct ping)
+  const renderIncomingState = () => (
+    <View style={styles.incomingContainer}>
+      {/* Animated rings */}
+      <Animated.View style={[
+        styles.incomingRing,
+        styles.incomingRing1,
+        { opacity: ringAnim.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] }),
+          transform: [{ scale: ringAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 2] }) }] }
+      ]} />
+      <Animated.View style={[
+        styles.incomingRing,
+        styles.incomingRing2,
+        { opacity: ringAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0.5, 0] }),
+          transform: [{ scale: ringAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.8] }) }] }
+      ]} />
+      
+      <Animated.View style={[styles.incomingCard, { transform: [{ scale: pulseAnim }] }]}>
+        <LinearGradient
+          colors={[COLORS.primary, COLORS.magenta]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.incomingHeader}
+        >
+          <Text style={styles.incomingLabel}>✨ NEW WISH REQUEST</Text>
+        </LinearGradient>
+        
+        <View style={styles.incomingBody}>
+          {/* Wisher Info */}
+          <View style={styles.wisherInfo}>
+            <View style={styles.wisherAvatar}>
+              <Text style={styles.wisherAvatarText}>{MOCK_INCOMING_WISH.wisher.avatar}</Text>
+            </View>
+            <View style={styles.wisherDetails}>
+              <Text style={styles.wisherName}>{MOCK_INCOMING_WISH.wisher.name}</Text>
+              <View style={styles.wisherRating}>
+                <Ionicons name="star" size={14} color={COLORS.amber} />
+                <Text style={styles.wisherRatingText}>{MOCK_INCOMING_WISH.wisher.rating}</Text>
+                <Text style={styles.wisherWishes}>• {MOCK_INCOMING_WISH.wisher.totalWishes} wishes</Text>
               </View>
-              <TouchableOpacity style={styles.modalClose} onPress={() => setSelectedWish(null)}>
-                <Ionicons name="close" size={24} color="#FFF" />
-              </TouchableOpacity>
-            </LinearGradient>
-
-            <ScrollView style={styles.wishModalBody} showsVerticalScrollIndicator={false}>
-              {/* Description */}
-              <View style={styles.wishSection}>
-                <Text style={styles.wishSectionTitle}>Wish Details</Text>
-                <Text style={styles.wishDescription}>{selectedWish.description}</Text>
-              </View>
-
-              {/* Location */}
-              <View style={styles.wishSection}>
-                <Text style={styles.wishSectionTitle}>Location</Text>
-                <View style={styles.locationCard}>
-                  <Ionicons name="location" size={20} color={COLORS.primary} />
-                  <View style={styles.locationInfo}>
-                    <Text style={styles.locationAddress}>{selectedWish.location.address}</Text>
-                    <Text style={styles.locationDistance}>{selectedWish.distance} km away</Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Wisher Profile */}
-              {selectedWish.wisher && (
-                <View style={styles.wishSection}>
-                  <Text style={styles.wishSectionTitle}>About the Wisher</Text>
-                  <View style={styles.wisherCard}>
-                    <View style={styles.wisherAvatar}>
-                      <Text style={styles.wisherInitial}>{selectedWish.wisher.name.charAt(0)}</Text>
-                    </View>
-                    <View style={styles.wisherInfo}>
-                      <View style={styles.wisherNameRow}>
-                        <Text style={styles.wisherName}>{selectedWish.wisher.name}</Text>
-                        {selectedWish.wisher.verified && (
-                          <View style={styles.verifiedBadge}>
-                            <Ionicons name="checkmark-circle" size={16} color={COLORS.cyan} />
-                          </View>
-                        )}
-                      </View>
-                      <View style={styles.wisherStats}>
-                        <View style={styles.wisherStat}>
-                          <Ionicons name="star" size={14} color={COLORS.urgent} />
-                          <Text style={styles.wisherStatText}>{selectedWish.wisher.rating}</Text>
-                        </View>
-                        <View style={styles.wisherStat}>
-                          <Ionicons name="gift" size={14} color={COLORS.primary} />
-                          <Text style={styles.wisherStatText}>{selectedWish.wisher.total_wishes} wishes</Text>
-                        </View>
-                      </View>
-                      <Text style={styles.wisherSince}>Member since {selectedWish.wisher.member_since}</Text>
-                    </View>
-                  </View>
-                </View>
-              )}
-
-              {/* Rewards */}
-              <View style={styles.rewardsSection}>
-                <View style={styles.rewardItem}>
-                  <Text style={styles.rewardLabel}>Earnings</Text>
-                  <Text style={styles.rewardValue}>₹{selectedWish.remuneration}</Text>
-                </View>
-                <View style={styles.rewardDivider} />
-                <View style={styles.rewardItem}>
-                  <Text style={styles.rewardLabel}>XP Reward</Text>
-                  <Text style={[styles.rewardValue, { color: COLORS.primary }]}>+{selectedWish.xp_reward || 50}</Text>
-                </View>
-              </View>
-            </ScrollView>
-
-            {/* Accept Button */}
-            <View style={styles.wishModalFooter}>
-              <TouchableOpacity
-                style={styles.acceptFullButton}
-                onPress={() => handleAcceptWish(selectedWish.wish_id)}
-                disabled={accepting === selectedWish.wish_id}
+            </View>
+            <View style={styles.categoryBadge}>
+              <Text style={styles.categoryEmoji}>{MOCK_INCOMING_WISH.emoji}</Text>
+              <Text style={styles.categoryText}>{MOCK_INCOMING_WISH.category}</Text>
+            </View>
+          </View>
+          
+          {/* Wish Details */}
+          <Text style={styles.wishTitle}>{MOCK_INCOMING_WISH.title}</Text>
+          <Text style={styles.wishDescription}>{MOCK_INCOMING_WISH.description}</Text>
+          
+          {/* Location & Earnings */}
+          <View style={styles.incomingMeta}>
+            <View style={styles.metaItem}>
+              <Ionicons name="location" size={16} color={COLORS.cyan} />
+              <Text style={styles.metaText}>{MOCK_INCOMING_WISH.location.distance} km</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Ionicons name="time" size={16} color={COLORS.amber} />
+              <Text style={styles.metaText}>{MOCK_INCOMING_WISH.estimatedTime}</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Ionicons name="flash" size={16} color={COLORS.magenta} />
+              <Text style={styles.metaText}>+{MOCK_INCOMING_WISH.xpReward} XP</Text>
+            </View>
+          </View>
+          
+          <View style={styles.budgetRow}>
+            <Text style={styles.budgetLabel}>Wisher's Budget</Text>
+            <Text style={styles.budgetValue}>
+              ₹{MOCK_INCOMING_WISH.budget.min} - ₹{MOCK_INCOMING_WISH.budget.max}
+            </Text>
+          </View>
+          
+          {/* Action Buttons */}
+          <View style={styles.incomingActions}>
+            <TouchableOpacity style={styles.declineBtn} onPress={handleDeclineWish}>
+              <Ionicons name="close" size={24} color={COLORS.red} />
+              <Text style={styles.declineBtnText}>Decline</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.acceptBtn} onPress={handleAcceptWish}>
+              <LinearGradient
+                colors={[COLORS.green, '#16A34A']}
+                style={styles.acceptBtnGradient}
               >
-                <LinearGradient
-                  colors={selectedWish.is_immediate ? [COLORS.urgent, COLORS.urgentLight] : [COLORS.primary, COLORS.magenta]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.acceptFullGradient}
-                >
-                  {accepting === selectedWish.wish_id ? (
-                    <ActivityIndicator size="small" color="#FFF" />
-                  ) : (
-                    <>
-                      <Ionicons name="sparkles" size={20} color="#FFF" />
-                      <Text style={styles.acceptFullText}>Grant This Wish</Text>
-                    </>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
+                <Ionicons name="checkmark" size={24} color="#FFF" />
+                <Text style={styles.acceptBtnText}>Accept Wish</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Animated.View>
+    </View>
+  );
+
+  // CONNECTED STATE - Active connection with wisher
+  const renderConnectedState = () => (
+    <View style={styles.connectedContainer}>
+      {/* Header with Wisher Info */}
+      <LinearGradient
+        colors={[COLORS.headerBg, COLORS.background]}
+        style={styles.connectedHeader}
+      >
+        <View style={styles.connectedHeaderTop}>
+          <View style={styles.connectedWisher}>
+            <View style={styles.connectedAvatar}>
+              <Text style={styles.connectedAvatarText}>{MOCK_ACTIVE_WISH.wisher.avatar}</Text>
+              <View style={styles.onlineDot} />
+            </View>
+            <View>
+              <Text style={styles.connectedName}>{MOCK_ACTIVE_WISH.wisher.name}</Text>
+              <Text style={styles.connectedStatus}>Connected {MOCK_ACTIVE_WISH.connectedAt}</Text>
+            </View>
+          </View>
+          <View style={styles.connectedActions}>
+            <TouchableOpacity style={styles.actionIconBtn}>
+              <Ionicons name="call" size={20} color={COLORS.green} />
+            </TouchableOpacity>
+          </View>
+        </View>
+        
+        {/* Wish Summary */}
+        <View style={styles.wishSummary}>
+          <Text style={styles.wishSummaryEmoji}>{MOCK_ACTIVE_WISH.emoji}</Text>
+          <View style={styles.wishSummaryInfo}>
+            <Text style={styles.wishSummaryTitle}>{MOCK_ACTIVE_WISH.title}</Text>
+            <View style={styles.wishSummaryMeta}>
+              <Text style={styles.wishSummaryEarnings}>₹{MOCK_ACTIVE_WISH.earnings}</Text>
+              <Text style={styles.wishSummaryXP}>+{MOCK_ACTIVE_WISH.xpReward} XP</Text>
             </View>
           </View>
         </View>
-      </Modal>
-    );
-  };
+        
+        {/* Tab Switcher */}
+        <View style={styles.tabSwitcher}>
+          <TouchableOpacity 
+            style={[styles.tab, activeTab === 'details' && styles.tabActive]}
+            onPress={() => setActiveTab('details')}
+          >
+            <Ionicons name="list" size={18} color={activeTab === 'details' ? COLORS.primary : COLORS.textMuted} />
+            <Text style={[styles.tabText, activeTab === 'details' && styles.tabTextActive]}>Details</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tab, activeTab === 'chat' && styles.tabActive]}
+            onPress={() => setActiveTab('chat')}
+          >
+            <Ionicons name="chatbubbles" size={18} color={activeTab === 'chat' ? COLORS.primary : COLORS.textMuted} />
+            <Text style={[styles.tabText, activeTab === 'chat' && styles.tabTextActive]}>Chat</Text>
+            <View style={styles.chatBadge}>
+              <Text style={styles.chatBadgeText}>2</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+      
+      {activeTab === 'details' ? (
+        <ScrollView style={styles.detailsContainer} showsVerticalScrollIndicator={false}>
+          {/* Items Checklist */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>📋 Items to Get</Text>
+            {MOCK_ACTIVE_WISH.items.map((item, index) => (
+              <TouchableOpacity key={index} style={styles.itemRow}>
+                <View style={[styles.checkbox, item.status === 'done' && styles.checkboxDone]}>
+                  {item.status === 'done' && <Ionicons name="checkmark" size={14} color="#FFF" />}
+                </View>
+                <Text style={[styles.itemText, item.status === 'done' && styles.itemTextDone]}>
+                  {item.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          
+          {/* Locations */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>📍 Locations</Text>
+            <View style={styles.locationCard}>
+              <View style={styles.locationRow}>
+                <View style={[styles.locationDot, { backgroundColor: COLORS.cyan }]} />
+                <View style={styles.locationInfo}>
+                  <Text style={styles.locationLabel}>Pickup</Text>
+                  <Text style={styles.locationAddress}>{MOCK_ACTIVE_WISH.location.pickup}</Text>
+                </View>
+              </View>
+              <View style={styles.locationLine} />
+              <View style={styles.locationRow}>
+                <View style={[styles.locationDot, { backgroundColor: COLORS.green }]} />
+                <View style={styles.locationInfo}>
+                  <Text style={styles.locationLabel}>Drop-off</Text>
+                  <Text style={styles.locationAddress}>{MOCK_ACTIVE_WISH.location.dropoff}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+          
+          {/* Special Instructions */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>📝 Instructions</Text>
+            <View style={styles.instructionsCard}>
+              <Text style={styles.instructionsText}>{MOCK_ACTIVE_WISH.description}</Text>
+            </View>
+          </View>
+          
+          <View style={{ height: 120 }} />
+        </ScrollView>
+      ) : (
+        <KeyboardAvoidingView 
+          style={styles.chatContainer}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={100}
+        >
+          <ScrollView 
+            ref={scrollViewRef}
+            style={styles.messagesContainer}
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+          >
+            {messages.map((msg) => (
+              <View 
+                key={msg.id} 
+                style={[
+                  styles.messageBubble,
+                  msg.sender === 'genie' ? styles.messageSent : styles.messageReceived
+                ]}
+              >
+                <Text style={styles.messageText}>{msg.text}</Text>
+                <Text style={styles.messageTime}>{msg.time}</Text>
+              </View>
+            ))}
+            <View style={{ height: 20 }} />
+          </ScrollView>
+          
+          <View style={styles.chatInputContainer}>
+            <TextInput
+              style={styles.chatInput}
+              placeholder="Type a message..."
+              placeholderTextColor={COLORS.textMuted}
+              value={newMessage}
+              onChangeText={setNewMessage}
+              multiline
+            />
+            <TouchableOpacity style={styles.sendBtn} onPress={sendMessage}>
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.magenta]}
+                style={styles.sendBtnGradient}
+              >
+                <Ionicons name="send" size={18} color="#FFF" />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      )}
+      
+      {/* Bottom Action */}
+      <View style={styles.bottomAction}>
+        <TouchableOpacity style={styles.navigateBtn} onPress={handleNavigate}>
+          <LinearGradient
+            colors={[COLORS.cyan, COLORS.blue]}
+            style={styles.navigateBtnGradient}
+          >
+            <Ionicons name="navigate" size={20} color="#FFF" />
+            <Text style={styles.navigateBtnText}>Navigate to Pickup</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
-      <EarningsModal />
-      <WishDetailModal />
-
-      {/* Magical Header - Soothing Deep Blue */}
-      <LinearGradient
-        colors={['#1E293B', '#334155', '#475569']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.headerTitle}>✨ Wishes Portal</Text>
-            <Text style={styles.headerSubtitle}>Grant wishes, earn magic</Text>
+      {/* Main Header */}
+      {wishState === 'waiting' && (
+        <LinearGradient
+          colors={[COLORS.headerBg, COLORS.background]}
+          style={styles.header}
+        >
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>✨ Wishes</Text>
+            <Text style={styles.headerSubtitle}>Grant wishes, earn magic!</Text>
           </View>
-          <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
-            <Ionicons name="refresh" size={22} color="#FFF" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Clickable Stats Row */}
-        <TouchableOpacity style={styles.statsRow} onPress={() => setShowEarningsModal(true)} activeOpacity={0.8}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>₹{totalEarnings}</Text>
-            <Text style={styles.statLabel}>Earnings</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{wishes.length}</Text>
-            <Text style={styles.statLabel}>Wishes</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <View style={styles.urgentStatBadge}>
-              <Ionicons name="flash" size={14} color={COLORS.urgentLight} />
-              <Text style={[styles.statValue, { color: COLORS.urgentLight }]}>{urgentWishes.length}</Text>
-            </View>
-            <Text style={styles.statLabel}>Urgent</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.6)" />
-        </TouchableOpacity>
-      </LinearGradient>
-
-      {/* Urgent Wishes Banner - Amber Theme */}
-      {urgentWishes.length > 0 && (
-        <View style={styles.urgentBanner}>
-          <LinearGradient
-            colors={[COLORS.urgentDark, COLORS.urgent, COLORS.urgentLight]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.urgentGradient}
-          >
-            <View style={styles.urgentIcon}>
-              <Ionicons name="flash" size={18} color="#FFF" />
-            </View>
-            <View style={styles.urgentContent}>
-              <Text style={styles.urgentTitle}>⚡ {urgentWishes.length} Time-Sensitive Wish{urgentWishes.length > 1 ? 'es' : ''}!</Text>
-              <Text style={styles.urgentText}>Higher rewards • Quick completion bonus</Text>
-            </View>
-            <TouchableOpacity style={styles.urgentAction} onPress={() => setFilter('urgent')}>
-              <Text style={styles.urgentActionText}>View</Text>
-            </TouchableOpacity>
-          </LinearGradient>
-        </View>
+        </LinearGradient>
       )}
-
-      {/* Filter Tabs */}
-      <View style={styles.filterContainer}>
-        {(['all', 'urgent', 'nearby'] as const).map((f) => (
-          <TouchableOpacity
-            key={f}
-            style={[styles.filterTab, filter === f && styles.filterTabActive]}
-            onPress={() => setFilter(f)}
-          >
-            <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
-              {f === 'all' ? '🌟 All' : f === 'urgent' ? '⚡ Priority' : '📍 Nearby'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
-        }
-      >
-        {getFilteredWishes().length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>🔮</Text>
-            <Text style={styles.emptyTitle}>No {filter !== 'all' ? filter : ''} wishes found</Text>
-            <Text style={styles.emptyText}>Pull down to refresh or check back soon</Text>
-          </View>
-        ) : (
-          getFilteredWishes().map((wish) => {
-            const isUrgent = wish.is_immediate;
-            const typeColor = getWishTypeColor(wish.wish_type);
-            
-            return (
-              <TouchableOpacity
-                key={wish.wish_id}
-                activeOpacity={0.9}
-                onPress={() => setSelectedWish(wish)}
-              >
-                <Animated.View
-                  style={[
-                    styles.wishCard,
-                    isUrgent && styles.wishCardUrgent,
-                    isUrgent && { transform: [{ scale: pulseAnim }] }
-                  ]}
-                >
-                  {/* Urgent Badge - Amber/Gold */}
-                  {isUrgent && (
-                    <View style={styles.urgentCardBadge}>
-                      <Ionicons name="flash" size={12} color="#FFF" />
-                      <Text style={styles.urgentCardText}>PRIORITY</Text>
-                    </View>
-                  )}
-
-                  {/* Card Header */}
-                  <View style={styles.cardHeader}>
-                    <View style={[styles.typeIconBg, { backgroundColor: typeColor + '20' }]}>
-                      <Ionicons name={getWishTypeIcon(wish.wish_type) as any} size={24} color={typeColor} />
-                    </View>
-                    <View style={styles.cardHeaderInfo}>
-                      <Text style={styles.wishTitle}>{wish.title}</Text>
-                      <View style={styles.metaRow}>
-                        <Text style={[styles.wishType, { color: typeColor }]}>{wish.wish_type}</Text>
-                        <Text style={styles.dotSeparator}>•</Text>
-                        <Text style={styles.timeAgo}>{formatTimeAgo(wish.created_at)}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.xpBadge}>
-                      <Text style={styles.xpText}>+{wish.xp_reward || 50}</Text>
-                      <Text style={styles.xpLabel}>XP</Text>
-                    </View>
-                  </View>
-
-                  {/* Location & Distance */}
-                  <View style={styles.locationRow}>
-                    <Ionicons name="location" size={16} color={COLORS.textMuted} />
-                    <Text style={styles.locationText} numberOfLines={1}>{wish.location.address}</Text>
-                    {wish.distance && (
-                      <View style={styles.distanceBadge}>
-                        <Text style={styles.distanceText}>{wish.distance} km</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* Footer */}
-                  <View style={styles.cardFooter}>
-                    <View style={styles.earningsBadge}>
-                      <Text style={styles.earningsSymbol}>₹</Text>
-                      <Text style={styles.earningsAmount}>{wish.remuneration}</Text>
-                    </View>
-                    <View style={styles.viewDetails}>
-                      <Text style={styles.viewDetailsText}>View Details</Text>
-                      <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
-                    </View>
-                  </View>
-                </Animated.View>
-              </TouchableOpacity>
-            );
-          })
-        )}
-
-        <View style={{ height: 100 }} />
-      </ScrollView>
+      
+      {/* Render based on state */}
+      {wishState === 'waiting' && renderWaitingState()}
+      {wishState === 'incoming' && renderIncomingState()}
+      {(wishState === 'connected' || wishState === 'in_progress') && renderConnectedState()}
+      
+      {/* Game Modals */}
+      <GameModal
+        visible={showAcceptModal}
+        type="confirm"
+        title="Accept This Wish?"
+        message={`You'll be connected with ${MOCK_INCOMING_WISH.wisher.name}. You can chat and coordinate the wish details.`}
+        emoji="🤝"
+        primaryButtonText="Yes, Connect!"
+        secondaryButtonText="Go Back"
+        onPrimaryPress={confirmAccept}
+        onSecondaryPress={() => setShowAcceptModal(false)}
+      />
+      
+      <GameModal
+        visible={showDeclineModal}
+        type="warning"
+        title="Decline Wish?"
+        message="The wish will be offered to another Genie. Your response rate may be affected."
+        emoji="😔"
+        primaryButtonText="Yes, Decline"
+        secondaryButtonText="Keep It"
+        onPrimaryPress={confirmDecline}
+        onSecondaryPress={() => setShowDeclineModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -698,706 +546,133 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-  },
   header: {
-    padding: 20,
-    paddingTop: 10,
-    paddingBottom: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
   },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  headerContent: {
     alignItems: 'center',
-    marginBottom: 16,
   },
   headerTitle: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '800',
-    color: '#FFF',
-    letterSpacing: -0.5,
+    color: COLORS.text,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 2,
-  },
-  refreshButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 16,
-    padding: 14,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#FFF',
-  },
-  statLabel: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 2,
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    marginHorizontal: 8,
-  },
-  urgentStatBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  urgentBanner: {
-    marginHorizontal: 16,
-    marginTop: -8,
-    marginBottom: 12,
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  urgentGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    gap: 12,
-  },
-  urgentIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  urgentContent: {
-    flex: 1,
-  },
-  urgentTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  urgentText: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.85)',
-    marginTop: 2,
-  },
-  urgentAction: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  urgentActionText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    marginBottom: 12,
-    gap: 8,
-  },
-  filterTab: {
-    flex: 1,
-    paddingVertical: 10,
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  filterTabActive: {
-    backgroundColor: COLORS.primary + '20',
-    borderColor: COLORS.primary,
-  },
-  filterText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textMuted,
-  },
-  filterTextActive: {
-    color: COLORS.primary,
-  },
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 4,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 14,
     color: COLORS.textSecondary,
-    textAlign: 'center',
-  },
-  wishCard: {
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  wishCardUrgent: {
-    borderColor: COLORS.urgent,
-    borderWidth: 2,
-  },
-  urgentCardBadge: {
-    position: 'absolute',
-    top: -1,
-    right: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.urgent,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-    gap: 4,
-  },
-  urgentCardText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#FFF',
-    letterSpacing: 0.5,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  typeIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cardHeaderInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  wishTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 4,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  wishType: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'capitalize',
-  },
-  dotSeparator: {
-    color: COLORS.textMuted,
-    marginHorizontal: 6,
-  },
-  timeAgo: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-  },
-  xpBadge: {
-    backgroundColor: COLORS.primary + '20',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  xpText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: COLORS.primary,
-  },
-  xpLabel: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: COLORS.primaryLight,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.backgroundSecondary,
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 14,
-    gap: 8,
-  },
-  locationText: {
-    flex: 1,
-    fontSize: 13,
-    color: COLORS.textSecondary,
-  },
-  distanceBadge: {
-    backgroundColor: COLORS.cardBorder,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  distanceText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.textMuted,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  earningsBadge: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    backgroundColor: COLORS.success + '15',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  earningsSymbol: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.success,
-  },
-  earningsAmount: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: COLORS.success,
-    marginLeft: 2,
-  },
-  viewDetails: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  viewDetailsText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: COLORS.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '85%',
-  },
-  modalHeader: {
-    padding: 20,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#FFF',
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
     marginTop: 4,
   },
-  modalClose: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  
+  // Waiting State
+  waitingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
-  modalBody: {
-    padding: 16,
-  },
-  insightCard: {
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  insightHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 12,
-  },
-  insightTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  bigNumber: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: COLORS.success,
-    marginBottom: 4,
-  },
-  insightLabel: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginBottom: 16,
-  },
-  timeSlots: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  timeSlot: {
-    backgroundColor: COLORS.backgroundSecondary,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    alignItems: 'center',
-    width: '48%',
-  },
-  timeLabel: {
-    fontSize: 11,
-    color: COLORS.textMuted,
-    marginBottom: 4,
-  },
-  timeAmount: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  statBox: {
-    flex: 1,
-    backgroundColor: COLORS.backgroundSecondary,
-    padding: 14,
-    borderRadius: 12,
+  waitingContent: {
     alignItems: 'center',
   },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: COLORS.text,
+  waitingIconContainer: {
+    marginBottom: 24,
   },
-  peakBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: COLORS.urgent + '15',
-    padding: 10,
-    borderRadius: 10,
-  },
-  peakText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.urgent,
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  categoryRank: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.textMuted,
-    width: 30,
-  },
-  categoryName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.text,
+  waitingIconGradient: {
     width: 120,
-  },
-  categoryBar: {
-    height: 8,
-    backgroundColor: COLORS.primary,
-    borderRadius: 4,
-  },
-  densityBadge: {
-    backgroundColor: COLORS.backgroundSecondary,
-    padding: 14,
-    borderRadius: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  densityLabel: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
+  waitingEmoji: {
+    fontSize: 56,
   },
-  densityValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.success,
-  },
-  // New Earnings Modal Styles
-  earningsGrid: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  earningsBox: {
-    flex: 1,
-    backgroundColor: COLORS.backgroundSecondary,
-    padding: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  earningsBoxLabel: {
-    fontSize: 11,
-    color: COLORS.textMuted,
-    marginBottom: 6,
-  },
-  earningsBoxValue: {
-    fontSize: 18,
+  waitingTitle: {
+    fontSize: 24,
     fontWeight: '800',
-    color: COLORS.success,
-  },
-  earningsBoxSub: {
-    fontSize: 10,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-  },
-  potentialCard: {
-    backgroundColor: COLORS.magenta + '15',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  potentialLabel: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    marginBottom: 8,
-  },
-  potentialValue: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: COLORS.magenta,
-  },
-  potentialSub: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    marginTop: 6,
-  },
-  progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    marginBottom: 12,
-  },
-  xpDisplay: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 4,
-  },
-  xpNumber: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: COLORS.urgent,
-  },
-  xpUnit: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.urgent,
-  },
-  levelBadge: {
-    flex: 1,
-    backgroundColor: COLORS.primary + '20',
-    padding: 12,
-    borderRadius: 12,
-  },
-  levelText: {
-    fontSize: 12,
-    color: COLORS.primaryLight,
-    fontWeight: '600',
-  },
-  levelTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.primary,
-    marginTop: 2,
-  },
-  xpBarContainer: {
-    height: 8,
-    backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  xpBarFill: {
-    width: '65%',
-    height: '100%',
-    backgroundColor: COLORS.urgent,
-    borderRadius: 4,
-  },
-  xpToNext: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-  },
-  trendingList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  trendingItem: {
-    backgroundColor: COLORS.backgroundSecondary,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  trendingText: {
-    fontSize: 13,
     color: COLORS.text,
-    fontWeight: '500',
-  },
-  // Wish Detail Modal
-  wishModalContent: {
-    backgroundColor: COLORS.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '90%',
-  },
-  wishModalHeader: {
-    padding: 20,
-    paddingTop: 24,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-  },
-  urgentTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    gap: 4,
-    marginBottom: 12,
-  },
-  urgentTagText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  wishModalTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#FFF',
     marginBottom: 8,
   },
-  wishModalMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  typeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    gap: 6,
-  },
-  typeBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFF',
-    textTransform: 'capitalize',
-  },
-  wishModalTime: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.7)',
-  },
-  wishModalBody: {
-    padding: 16,
-  },
-  wishSection: {
-    marginBottom: 20,
-  },
-  wishSectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.textMuted,
-    marginBottom: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  wishDescription: {
+  waitingSubtitle: {
     fontSize: 15,
-    color: COLORS.text,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
     lineHeight: 22,
   },
-  locationCard: {
-    flexDirection: 'row',
+  waitingStats: {
+    marginTop: 32,
+  },
+  waitingStat: {
     alignItems: 'center',
-    backgroundColor: COLORS.cardBg,
-    padding: 14,
-    borderRadius: 12,
-    gap: 12,
   },
-  locationInfo: {
-    flex: 1,
-  },
-  locationAddress: {
-    fontSize: 15,
-    fontWeight: '600',
+  waitingStatValue: {
+    fontSize: 16,
+    fontWeight: '700',
     color: COLORS.text,
+    marginTop: 8,
   },
-  locationDistance: {
+  waitingStatLabel: {
     fontSize: 13,
     color: COLORS.textSecondary,
-    marginTop: 2,
   },
-  wisherCard: {
+  tipCard: {
     flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.amber + '15',
+    borderRadius: 14,
+    padding: 16,
+    marginTop: 32,
+    gap: 12,
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 13,
+    color: COLORS.amber,
+    lineHeight: 20,
+  },
+  
+  // Incoming State
+  incomingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  incomingRing: {
+    position: 'absolute',
+    width: SCREEN_WIDTH - 40,
+    height: SCREEN_WIDTH - 40,
+    borderRadius: (SCREEN_WIDTH - 40) / 2,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  incomingRing1: {},
+  incomingRing2: {},
+  incomingCard: {
+    width: SCREEN_WIDTH - 40,
     backgroundColor: COLORS.cardBg,
-    padding: 14,
-    borderRadius: 12,
-    gap: 14,
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  incomingHeader: {
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  incomingLabel: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFF',
+    letterSpacing: 1,
+  },
+  incomingBody: {
+    padding: 20,
+  },
+  wisherInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   wisherAvatar: {
     width: 50,
@@ -1407,88 +682,458 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  wisherInitial: {
+  wisherAvatarText: {
     fontSize: 20,
     fontWeight: '700',
     color: '#FFF',
   },
-  wisherInfo: {
+  wisherDetails: {
     flex: 1,
+    marginLeft: 12,
   },
-  wisherNameRow: {
+  wisherName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  wisherRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 4,
+  },
+  wisherRatingText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.amber,
+  },
+  wisherWishes: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+  },
+  categoryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.backgroundSecondary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 6,
+  },
+  categoryEmoji: {
+    fontSize: 16,
+  },
+  categoryText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  wishTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  wishDescription: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  incomingMeta: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 16,
+  },
+  metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  wisherName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  verifiedBadge: {
-    marginLeft: 2,
-  },
-  wisherStats: {
-    flexDirection: 'row',
-    gap: 16,
-    marginTop: 6,
-  },
-  wisherStat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  wisherStatText: {
+  metaText: {
     fontSize: 13,
     color: COLORS.textSecondary,
   },
-  wisherSince: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    marginTop: 6,
-  },
-  rewardsSection: {
+  budgetRow: {
     flexDirection: 'row',
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 12,
-    padding: 16,
-  },
-  rewardItem: {
-    flex: 1,
+    justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: COLORS.green + '15',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginBottom: 20,
   },
-  rewardLabel: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    marginBottom: 4,
+  budgetLabel: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
   },
-  rewardValue: {
-    fontSize: 24,
+  budgetValue: {
+    fontSize: 18,
     fontWeight: '800',
-    color: COLORS.success,
+    color: COLORS.green,
   },
-  rewardDivider: {
-    width: 1,
-    backgroundColor: COLORS.cardBorder,
-    marginHorizontal: 16,
+  incomingActions: {
+    flexDirection: 'row',
+    gap: 12,
   },
-  wishModalFooter: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  acceptFullButton: {
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  acceptFullGradient: {
+  declineBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 18,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: COLORS.red + '15',
+    gap: 8,
+  },
+  declineBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.red,
+  },
+  acceptBtn: {
+    flex: 1.5,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  acceptBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 8,
+  },
+  acceptBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  
+  // Connected State
+  connectedContainer: {
+    flex: 1,
+  },
+  connectedHeader: {
+    paddingTop: 10,
+    paddingBottom: 0,
+  },
+  connectedHeaderTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  connectedWisher: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  connectedAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  connectedAvatarText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  onlineDot: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: COLORS.green,
+    borderWidth: 2,
+    borderColor: COLORS.headerBg,
+  },
+  connectedName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  connectedStatus: {
+    fontSize: 12,
+    color: COLORS.green,
+    marginTop: 2,
+  },
+  connectedActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionIconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.green + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  wishSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginHorizontal: 20,
+    padding: 14,
+    borderRadius: 14,
+    marginBottom: 16,
+  },
+  wishSummaryEmoji: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  wishSummaryInfo: {
+    flex: 1,
+  },
+  wishSummaryTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  wishSummaryMeta: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
+  },
+  wishSummaryEarnings: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.green,
+  },
+  wishSummaryXP: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.magenta,
+  },
+  tabSwitcher: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 8,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabActive: {
+    borderBottomColor: COLORS.primary,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textMuted,
+  },
+  tabTextActive: {
+    color: COLORS.primary,
+  },
+  chatBadge: {
+    backgroundColor: COLORS.red,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  chatBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  
+  // Details Tab
+  detailsContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.cardBg,
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 8,
+    gap: 12,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: COLORS.cardBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxDone: {
+    backgroundColor: COLORS.green,
+    borderColor: COLORS.green,
+  },
+  itemText: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.text,
+  },
+  itemTextDone: {
+    textDecorationLine: 'line-through',
+    color: COLORS.textMuted,
+  },
+  locationCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 14,
+    padding: 16,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  locationDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  locationInfo: {
+    flex: 1,
+  },
+  locationLabel: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
+  locationAddress: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: 2,
+  },
+  locationLine: {
+    width: 2,
+    height: 24,
+    backgroundColor: COLORS.cardBorder,
+    marginLeft: 5,
+    marginVertical: 4,
+  },
+  instructionsCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 14,
+    padding: 16,
+  },
+  instructionsText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+  },
+  
+  // Chat Tab
+  chatContainer: {
+    flex: 1,
+  },
+  messagesContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  messageBubble: {
+    maxWidth: '80%',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 18,
+    marginBottom: 8,
+  },
+  messageReceived: {
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.cardBg,
+    borderBottomLeftRadius: 4,
+  },
+  messageSent: {
+    alignSelf: 'flex-end',
+    backgroundColor: COLORS.primary,
+    borderBottomRightRadius: 4,
+  },
+  messageText: {
+    fontSize: 15,
+    color: COLORS.text,
+    lineHeight: 20,
+  },
+  messageTime: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    marginTop: 4,
+    alignSelf: 'flex-end',
+  },
+  chatInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: COLORS.backgroundSecondary,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.cardBorder,
     gap: 10,
   },
-  acceptFullText: {
-    fontSize: 18,
+  chatInput: {
+    flex: 1,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: COLORS.text,
+    maxHeight: 100,
+  },
+  sendBtn: {
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
+  sendBtnGradient: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  // Bottom Action
+  bottomAction: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    backgroundColor: COLORS.background,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.cardBorder,
+  },
+  navigateBtn: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  navigateBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 10,
+  },
+  navigateBtnText: {
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFF',
   },
