@@ -685,6 +685,9 @@ const styles = StyleSheet.create({
   incomingHeader: {
     paddingVertical: 14,
     alignItems: 'center',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
   },
   incomingLabel: {
     fontSize: 14,
