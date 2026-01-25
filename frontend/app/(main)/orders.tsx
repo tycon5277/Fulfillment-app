@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  Alert,
   Animated,
   Image,
   LayoutAnimation,
@@ -22,6 +21,7 @@ import * as Location from 'expo-location';
 import * as api from '../../src/api';
 import THEME from '../../src/theme';
 import type { Order } from '../../src/types';
+import GameModal from '../../src/components/GameModal';
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
