@@ -93,16 +93,24 @@ export default function MainLayout() {
         }}
       />
 
-      {/* Wishes - Agent only */}
+      {/* Wishes - Agent only - PROMINENT TAB */}
       <Tabs.Screen
         name="wishes"
         options={{
           title: 'Wishes',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
-              <Ionicons name={focused ? "sparkles" : "sparkles-outline"} size={24} color={color} />
+            <View style={[
+              styles.wishesIconContainer,
+              focused && styles.wishesIconContainerActive,
+              isMobileGenie && styles.wishesIconMobileGenie
+            ]}>
+              <Ionicons name={focused ? "sparkles" : "sparkles-outline"} size={28} color={focused ? '#FBBF24' : color} />
             </View>
           ),
+          tabBarLabelStyle: {
+            fontSize: 12,
+            fontWeight: '700',
+          },
           href: partnerType === 'agent' ? '/(main)/wishes' : null,
         }}
       />
