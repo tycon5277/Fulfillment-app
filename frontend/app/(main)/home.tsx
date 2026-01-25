@@ -30,6 +30,20 @@ const MOCK_LOCATION = {
   longitude: 77.5946,
 };
 
+// OpenStreetMap tile URL generator
+const getMapTileUrl = (lat: number, lon: number, zoom: number = 15) => {
+  // Using OpenStreetMap static tiles
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${lon - 0.01}%2C${lat - 0.01}%2C${lon + 0.01}%2C${lat + 0.01}&layer=mapnik&marker=${lat}%2C${lon}`;
+};
+
+// Static map image URL using OpenStreetMap tiles
+const getStaticMapUrl = (lat: number, lon: number, zoom: number = 16, width: number = 400, height: number = 250) => {
+  // Using a static map tile service
+  const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
+  const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+  return `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
+};
+
 export default function HomeScreen() {
   const router = useRouter();
   const { user, setUser } = useAuthStore();
@@ -40,6 +54,7 @@ export default function HomeScreen() {
   const [statusLoading, setStatusLoading] = useState(false);
   const [location, setLocation] = useState(MOCK_LOCATION);
   const [locationError, setLocationError] = useState(false);
+  const [mapTiles, setMapTiles] = useState<string[]>([]);
   
   // Animation refs
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -49,6 +64,32 @@ export default function HomeScreen() {
   const dotGlow = useRef(new Animated.Value(0.5)).current;
 
   const isMobileGenie = user?.agent_type === 'mobile';
+
+  // Generate map tiles for current location
+  useEffect(() => {
+    const generateMapTiles = () => {
+      const zoom = 16;
+      const lat = location.latitude;
+      const lon = location.longitude;
+      
+      // Calculate tile coordinates
+      const n = Math.pow(2, zoom);
+      const x = Math.floor((lon + 180) / 360 * n);
+      const latRad = lat * Math.PI / 180;
+      const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
+      
+      // Generate 3x3 grid of tiles for better coverage
+      const tiles: string[] = [];
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          tiles.push(`https://tile.openstreetmap.org/${zoom}/${x + dx}/${y + dy}.png`);
+        }
+      }
+      setMapTiles(tiles);
+    };
+    
+    generateMapTiles();
+  }, [location]);
 
   // Pulse animation for location indicator
   useEffect(() => {
@@ -205,7 +246,7 @@ export default function HomeScreen() {
   }
 
   // Calculate level and XP
-  const totalTasks = stats?.total_tasks || 0;
+  const totalTasks = stats?.total_tasks || user?.agent_total_deliveries || 0;
   const currentLevel = Math.floor(totalTasks / 10) + 1;
   const xpInLevel = (totalTasks % 10) * 100;
   const xpNeeded = 1000;
@@ -217,7 +258,18 @@ export default function HomeScreen() {
     if (make && model) return `${make} ${model}`;
     if (make) return make;
     if (model) return model;
-    return user?.agent_vehicle?.charAt(0).toUpperCase() + (user?.agent_vehicle || '').slice(1) || 'Vehicle';
+    if (user?.agent_vehicle) {
+      return user.agent_vehicle.charAt(0).toUpperCase() + user.agent_vehicle.slice(1);
+    }
+    return 'Not set';
+  };
+
+  // Get vehicle type emoji
+  const getVehicleEmoji = () => {
+    const vehicleType = user?.agent_vehicle?.toLowerCase();
+    if (vehicleType === 'car') return '🚗';
+    if (vehicleType === 'motorbike') return '🏍️';
+    return '🛵';
   };
 
   // Mobile Genie Dashboard
@@ -235,42 +287,57 @@ export default function HomeScreen() {
           }
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.greeting}>Hey, {user?.name?.split(' ')[0] || 'Genie'}</Text>
-              <View style={styles.statusBadge}>
-                <View style={[styles.statusDot, isOnline ? styles.statusOnline : styles.statusOffline]} />
-                <Text style={styles.statusText}>{isOnline ? 'Online' : 'Offline'}</Text>
-              </View>
-            </View>
-            <TouchableOpacity 
-              style={styles.profileBtn}
-              onPress={() => router.push('/(main)/profile')}
-            >
+          {/* Header with Avatar */}
+          <TouchableOpacity 
+            style={styles.header}
+            onPress={() => router.push('/(main)/profile')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.headerLeft}>
+              {/* Avatar */}
               {user?.picture ? (
-                <Image source={{ uri: user.picture }} style={styles.avatar} />
+                <Image source={{ uri: user.picture }} style={styles.headerAvatar} />
               ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'G'}</Text>
+                <View style={styles.headerAvatarPlaceholder}>
+                  <Text style={styles.headerAvatarText}>{user?.name?.charAt(0) || 'G'}</Text>
                 </View>
               )}
-            </TouchableOpacity>
-          </View>
+              <View style={styles.headerTextContainer}>
+                <Text style={styles.greeting}>Hey, {user?.name?.split(' ')[0] || 'Genie'}</Text>
+                <View style={styles.statusBadge}>
+                  <View style={[styles.statusDot, isOnline ? styles.statusOnline : styles.statusOffline]} />
+                  <Text style={styles.statusText}>{isOnline ? 'Online' : 'Offline'}</Text>
+                </View>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={THEME.textMuted} />
+          </TouchableOpacity>
 
-          {/* Location Card with Stylized Map */}
+          {/* Map Card with Real OpenStreetMap */}
           <View style={styles.mapCard}>
             <View style={styles.mapContainer}>
-              {/* Stylized map grid background */}
-              <View style={styles.mapGrid}>
-                {/* Horizontal lines */}
-                {[...Array(8)].map((_, i) => (
-                  <View key={`h-${i}`} style={[styles.gridLine, styles.gridLineH, { top: `${(i + 1) * 12}%` }]} />
-                ))}
-                {/* Vertical lines */}
-                {[...Array(8)].map((_, i) => (
-                  <View key={`v-${i}`} style={[styles.gridLine, styles.gridLineV, { left: `${(i + 1) * 12}%` }]} />
-                ))}
+              {/* OpenStreetMap Tiles Grid */}
+              <View style={styles.mapTilesContainer}>
+                {mapTiles.length > 0 ? (
+                  <View style={styles.tilesGrid}>
+                    {mapTiles.map((tile, index) => (
+                      <Image 
+                        key={index}
+                        source={{ uri: tile }}
+                        style={styles.mapTile}
+                        resizeMode="cover"
+                      />
+                    ))}
+                  </View>
+                ) : (
+                  <View style={styles.mapPlaceholder}>
+                    <Ionicons name="map-outline" size={40} color={THEME.textMuted} />
+                    <Text style={styles.mapPlaceholderText}>Loading map...</Text>
+                  </View>
+                )}
+                
+                {/* Dark overlay for better contrast */}
+                <View style={styles.mapOverlayDark} />
               </View>
 
               {/* Pulse rings when online */}
@@ -326,14 +393,14 @@ export default function HomeScreen() {
                 <View style={[styles.locationMarker, isOnline && styles.locationMarkerOnline]}>
                   <Ionicons 
                     name={user?.agent_vehicle === 'car' ? 'car' : 'bicycle'} 
-                    size={16} 
+                    size={18} 
                     color="#FFF" 
                   />
                 </View>
               </View>
 
               {/* Location info badge */}
-              <View style={styles.mapOverlay}>
+              <View style={styles.mapBadgeContainer}>
                 <View style={styles.locationBadge}>
                   <Ionicons name="location" size={12} color={THEME.primary} />
                   <Text style={styles.locationText}>
@@ -421,7 +488,7 @@ export default function HomeScreen() {
             </View>
             <View style={styles.quickStatDivider} />
             <View style={styles.quickStatItem}>
-              <Text style={styles.quickStatValue}>{stats?.rating?.toFixed(1) || '5.0'}</Text>
+              <Text style={styles.quickStatValue}>{(user?.agent_rating || stats?.rating || 5.0).toFixed(1)}</Text>
               <Text style={styles.quickStatLabel}>Rating</Text>
             </View>
           </View>
@@ -446,24 +513,38 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Vehicle Info */}
+          {/* Vehicle Info - Enhanced */}
           <View style={styles.vehicleCard}>
-            <View style={styles.vehicleRow}>
-              <View style={styles.vehicleIcon}>
-                <Text style={styles.vehicleEmoji}>
-                  {user?.agent_vehicle === 'car' ? '🚗' : user?.agent_vehicle === 'motorbike' ? '🏍️' : '🛵'}
-                </Text>
-              </View>
-              <View style={styles.vehicleInfo}>
-                <Text style={styles.vehicleName}>{getVehicleDisplay()}</Text>
-                <Text style={styles.vehicleReg}>{user?.agent_vehicle_registration || 'N/A'}</Text>
-              </View>
+            <View style={styles.vehicleHeader}>
+              <Text style={styles.vehicleSectionTitle}>Your Vehicle</Text>
               {user?.agent_is_electric && (
                 <View style={styles.evBadge}>
                   <Ionicons name="leaf" size={12} color={THEME.success} />
-                  <Text style={styles.evText}>EV</Text>
+                  <Text style={styles.evText}>Electric</Text>
                 </View>
               )}
+            </View>
+            <View style={styles.vehicleRow}>
+              <View style={styles.vehicleIcon}>
+                <Text style={styles.vehicleEmoji}>{getVehicleEmoji()}</Text>
+              </View>
+              <View style={styles.vehicleInfo}>
+                <Text style={styles.vehicleName}>{getVehicleDisplay()}</Text>
+                <View style={styles.vehicleDetails}>
+                  {user?.agent_vehicle_registration && (
+                    <View style={styles.vehicleDetailItem}>
+                      <Ionicons name="card-outline" size={12} color={THEME.textMuted} />
+                      <Text style={styles.vehicleDetailText}>{user.agent_vehicle_registration}</Text>
+                    </View>
+                  )}
+                  {user?.agent_vehicle_color && (
+                    <View style={styles.vehicleDetailItem}>
+                      <Ionicons name="color-palette-outline" size={12} color={THEME.textMuted} />
+                      <Text style={styles.vehicleDetailText}>{user.agent_vehicle_color}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
             </View>
           </View>
 
@@ -475,9 +556,9 @@ export default function HomeScreen() {
               onPress={() => router.push('/(main)/orders')}
             >
               <View style={[styles.actionIcon, { backgroundColor: THEME.accent3 + '20' }]}>
-                <Ionicons name="cube-outline" size={24} color={THEME.accent3} />
+                <Ionicons name="storefront-outline" size={24} color={THEME.accent3} />
               </View>
-              <Text style={styles.actionLabel}>Tasks</Text>
+              <Text style={styles.actionLabel}>Hub Order</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.actionCard}
@@ -495,7 +576,7 @@ export default function HomeScreen() {
               <View style={[styles.actionIcon, { backgroundColor: THEME.accent2 + '20' }]}>
                 <Ionicons name="rocket-outline" size={24} color={THEME.accent2} />
               </View>
-              <Text style={styles.actionLabel}>Active</Text>
+              <Text style={styles.actionLabel}>Deliveries</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.actionCard}
@@ -578,22 +659,54 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 100,
   },
-  // Header
+  // Header with Avatar
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
+    backgroundColor: THEME.cardBg,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: THEME.primary,
+  },
+  headerAvatarPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: THEME.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerAvatarText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  headerTextContainer: {
+    marginLeft: 12,
   },
   greeting: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     color: THEME.text,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 2,
     gap: 6,
   },
   statusDot: {
@@ -634,7 +747,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: THEME.text,
   },
-  // Map Card
+  // Map Card - Larger
   mapCard: {
     backgroundColor: THEME.cardBg,
     borderRadius: 20,
@@ -644,28 +757,44 @@ const styles = StyleSheet.create({
     borderColor: THEME.cardBorder,
   },
   mapContainer: {
-    height: 160,
+    height: 220,
     position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mapTilesContainer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  tilesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: 768,
+    height: 768,
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginLeft: -384,
+    marginTop: -384,
+  },
+  mapTile: {
+    width: 256,
+    height: 256,
+  },
+  mapPlaceholder: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: THEME.backgroundSecondary,
   },
-  mapGrid: {
+  mapPlaceholderText: {
+    color: THEME.textMuted,
+    fontSize: 13,
+    marginTop: 8,
+  },
+  mapOverlayDark: {
     ...StyleSheet.absoluteFillObject,
-  },
-  gridLine: {
-    position: 'absolute',
-    backgroundColor: THEME.cardBorder,
-  },
-  gridLineH: {
-    left: 0,
-    right: 0,
-    height: 1,
-  },
-  gridLineV: {
-    top: 0,
-    bottom: 0,
-    width: 1,
+    backgroundColor: 'rgba(13, 13, 18, 0.3)',
   },
   pulseRing: {
     position: 'absolute',
@@ -678,29 +807,35 @@ const styles = StyleSheet.create({
   locationMarkerContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 10,
   },
   locationGlow: {
     position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     backgroundColor: THEME.primary,
     opacity: 0.2,
   },
   locationMarker: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: THEME.primary,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
     borderColor: THEME.cardBg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
   },
   locationMarkerOnline: {
     backgroundColor: THEME.success,
   },
-  mapOverlay: {
+  mapBadgeContainer: {
     position: 'absolute',
     top: 12,
     left: 12,
@@ -727,6 +862,10 @@ const styles = StyleSheet.create({
   coordsText: {
     fontSize: 10,
     color: THEME.textMuted,
+    backgroundColor: THEME.cardBg + 'CC',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   // Button styles
@@ -886,7 +1025,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.secondary,
     borderRadius: 3,
   },
-  // Vehicle Card
+  // Vehicle Card - Enhanced
   vehicleCard: {
     backgroundColor: THEME.cardBg,
     borderRadius: 16,
@@ -895,29 +1034,56 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: THEME.cardBorder,
   },
+  vehicleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  vehicleSectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: THEME.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   vehicleRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   vehicleIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 50,
+    height: 50,
+    borderRadius: 14,
     backgroundColor: THEME.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
   },
   vehicleEmoji: {
-    fontSize: 22,
+    fontSize: 26,
   },
   vehicleInfo: {
     flex: 1,
     marginLeft: 12,
   },
   vehicleName: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: THEME.text,
+  },
+  vehicleDetails: {
+    flexDirection: 'row',
+    marginTop: 4,
+    gap: 12,
+  },
+  vehicleDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  vehicleDetailText: {
+    fontSize: 12,
+    color: THEME.textSecondary,
   },
   vehicleReg: {
     fontSize: 13,
@@ -969,7 +1135,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   actionLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
     color: THEME.textSecondary,
   },
