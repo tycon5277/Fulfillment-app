@@ -980,4 +980,55 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 15,
   },
+  // Offline State
+  offlineContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  offlineGradient: {
+    alignItems: 'center',
+    padding: 40,
+    borderRadius: 24,
+    width: '100%',
+  },
+  offlineIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: THEME.backgroundSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  offlineTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: THEME.text,
+    marginBottom: 8,
+  },
+  offlineSubtitle: {
+    fontSize: 15,
+    color: THEME.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  goOnlineButton: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  goOnlineGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+  },
+  goOnlineText: {
+    color: '#FFF',
+    fontWeight: '600',
+    fontSize: 16,
+  },
 });
