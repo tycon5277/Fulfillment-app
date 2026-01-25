@@ -551,6 +551,24 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Offline Mode Notice */}
+          {!isOnline && (
+            <View style={styles.offlineNotice}>
+              <LinearGradient
+                colors={['#3B415220', '#3B415210']}
+                style={styles.offlineGradient}
+              >
+                <Ionicons name="moon-outline" size={24} color="#64748B" />
+                <View style={styles.offlineTextContainer}>
+                  <Text style={styles.offlineTitle}>You're Offline</Text>
+                  <Text style={styles.offlineSubtitle}>
+                    Go online to receive new orders and wishes
+                  </Text>
+                </View>
+              </LinearGradient>
+            </View>
+          )}
+
           {/* Services */}
           {(user?.agent_services && user.agent_services.length > 0) && (
             <>
