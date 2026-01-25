@@ -30,14 +30,14 @@ const MOCK_LOCATION = {
   longitude: 77.5946,
 };
 
-// Use Carto basemaps (free, no API key required, allows direct tile access)
+// Use Carto basemaps with desert/sandal color (light voyager with sepia tint)
 const getCartoTileUrl = (lat: number, lon: number, zoom: number = 15) => {
   const n = Math.pow(2, zoom);
   const x = Math.floor((lon + 180) / 360 * n);
   const latRad = lat * Math.PI / 180;
   const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
-  // Using Carto dark matter basemap - free to use
-  return `https://basemaps.cartocdn.com/dark_all/${zoom}/${x}/${y}.png`;
+  // Using Carto voyager basemap with warmer tones
+  return `https://basemaps.cartocdn.com/rastertiles/voyager/${zoom}/${x}/${y}.png`;
 };
 
 export default function HomeScreen() {
