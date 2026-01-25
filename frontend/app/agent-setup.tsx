@@ -425,7 +425,7 @@ export default function AgentSetupScreen() {
                 />
               </View>
               <View style={styles.stepsRow}>
-                {['Carpet', 'Details', 'Quests'].map((label, i) => (
+                {['Magic Carpet', 'Details', 'Quests'].map((label, i) => (
                   <View key={i} style={styles.stepDot}>
                     <View style={[
                       styles.stepCircle,
