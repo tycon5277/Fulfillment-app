@@ -308,7 +308,8 @@ export default function WishesScreen() {
           </View>
         </View>
       </Animated.View>
-    </View>
+      <View style={{ height: 40 }} />
+    </ScrollView>
   );
 
   // CONNECTED STATE - Active connection with wisher
