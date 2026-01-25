@@ -472,6 +472,43 @@ export default function OrdersScreen() {
         }
         showsVerticalScrollIndicator={false}
       />
+
+      {/* Beautiful Game Modals */}
+      <GameModal
+        visible={showAcceptModal}
+        type="confirm"
+        title="Accept Order"
+        message="Ready to pick up this order? Once accepted, head to the Deliveries tab to start."
+        emoji="🎯"
+        primaryButtonText="Accept"
+        secondaryButtonText="Cancel"
+        onPrimaryPress={confirmAcceptOrder}
+        onSecondaryPress={() => setShowAcceptModal(false)}
+        onClose={() => setShowAcceptModal(false)}
+      />
+
+      <GameModal
+        visible={showSuccessModal}
+        type="success"
+        title="Order Accepted!"
+        message="Great! Head to Deliveries to start your journey."
+        emoji="🎉"
+        xpReward={40}
+        primaryButtonText="Go to Deliveries"
+        onPrimaryPress={handleSuccessClose}
+        onClose={handleSuccessClose}
+      />
+
+      <GameModal
+        visible={showErrorModal}
+        type="warning"
+        title="Oops!"
+        message={errorMessage}
+        emoji="😕"
+        primaryButtonText="Try Again"
+        onPrimaryPress={() => setShowErrorModal(false)}
+        onClose={() => setShowErrorModal(false)}
+      />
     </SafeAreaView>
   );
 }
