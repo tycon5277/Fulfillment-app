@@ -415,9 +415,18 @@ export default function OrdersScreen() {
           <Text style={styles.statValue}>{stats.pending}</Text>
           <Text style={styles.statLabel}>Pending</Text>
         </View>
-        <View style={styles.statCard}>
+        <TouchableOpacity 
+          style={[styles.statCard, styles.statCardClickable]}
+          onPress={() => router.push('/earnings')}
+          activeOpacity={0.7}
+        >
           <Text style={styles.statEmoji}>💰</Text>
-          <Text style={styles.statValue}>₹{stats.earnings}</Text>
+          <Text style={[styles.statValue, styles.statValueHighlight]}>₹{stats.earnings}</Text>
+          <Text style={styles.statLabel}>Total Earn</Text>
+          <View style={styles.statArrow}>
+            <Ionicons name="chevron-forward" size={14} color={THEME.success} />
+          </View>
+        </TouchableOpacity>
           <Text style={styles.statLabel}>Total Earn</Text>
         </View>
       </View>
