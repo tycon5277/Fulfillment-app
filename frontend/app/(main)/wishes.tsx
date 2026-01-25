@@ -96,7 +96,7 @@ export default function WishesScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={THEME.primary} />
         </View>
       </SafeAreaView>
     );
@@ -115,12 +115,12 @@ export default function WishesScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={THEME.primary} />
         }
       >
         {wishes.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="star-outline" size={64} color={COLORS.textSecondary} />
+            <Ionicons name="star-outline" size={64} color={THEME.textMuted} />
             <Text style={styles.emptyTitle}>No Wishes Available</Text>
             <Text style={styles.emptyText}>
               New wishes from customers will appear here
@@ -131,7 +131,7 @@ export default function WishesScreen() {
             <View key={wish.wish_id} style={styles.wishCard}>
               <View style={styles.wishHeader}>
                 <View style={styles.wishIconBg}>
-                  <Ionicons name={getWishTypeIcon(wish.wish_type)} size={24} color={COLORS.primary} />
+                  <Ionicons name={getWishTypeIcon(wish.wish_type)} size={24} color={THEME.accent2} />
                 </View>
                 <View style={styles.wishInfo}>
                   <Text style={styles.wishTitle}>{wish.title}</Text>
@@ -139,7 +139,7 @@ export default function WishesScreen() {
                 </View>
                 {wish.is_immediate && (
                   <View style={styles.urgentBadge}>
-                    <Ionicons name="flash" size={12} color={COLORS.white} />
+                    <Ionicons name="flash" size={12} color={THEME.background} />
                     <Text style={styles.urgentText}>Urgent</Text>
                   </View>
                 )}
@@ -153,7 +153,7 @@ export default function WishesScreen() {
 
               <View style={styles.wishDetails}>
                 <View style={styles.detailItem}>
-                  <Ionicons name="location" size={16} color={COLORS.textSecondary} />
+                  <Ionicons name="location" size={16} color={THEME.textMuted} />
                   <Text style={styles.detailText} numberOfLines={1}>
                     {wish.location.address}
                   </Text>
@@ -162,7 +162,7 @@ export default function WishesScreen() {
 
               <View style={styles.wishFooter}>
                 <View style={styles.remunerationBadge}>
-                  <Ionicons name="cash" size={18} color={COLORS.success} />
+                  <Ionicons name="cash" size={18} color={THEME.success} />
                   <Text style={styles.remunerationText}>₹{wish.remuneration}</Text>
                 </View>
                 <TouchableOpacity
@@ -171,10 +171,10 @@ export default function WishesScreen() {
                   disabled={accepting === wish.wish_id}
                 >
                   {accepting === wish.wish_id ? (
-                    <ActivityIndicator size="small" color={COLORS.white} />
+                    <ActivityIndicator size="small" color={THEME.background} />
                   ) : (
                     <>
-                      <Ionicons name="checkmark-circle" size={18} color={COLORS.white} />
+                      <Ionicons name="checkmark-circle" size={18} color={THEME.background} />
                       <Text style={styles.acceptButtonText}>Accept</Text>
                     </>
                   )}
