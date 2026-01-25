@@ -576,9 +576,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mapContainer: {
-    height: 200,
+    height: 220,
     backgroundColor: COLORS.cardBg,
     position: 'relative',
+    overflow: 'hidden',
+  },
+  mapWebView: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundSecondary,
   },
   mapImage: {
     width: '100%',
