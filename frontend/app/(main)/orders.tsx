@@ -90,6 +90,13 @@ export default function OrdersScreen() {
   const [expanded, setExpanded] = useState<ExpandedOrder>({});
   const [myLocation, setMyLocation] = useState(MOCK_LOCATION);
   const [stats, setStats] = useState({ total: 0, pending: 0, earnings: 0 });
+  
+  // Modal states
+  const [showAcceptModal, setShowAcceptModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Get user location
   useEffect(() => {
