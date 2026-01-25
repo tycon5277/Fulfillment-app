@@ -81,6 +81,9 @@ class User(BaseModel):
     promoter_type: Optional[str] = None  # trip_organizer, event_organizer, service_provider
     promoter_description: Optional[str] = None
     
+    # Push notification token (Expo)
+    push_token: Optional[str] = None
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserSession(BaseModel):
