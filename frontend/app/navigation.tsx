@@ -16,6 +16,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import GameModal from '../src/components/GameModal';
+import { WebView } from 'react-native-webview';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
