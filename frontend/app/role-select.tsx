@@ -81,7 +81,7 @@ export default function RoleSelectScreen() {
     setError('');
 
     if (partnerType === 'agent') {
-      router.push('/agent-setup');
+      router.push('/genie-type-select');
     } else if (partnerType === 'vendor') {
       router.push('/vendor-setup');
     } else if (partnerType === 'promoter') {
