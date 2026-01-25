@@ -131,7 +131,7 @@ export default function MainLayout() {
           height: tabBarHeight,
           paddingBottom: insets.bottom + 8,
           paddingTop: 10,
-          ...(isMobileGenie && {
+          ...(isAgent && {
             shadowColor: THEME.primary,
             shadowOffset: { width: 0, height: -4 },
             shadowOpacity: 0.1,
