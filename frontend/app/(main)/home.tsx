@@ -314,7 +314,7 @@ export default function HomeScreen() {
           {/* Map Card with Real OpenStreetMap */}
           <View style={styles.mapCard}>
             <View style={styles.mapContainer}>
-              {/* Carto Dark Map Tiles Grid */}
+              {/* Carto Map Tiles Grid with Desert/Sandal Tint */}
               <View style={styles.mapTilesContainer}>
                 {mapTiles.length > 0 ? (
                   <View style={styles.tilesGrid}>
@@ -333,6 +333,8 @@ export default function HomeScreen() {
                     <Text style={styles.mapPlaceholderText}>Loading map...</Text>
                   </View>
                 )}
+                {/* Desert/Sandal color overlay */}
+                <View style={styles.mapDesertOverlay} />
               </View>
 
               {/* Pulse rings when online */}
