@@ -19,8 +19,18 @@ export interface User {
   partner_total_earnings: number;
   
   // Agent-specific
-  agent_vehicle?: string;  // bike, scooter, car
-  agent_services?: string[];  // delivery, courier, rides, errands
+  agent_type?: 'mobile' | 'skilled';  // Mobile Genie or Skilled Genie
+  agent_vehicle?: string;  // motorbike, scooter, car
+  agent_vehicle_registration?: string;
+  agent_vehicle_make?: string;
+  agent_vehicle_model?: string;
+  agent_vehicle_color?: string;
+  agent_is_electric?: boolean;
+  agent_has_vehicle?: boolean;
+  agent_services?: string[];  // delivery, courier, rides, errands, surprise
+  agent_skills?: string[];
+  agent_rating?: number;
+  agent_total_deliveries?: number;
   
   // Vendor-specific
   vendor_shop_name?: string;
