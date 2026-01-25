@@ -412,50 +412,29 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            {/* Go Online Button - Clean Compact Design */}
-            <Animated.View style={[styles.buttonWrapper, { transform: [{ scale: buttonScale }] }]}>
+            {/* Online/Offline Toggle - Clean Pill Design */}
+            <View style={styles.pillButtonContainer}>
               <TouchableOpacity
                 onPress={toggleOnlineStatus}
-                onPressIn={handleButtonPressIn}
-                onPressOut={handleButtonPressOut}
                 disabled={statusLoading}
-                activeOpacity={0.9}
+                activeOpacity={0.8}
+                style={[
+                  styles.pillButton,
+                  isOnline ? styles.pillButtonOnline : styles.pillButtonOffline
+                ]}
               >
-                {isOnline ? (
-                  <LinearGradient
-                    colors={['#10B981', '#059669']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.compactButton}
-                  >
-                    {statusLoading ? (
-                      <ActivityIndicator color="#FFF" size="small" />
-                    ) : (
-                      <View style={styles.compactButtonContent}>
-                        <Ionicons name="radio" size={20} color="#FFF" />
-                        <Text style={styles.compactButtonText}>ONLINE</Text>
-                      </View>
-                    )}
-                  </LinearGradient>
+                {statusLoading ? (
+                  <ActivityIndicator color="#FFF" size="small" />
                 ) : (
-                  <LinearGradient
-                    colors={['#6366F1', '#8B5CF6']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.compactButton}
-                  >
-                    {statusLoading ? (
-                      <ActivityIndicator color="#FFF" size="small" />
-                    ) : (
-                      <View style={styles.compactButtonContent}>
-                        <Ionicons name="power" size={20} color="#FFF" />
-                        <Text style={styles.compactButtonText}>GO ONLINE</Text>
-                      </View>
-                    )}
-                  </LinearGradient>
+                  <>
+                    <View style={[styles.pillDot, isOnline ? styles.pillDotOnline : styles.pillDotOffline]} />
+                    <Text style={styles.pillButtonText}>
+                      {isOnline ? 'Online' : 'Offline'}
+                    </Text>
+                  </>
                 )}
               </TouchableOpacity>
-            </Animated.View>
+            </View>
           </View>
 
           {/* Quick Stats Row */}
