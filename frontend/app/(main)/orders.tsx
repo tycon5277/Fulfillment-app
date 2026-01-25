@@ -448,40 +448,69 @@ export default function OrdersScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Orders List */}
-      <FlatList
-        data={orders}
-        keyExtractor={(item) => item.order_id}
-        renderItem={renderOrder}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh}
-            tintColor={THEME.primary}
-          />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyEmoji}>📭</Text>
-            <Text style={styles.emptyTitle}>No Orders Yet</Text>
-            <Text style={styles.emptyText}>New hub orders will appear here</Text>
+      {/* Orders List - Only show when online */}
+      {!isOnline ? (
+        <View style={styles.offlineContainer}>
+          <LinearGradient
+            colors={[THEME.cardBg, THEME.backgroundSecondary]}
+            style={styles.offlineGradient}
+          >
+            <View style={styles.offlineIconContainer}>
+              <Ionicons name="moon" size={64} color={THEME.textMuted} />
+            </View>
+            <Text style={styles.offlineTitle}>You're Offline</Text>
+            <Text style={styles.offlineSubtitle}>
+              Go online from the Home screen to see available hub orders
+            </Text>
             <TouchableOpacity 
-              style={styles.seedButton} 
-              onPress={() => api.seedOrders().then(fetchOrders)}
+              style={styles.goOnlineButton}
+              onPress={() => router.push('/(main)/home')}
             >
               <LinearGradient
                 colors={[THEME.primary, THEME.primaryDark]}
-                style={styles.seedButtonGradient}
+                style={styles.goOnlineGradient}
               >
-                <Ionicons name="add-circle-outline" size={18} color="#FFF" />
-                <Text style={styles.seedButtonText}>Add Demo Orders</Text>
+                <Ionicons name="power" size={18} color="#FFF" />
+                <Text style={styles.goOnlineText}>Go to Home</Text>
               </LinearGradient>
             </TouchableOpacity>
-          </View>
-        }
-        showsVerticalScrollIndicator={false}
-      />
+          </LinearGradient>
+        </View>
+      ) : (
+        <FlatList
+          data={orders}
+          keyExtractor={(item) => item.order_id}
+          renderItem={renderOrder}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh}
+              tintColor={THEME.primary}
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyEmoji}>📭</Text>
+              <Text style={styles.emptyTitle}>No Orders Yet</Text>
+              <Text style={styles.emptyText}>New hub orders will appear here</Text>
+              <TouchableOpacity 
+                style={styles.seedButton} 
+                onPress={() => api.seedOrders().then(fetchOrders)}
+              >
+                <LinearGradient
+                  colors={[THEME.primary, THEME.primaryDark]}
+                  style={styles.seedButtonGradient}
+                >
+                  <Ionicons name="add-circle-outline" size={18} color="#FFF" />
+                  <Text style={styles.seedButtonText}>Add Demo Orders</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       {/* Beautiful Game Modals */}
       <GameModal
