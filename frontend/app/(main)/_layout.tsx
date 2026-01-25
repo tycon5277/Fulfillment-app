@@ -281,7 +281,7 @@ export default function MainLayout() {
         options={{
           title: 'Bookings',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
+            <View style={[styles.iconContainer]}>
               <Ionicons name={focused ? "ticket" : "ticket-outline"} size={24} color={color} />
             </View>
           ),
@@ -295,7 +295,7 @@ export default function MainLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
+            <View style={[styles.iconContainer, focused && isAgent && styles.iconContainerActive]}>
               <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
             </View>
           ),
