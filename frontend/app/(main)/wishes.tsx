@@ -191,7 +191,7 @@ export default function WishesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: THEME.background,
   },
   loadingContainer: {
     flex: 1,
@@ -203,28 +203,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: COLORS.white,
+    backgroundColor: THEME.cardBg,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: THEME.cardBorder,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: COLORS.text,
+    color: THEME.text,
   },
   countBadge: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: THEME.accent2,
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
   },
   countText: {
-    color: COLORS.white,
+    color: THEME.background,
     fontWeight: '600',
     fontSize: 14,
   },
   content: {
     padding: 16,
+    paddingBottom: 100,
   },
   emptyState: {
     alignItems: 'center',
@@ -233,25 +234,22 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.text,
+    color: THEME.text,
     marginTop: 16,
   },
   emptyText: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: THEME.textMuted,
     marginTop: 8,
     textAlign: 'center',
   },
   wishCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: THEME.cardBg,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
   },
   wishHeader: {
     flexDirection: 'row',
@@ -262,7 +260,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: COLORS.primary + '20',
+    backgroundColor: THEME.accent2 + '25',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -273,18 +271,18 @@ const styles = StyleSheet.create({
   wishTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.text,
+    color: THEME.text,
   },
   wishType: {
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: THEME.textSecondary,
     marginTop: 2,
     textTransform: 'capitalize',
   },
   urgentBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.amber,
+    backgroundColor: THEME.warning,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -293,11 +291,11 @@ const styles = StyleSheet.create({
   urgentText: {
     fontSize: 11,
     fontWeight: '600',
-    color: COLORS.white,
+    color: THEME.background,
   },
   wishDescription: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: THEME.textSecondary,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -311,7 +309,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: THEME.textSecondary,
     flex: 1,
   },
   wishFooter: {
@@ -320,12 +318,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: THEME.cardBorder,
   },
   remunerationBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#D1FAE5',
+    backgroundColor: THEME.success + '20',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -334,12 +332,12 @@ const styles = StyleSheet.create({
   remunerationText: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.success,
+    color: THEME.success,
   },
   acceptButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primary,
+    backgroundColor: THEME.accent2,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
@@ -349,7 +347,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   acceptButtonText: {
-    color: COLORS.white,
+    color: THEME.background,
     fontWeight: '600',
     fontSize: 14,
   },
