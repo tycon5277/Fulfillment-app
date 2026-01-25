@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as api from '../../src/api';
+import THEME from '../../src/theme';
 
 const COLORS = {
   primary: '#7C3AED',
