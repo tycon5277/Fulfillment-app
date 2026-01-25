@@ -623,8 +623,11 @@ const styles = StyleSheet.create({
   },
   
   // Incoming State
-  incomingContainer: {
+  incomingScrollContainer: {
     flex: 1,
+  },
+  incomingContainer: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
