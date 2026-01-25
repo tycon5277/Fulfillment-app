@@ -16,12 +16,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import GameModal from '../src/components/GameModal';
-
-// Conditionally import WebView only for native platforms
-let WebView: any = null;
-if (Platform.OS !== 'web') {
-  WebView = require('react-native-webview').WebView;
-}
+import MapView from '../src/components/MapView';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
