@@ -276,15 +276,18 @@ export default function DeliveriesScreen() {
           <View style={styles.xpDisplay}>
             <Text style={styles.xpValue}>+{delivery.xp} XP</Text>
           </View>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => handleDeliveryPress(delivery)}
+          >
             <LinearGradient
               colors={gradientColors}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.actionGradient}
             >
-              <Text style={styles.actionText}>Update</Text>
-              <Ionicons name="chevron-forward" size={16} color="#FFF" />
+              <Ionicons name="navigate" size={16} color="#FFF" />
+              <Text style={styles.actionText}>Navigate</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
