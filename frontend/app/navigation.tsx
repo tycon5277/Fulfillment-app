@@ -314,11 +314,15 @@ export default function NavigationScreen() {
         {/* Real Map Preview using Leaflet */}
         <View style={styles.mapContainer}>
           {Platform.OS === 'web' ? (
-            <iframe
-              srcDoc={getMapHtml()}
-              style={{ width: '100%', height: '100%', border: 'none' }}
-              title="Navigation Map"
-            />
+            // For web: Use dangerouslySetInnerHTML with iframe
+            <View style={styles.mapWebView}>
+              <div 
+                style={{ width: '100%', height: '100%' }}
+                dangerouslySetInnerHTML={{ 
+                  __html: `<iframe srcDoc="${getMapHtml().replace(/"/g, '&quot;')}" style="width:100%;height:100%;border:none;" title="Map"></iframe>`
+                }}
+              />
+            </View>
           ) : WebView ? (
             <WebView
               source={{ html: getMapHtml() }}
