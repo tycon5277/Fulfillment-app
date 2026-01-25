@@ -158,29 +158,31 @@ export default function OrdersScreen() {
   };
 
   const handleAcceptOrder = async (orderId: string) => {
-    Alert.alert(
-      '🎯 Accept Order',
-      'Ready to pick up this order?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Accept',
-          onPress: async () => {
-            setAccepting(orderId);
-            try {
-              await api.acceptOrder(orderId);
-              Alert.alert('🎉 Success!', 'Order accepted! Head to Deliveries to start.');
-              fetchOrders();
-              router.push('/(main)/deliveries');
-            } catch (error: any) {
-              Alert.alert('Error', error.response?.data?.detail || 'Failed to accept order');
-            } finally {
-              setAccepting(null);
-            }
-          },
-        },
-      ]
-    );
+    setSelectedOrderId(orderId);
+    setShowAcceptModal(true);
+  };
+
+  const confirmAcceptOrder = async () => {
+    if (!selectedOrderId) return;
+    
+    setShowAcceptModal(false);
+    setAccepting(selectedOrderId);
+    
+    try {
+      await api.acceptOrder(selectedOrderId);
+      setShowSuccessModal(true);
+      fetchOrders();
+    } catch (error: any) {
+      setErrorMessage(error.response?.data?.detail || 'Failed to accept order');
+      setShowErrorModal(true);
+    } finally {
+      setAccepting(null);
+    }
+  };
+
+  const handleSuccessClose = () => {
+    setShowSuccessModal(false);
+    router.push('/(main)/deliveries');
   };
 
   // Get distances for an order
