@@ -280,10 +280,11 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.primary + '20',
     borderRadius: 14,
   },
-  // Magical Floating Wishes Button
+  // Magical Floating Wishes Button - Violet Theme
   wishesContainer: {
     alignItems: 'center',
     marginTop: -20,
+    width: 70,
   },
   wishesFloatingContainer: {
     alignItems: 'center',
@@ -297,10 +298,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 3,
-    shadowColor: '#3B82F6',
+    shadowColor: '#8B5CF6',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
     elevation: 10,
   },
   wishesInnerRing: {
@@ -327,13 +328,14 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: '#FBBF24',
+    backgroundColor: '#A855F7',
     zIndex: -1,
   },
   wishesLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#FBBF24',
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#A855F7',
     marginTop: 4,
+    textAlign: 'center',
   },
 });
