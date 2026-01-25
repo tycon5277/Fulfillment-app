@@ -182,36 +182,9 @@ export default function MainLayout() {
         options={{
           title: 'Wishes',
           tabBarIcon: ({ color, focused }) => (
-            <View style={styles.wishesFloatingContainer}>
-              {/* Outer gradient ring - Blue to Cyan */}
-              <LinearGradient
-                colors={['#3B82F6', '#06B6D4', '#22D3EE']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.wishesOuterRing}
-              >
-                {/* Inner gradient ring - Yellow to Orange */}
-                <LinearGradient
-                  colors={['#F59E0B', '#FBBF24', '#FCD34D']}
-                  start={{ x: 0, y: 1 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.wishesInnerRing}
-                >
-                  {/* Center button */}
-                  <View style={[styles.wishesCenterButton, focused && styles.wishesCenterButtonActive]}>
-                    <Ionicons 
-                      name={focused ? "sparkles" : "sparkles-outline"} 
-                      size={24} 
-                      color={focused ? '#FBBF24' : '#FFF'} 
-                    />
-                  </View>
-                </LinearGradient>
-              </LinearGradient>
-              {/* Glow effect */}
-              <View style={styles.wishesGlow} />
-            </View>
+            <WishesButton focused={focused} />
           ),
-          tabBarLabel: () => null, // Hide label for floating button
+          tabBarLabel: () => null, // Label is part of the custom component
           href: partnerType === 'agent' ? '/(main)/wishes' : null,
         }}
       />
