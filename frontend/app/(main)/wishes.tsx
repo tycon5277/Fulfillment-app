@@ -704,11 +704,13 @@ const styles = StyleSheet.create({
   },
   incomingBody: {
     padding: 20,
+    backgroundColor: COLORS.cardBg,
   },
   wisherInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+    backgroundColor: 'rgba(255,0,0,0.1)',
   },
   wisherAvatar: {
     width: 50,
