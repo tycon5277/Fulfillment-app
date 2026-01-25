@@ -237,89 +237,91 @@ export default function WishesScreen() {
 
   // INCOMING STATE - New wish request received (direct ping)
   const renderIncomingState = () => (
-    <ScrollView 
-      style={styles.incomingScrollContainer} 
-      contentContainerStyle={styles.incomingContainer}
-      showsVerticalScrollIndicator={false}
-    >
-      <Animated.View style={[styles.incomingCard, { transform: [{ scale: pulseAnim }] }]}>
-        <LinearGradient
-          colors={[COLORS.primary, COLORS.magenta]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.incomingHeader}
-        >
-          <Text style={styles.incomingLabel}>✨ NEW WISH REQUEST</Text>
-        </LinearGradient>
-        
-        <View style={styles.incomingBody}>
-          {/* Wisher Info */}
-          <View style={styles.wisherInfo}>
-            <View style={styles.wisherAvatar}>
-              <Text style={styles.wisherAvatarText}>{MOCK_INCOMING_WISH.wisher.avatar}</Text>
-            </View>
-            <View style={styles.wisherDetails}>
-              <Text style={styles.wisherName}>{MOCK_INCOMING_WISH.wisher.name}</Text>
-              <View style={styles.wisherRating}>
-                <Ionicons name="star" size={14} color={COLORS.amber} />
-                <Text style={styles.wisherRatingText}>{MOCK_INCOMING_WISH.wisher.rating}</Text>
-                <Text style={styles.wisherWishes}>• {MOCK_INCOMING_WISH.wisher.totalWishes} wishes</Text>
+    <View style={styles.incomingWrapper}>
+      <ScrollView 
+        style={styles.incomingScrollContainer} 
+        contentContainerStyle={styles.incomingContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View style={[styles.incomingCard, { transform: [{ scale: pulseAnim }] }]}>
+          <LinearGradient
+            colors={[COLORS.primary, COLORS.magenta]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.incomingHeader}
+          >
+            <Text style={styles.incomingLabel}>✨ NEW WISH REQUEST</Text>
+          </LinearGradient>
+          
+          <View style={styles.incomingBody}>
+            {/* Wisher Info */}
+            <View style={styles.wisherInfo}>
+              <View style={styles.wisherAvatar}>
+                <Text style={styles.wisherAvatarText}>{MOCK_INCOMING_WISH.wisher.avatar}</Text>
+              </View>
+              <View style={styles.wisherDetails}>
+                <Text style={styles.wisherName}>{MOCK_INCOMING_WISH.wisher.name}</Text>
+                <View style={styles.wisherRating}>
+                  <Ionicons name="star" size={14} color={COLORS.amber} />
+                  <Text style={styles.wisherRatingText}>{MOCK_INCOMING_WISH.wisher.rating}</Text>
+                  <Text style={styles.wisherWishes}>• {MOCK_INCOMING_WISH.wisher.totalWishes} wishes</Text>
+                </View>
+              </View>
+              <View style={styles.categoryBadge}>
+                <Text style={styles.categoryEmoji}>{MOCK_INCOMING_WISH.emoji}</Text>
+                <Text style={styles.categoryText}>{MOCK_INCOMING_WISH.category}</Text>
               </View>
             </View>
-            <View style={styles.categoryBadge}>
-              <Text style={styles.categoryEmoji}>{MOCK_INCOMING_WISH.emoji}</Text>
-              <Text style={styles.categoryText}>{MOCK_INCOMING_WISH.category}</Text>
-            </View>
-          </View>
-          
-          {/* Wish Details */}
-          <Text style={styles.wishTitle}>{MOCK_INCOMING_WISH.title}</Text>
-          <Text style={styles.wishDescription}>{MOCK_INCOMING_WISH.description}</Text>
-          
-          {/* Location & Earnings */}
-          <View style={styles.incomingMeta}>
-            <View style={styles.metaItem}>
-              <Ionicons name="location" size={16} color={COLORS.cyan} />
-              <Text style={styles.metaText}>{MOCK_INCOMING_WISH.location.distance} km</Text>
-            </View>
-            <View style={styles.metaItem}>
-              <Ionicons name="time" size={16} color={COLORS.amber} />
-              <Text style={styles.metaText}>{MOCK_INCOMING_WISH.estimatedTime}</Text>
-            </View>
-            <View style={styles.metaItem}>
-              <Ionicons name="flash" size={16} color={COLORS.magenta} />
-              <Text style={styles.metaText}>+{MOCK_INCOMING_WISH.xpReward} XP</Text>
-            </View>
-          </View>
-          
-          <View style={styles.budgetRow}>
-            <Text style={styles.budgetLabel}>Wisher's Budget</Text>
-            <Text style={styles.budgetValue}>
-              ₹{MOCK_INCOMING_WISH.budget.min} - ₹{MOCK_INCOMING_WISH.budget.max}
-            </Text>
-          </View>
-          
-          {/* Action Buttons */}
-          <View style={styles.incomingActions}>
-            <TouchableOpacity style={styles.declineBtn} onPress={handleDeclineWish}>
-              <Ionicons name="close" size={24} color={COLORS.red} />
-              <Text style={styles.declineBtnText}>Decline</Text>
-            </TouchableOpacity>
             
-            <TouchableOpacity style={styles.acceptBtn} onPress={handleAcceptWish}>
-              <LinearGradient
-                colors={[COLORS.green, '#16A34A']}
-                style={styles.acceptBtnGradient}
-              >
-                <Ionicons name="checkmark" size={24} color="#FFF" />
-                <Text style={styles.acceptBtnText}>Accept Wish</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+            {/* Wish Details */}
+            <Text style={styles.wishTitle}>{MOCK_INCOMING_WISH.title}</Text>
+            <Text style={styles.wishDescription}>{MOCK_INCOMING_WISH.description}</Text>
+            
+            {/* Location & Earnings */}
+            <View style={styles.incomingMeta}>
+              <View style={styles.metaItem}>
+                <Ionicons name="location" size={16} color={COLORS.cyan} />
+                <Text style={styles.metaText}>{MOCK_INCOMING_WISH.location.distance} km</Text>
+              </View>
+              <View style={styles.metaItem}>
+                <Ionicons name="time" size={16} color={COLORS.amber} />
+                <Text style={styles.metaText}>{MOCK_INCOMING_WISH.estimatedTime}</Text>
+              </View>
+              <View style={styles.metaItem}>
+                <Ionicons name="flash" size={16} color={COLORS.magenta} />
+                <Text style={styles.metaText}>+{MOCK_INCOMING_WISH.xpReward} XP</Text>
+              </View>
+            </View>
+            
+            <View style={styles.budgetRow}>
+              <Text style={styles.budgetLabel}>Wisher's Budget</Text>
+              <Text style={styles.budgetValue}>
+                ₹{MOCK_INCOMING_WISH.budget.min} - ₹{MOCK_INCOMING_WISH.budget.max}
+              </Text>
+            </View>
+            
+            {/* Action Buttons */}
+            <View style={styles.incomingActions}>
+              <TouchableOpacity style={styles.declineBtn} onPress={handleDeclineWish}>
+                <Ionicons name="close" size={24} color={COLORS.red} />
+                <Text style={styles.declineBtnText}>Decline</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.acceptBtn} onPress={handleAcceptWish}>
+                <LinearGradient
+                  colors={[COLORS.green, '#16A34A']}
+                  style={styles.acceptBtnGradient}
+                >
+                  <Ionicons name="checkmark" size={24} color="#FFF" />
+                  <Text style={styles.acceptBtnText}>Accept Wish</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </Animated.View>
-      <View style={{ height: 40 }} />
-    </ScrollView>
+        </Animated.View>
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </View>
   );
 
   // CONNECTED STATE - Active connection with wisher
