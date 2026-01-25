@@ -1366,8 +1366,505 @@ async def seed_sample_wishes():
 
 @api_router.get("/health")
 async def health_check():
-    """Health check endpoint"""
     return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+# ===================== WEBSOCKET CONNECTION MANAGER =====================
+
+class ConnectionManager:
+    """Manages WebSocket connections for real-time chat"""
+    
+    def __init__(self):
+        # room_id -> {user_id: websocket}
+        self.active_connections: Dict[str, Dict[str, WebSocket]] = {}
+    
+    async def connect(self, websocket: WebSocket, room_id: str, user_id: str):
+        await websocket.accept()
+        if room_id not in self.active_connections:
+            self.active_connections[room_id] = {}
+        self.active_connections[room_id][user_id] = websocket
+        logger.info(f"User {user_id} connected to room {room_id}")
+    
+    def disconnect(self, room_id: str, user_id: str):
+        if room_id in self.active_connections:
+            if user_id in self.active_connections[room_id]:
+                del self.active_connections[room_id][user_id]
+            if not self.active_connections[room_id]:
+                del self.active_connections[room_id]
+        logger.info(f"User {user_id} disconnected from room {room_id}")
+    
+    async def send_personal_message(self, message: dict, room_id: str, user_id: str):
+        if room_id in self.active_connections and user_id in self.active_connections[room_id]:
+            await self.active_connections[room_id][user_id].send_json(message)
+    
+    async def broadcast_to_room(self, message: dict, room_id: str, exclude_user: str = None):
+        if room_id in self.active_connections:
+            for user_id, websocket in self.active_connections[room_id].items():
+                if exclude_user and user_id == exclude_user:
+                    continue
+                try:
+                    await websocket.send_json(message)
+                except Exception as e:
+                    logger.error(f"Error sending to {user_id}: {e}")
+
+    def is_user_online(self, room_id: str, user_id: str) -> bool:
+        return room_id in self.active_connections and user_id in self.active_connections[room_id]
+
+manager = ConnectionManager()
+
+# ===================== WEBSOCKET CHAT ENDPOINT =====================
+
+@app.websocket("/ws/chat/{room_id}/{user_id}")
+async def websocket_chat(websocket: WebSocket, room_id: str, user_id: str):
+    await manager.connect(websocket, room_id, user_id)
+    
+    # Send connection confirmation
+    await websocket.send_json({
+        "type": "connected",
+        "room_id": room_id,
+        "user_id": user_id,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+    
+    try:
+        while True:
+            data = await websocket.receive_json()
+            
+            if data.get("type") == "message":
+                # Save message to database
+                message_id = f"msg_{uuid.uuid4().hex[:12]}"
+                message_doc = {
+                    "message_id": message_id,
+                    "room_id": room_id,
+                    "sender_id": user_id,
+                    "sender_type": data.get("sender_type", "unknown"),
+                    "content": data.get("content", ""),
+                    "created_at": datetime.now(timezone.utc)
+                }
+                await db.messages.insert_one(message_doc)
+                
+                # Broadcast to all users in the room
+                broadcast_msg = {
+                    "type": "new_message",
+                    "message": {
+                        "message_id": message_id,
+                        "sender_id": user_id,
+                        "sender_type": data.get("sender_type", "unknown"),
+                        "content": data.get("content", ""),
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                }
+                await manager.broadcast_to_room(broadcast_msg, room_id)
+                
+            elif data.get("type") == "typing":
+                # Broadcast typing indicator
+                await manager.broadcast_to_room({
+                    "type": "typing",
+                    "user_id": user_id,
+                    "is_typing": data.get("is_typing", False)
+                }, room_id, exclude_user=user_id)
+                
+            elif data.get("type") == "read":
+                # Mark messages as read
+                await manager.broadcast_to_room({
+                    "type": "read",
+                    "user_id": user_id,
+                    "last_read_at": datetime.now(timezone.utc).isoformat()
+                }, room_id, exclude_user=user_id)
+                
+    except WebSocketDisconnect:
+        manager.disconnect(room_id, user_id)
+        # Notify others in the room
+        await manager.broadcast_to_room({
+            "type": "user_disconnected",
+            "user_id": user_id
+        }, room_id)
+
+# ===================== CHAT REST ENDPOINTS =====================
+
+@api_router.post("/chat/rooms")
+async def create_chat_room(
+    wish_id: str,
+    wisher_id: str,
+    partner_id: str,
+    wish_title: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """Create a new chat room for a wish connection"""
+    room_id = f"room_{uuid.uuid4().hex[:12]}"
+    
+    room_doc = {
+        "room_id": room_id,
+        "wish_id": wish_id,
+        "wisher_id": wisher_id,
+        "partner_id": partner_id,
+        "wish_title": wish_title,
+        "status": "active",
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.chat_rooms.insert_one(room_doc)
+    return room_doc
+
+@api_router.get("/chat/rooms/{room_id}")
+async def get_chat_room(room_id: str, user: dict = Depends(get_current_user)):
+    """Get chat room details"""
+    room = await db.chat_rooms.find_one({"room_id": room_id})
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+    
+    # Get participant info
+    wisher = await db.users.find_one({"user_id": room["wisher_id"]})
+    partner = await db.users.find_one({"user_id": room["partner_id"]})
+    
+    room["_id"] = str(room["_id"])
+    room["wisher"] = {"name": wisher.get("name"), "phone": wisher.get("phone")} if wisher else None
+    room["partner"] = {"name": partner.get("name"), "phone": partner.get("phone")} if partner else None
+    
+    return room
+
+@api_router.get("/chat/rooms/{room_id}/messages")
+async def get_chat_messages(
+    room_id: str, 
+    limit: int = 50, 
+    before: Optional[str] = None,
+    user: dict = Depends(get_current_user)
+):
+    """Get messages for a chat room"""
+    query = {"room_id": room_id}
+    if before:
+        query["created_at"] = {"$lt": datetime.fromisoformat(before)}
+    
+    cursor = db.messages.find(query).sort("created_at", -1).limit(limit)
+    messages = await cursor.to_list(length=limit)
+    
+    for msg in messages:
+        msg["_id"] = str(msg["_id"])
+        msg["created_at"] = msg["created_at"].isoformat()
+    
+    return list(reversed(messages))
+
+@api_router.get("/chat/my-rooms")
+async def get_my_chat_rooms(user: dict = Depends(get_current_user)):
+    """Get all chat rooms for the current user"""
+    user_id = user["user_id"]
+    
+    cursor = db.chat_rooms.find({
+        "$or": [{"wisher_id": user_id}, {"partner_id": user_id}],
+        "status": "active"
+    }).sort("created_at", -1)
+    
+    rooms = await cursor.to_list(length=50)
+    
+    result = []
+    for room in rooms:
+        room["_id"] = str(room["_id"])
+        
+        # Get last message
+        last_msg = await db.messages.find_one(
+            {"room_id": room["room_id"]},
+            sort=[("created_at", -1)]
+        )
+        if last_msg:
+            room["last_message"] = {
+                "content": last_msg["content"],
+                "sender_id": last_msg["sender_id"],
+                "created_at": last_msg["created_at"].isoformat()
+            }
+        
+        # Get other participant info
+        other_id = room["partner_id"] if room["wisher_id"] == user_id else room["wisher_id"]
+        other_user = await db.users.find_one({"user_id": other_id})
+        if other_user:
+            room["other_user"] = {
+                "user_id": other_user["user_id"],
+                "name": other_user.get("name"),
+                "phone": other_user.get("phone")
+            }
+        
+        result.append(room)
+    
+    return result
+
+# ===================== PUSH NOTIFICATION ENDPOINTS =====================
+
+class PushTokenUpdate(BaseModel):
+    push_token: str
+
+@api_router.post("/notifications/register-token")
+async def register_push_token(data: PushTokenUpdate, user: dict = Depends(get_current_user)):
+    """Register Expo push notification token for a user"""
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"push_token": data.push_token}}
+    )
+    return {"status": "success", "message": "Push token registered"}
+
+async def send_push_notification(push_token: str, title: str, body: str, data: dict = None):
+    """Send push notification via Expo Push API"""
+    if not push_token or not push_token.startswith("ExponentPushToken"):
+        logger.warning(f"Invalid push token: {push_token}")
+        return False
+    
+    message = {
+        "to": push_token,
+        "sound": "default",
+        "title": title,
+        "body": body,
+        "data": data or {}
+    }
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://exp.host/--/api/v2/push/send",
+                json=message,
+                headers={"Content-Type": "application/json"}
+            )
+            result = response.json()
+            logger.info(f"Push notification sent: {result}")
+            return True
+    except Exception as e:
+        logger.error(f"Failed to send push notification: {e}")
+        return False
+
+@api_router.post("/notifications/send-wish-request")
+async def send_wish_request_notification(
+    genie_id: str,
+    wish_id: str,
+    wisher_name: str,
+    wish_title: str,
+    user: dict = Depends(get_current_user)
+):
+    """Send push notification to Genie for new wish request"""
+    genie = await db.users.find_one({"user_id": genie_id})
+    if not genie or not genie.get("push_token"):
+        raise HTTPException(status_code=404, detail="Genie not found or no push token")
+    
+    success = await send_push_notification(
+        genie["push_token"],
+        "✨ New Wish Request!",
+        f"{wisher_name} needs your help with: {wish_title}",
+        {"type": "wish_request", "wish_id": wish_id}
+    )
+    
+    return {"status": "success" if success else "failed"}
+
+# ===================== WISH MATCHING & ASSIGNMENT =====================
+
+class WishCreate(BaseModel):
+    category: str
+    title: str
+    description: str
+    budget_min: float
+    budget_max: float
+    pickup_location: Optional[dict] = None
+    dropoff_location: dict
+    is_urgent: bool = False
+
+@api_router.post("/wishes/create")
+async def create_wish(wish_data: WishCreate, user: dict = Depends(get_current_user)):
+    """Create a new wish and find matching Genie"""
+    wish_id = f"wish_{uuid.uuid4().hex[:12]}"
+    
+    # Create wish document
+    wish_doc = {
+        "wish_id": wish_id,
+        "wisher_id": user["user_id"],
+        "wisher_name": user.get("name", "Unknown"),
+        "category": wish_data.category,
+        "title": wish_data.title,
+        "description": wish_data.description,
+        "budget_min": wish_data.budget_min,
+        "budget_max": wish_data.budget_max,
+        "pickup_location": wish_data.pickup_location,
+        "dropoff_location": wish_data.dropoff_location,
+        "is_urgent": wish_data.is_urgent,
+        "status": "searching",  # searching, matched, accepted, in_progress, completed, cancelled
+        "assigned_genie_id": None,
+        "chat_room_id": None,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.wishes.insert_one(wish_doc)
+    
+    # Find nearby available Genies (mobile genies only for wishes)
+    available_genies = await db.users.find({
+        "partner_type": "agent",
+        "agent_type": "mobile",
+        "partner_status": "available"
+    }).to_list(length=10)
+    
+    if available_genies:
+        # For now, assign to first available genie (later: proximity-based)
+        genie = available_genies[0]
+        
+        # Update wish with assigned genie
+        await db.wishes.update_one(
+            {"wish_id": wish_id},
+            {"$set": {
+                "status": "matched",
+                "assigned_genie_id": genie["user_id"],
+                "assigned_genie_name": genie.get("name", "Genie")
+            }}
+        )
+        
+        # Send push notification to genie
+        if genie.get("push_token"):
+            await send_push_notification(
+                genie["push_token"],
+                "✨ New Wish Request!",
+                f"{user.get('name', 'Someone')} needs help: {wish_data.title}",
+                {"type": "wish_request", "wish_id": wish_id}
+            )
+        
+        wish_doc["status"] = "matched"
+        wish_doc["assigned_genie_id"] = genie["user_id"]
+        wish_doc["assigned_genie_name"] = genie.get("name", "Genie")
+    
+    wish_doc.pop("_id", None)
+    return wish_doc
+
+@api_router.post("/wishes/{wish_id}/accept")
+async def accept_wish(wish_id: str, user: dict = Depends(get_current_user)):
+    """Genie accepts a wish - creates chat room and starts connection"""
+    wish = await db.wishes.find_one({"wish_id": wish_id})
+    if not wish:
+        raise HTTPException(status_code=404, detail="Wish not found")
+    
+    if wish.get("assigned_genie_id") != user["user_id"]:
+        raise HTTPException(status_code=403, detail="This wish is not assigned to you")
+    
+    # Create chat room
+    room_id = f"room_{uuid.uuid4().hex[:12]}"
+    room_doc = {
+        "room_id": room_id,
+        "wish_id": wish_id,
+        "wisher_id": wish["wisher_id"],
+        "partner_id": user["user_id"],
+        "wish_title": wish.get("title"),
+        "status": "active",
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.chat_rooms.insert_one(room_doc)
+    
+    # Update wish status
+    await db.wishes.update_one(
+        {"wish_id": wish_id},
+        {"$set": {
+            "status": "accepted",
+            "chat_room_id": room_id,
+            "accepted_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    # Update genie status to busy
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"partner_status": "busy"}}
+    )
+    
+    # Notify wisher
+    wisher = await db.users.find_one({"user_id": wish["wisher_id"]})
+    if wisher and wisher.get("push_token"):
+        await send_push_notification(
+            wisher["push_token"],
+            "🎉 Genie Connected!",
+            f"{user.get('name', 'A Genie')} has accepted your wish!",
+            {"type": "wish_accepted", "wish_id": wish_id, "room_id": room_id}
+        )
+    
+    return {
+        "status": "success",
+        "wish_id": wish_id,
+        "room_id": room_id,
+        "wisher": {
+            "name": wisher.get("name") if wisher else None,
+            "phone": wisher.get("phone") if wisher else None
+        }
+    }
+
+@api_router.post("/wishes/{wish_id}/decline")
+async def decline_wish(wish_id: str, user: dict = Depends(get_current_user)):
+    """Genie declines a wish - reassign to another genie"""
+    wish = await db.wishes.find_one({"wish_id": wish_id})
+    if not wish:
+        raise HTTPException(status_code=404, detail="Wish not found")
+    
+    # Find another available genie
+    available_genies = await db.users.find({
+        "partner_type": "agent",
+        "agent_type": "mobile",
+        "partner_status": "available",
+        "user_id": {"$ne": user["user_id"]}  # Exclude current genie
+    }).to_list(length=10)
+    
+    if available_genies:
+        new_genie = available_genies[0]
+        await db.wishes.update_one(
+            {"wish_id": wish_id},
+            {"$set": {
+                "assigned_genie_id": new_genie["user_id"],
+                "assigned_genie_name": new_genie.get("name", "Genie")
+            }}
+        )
+        
+        # Notify new genie
+        if new_genie.get("push_token"):
+            await send_push_notification(
+                new_genie["push_token"],
+                "✨ New Wish Request!",
+                f"Someone needs help: {wish.get('title')}",
+                {"type": "wish_request", "wish_id": wish_id}
+            )
+    else:
+        # No genies available
+        await db.wishes.update_one(
+            {"wish_id": wish_id},
+            {"$set": {"status": "searching", "assigned_genie_id": None}}
+        )
+    
+    return {"status": "success", "message": "Wish reassigned"}
+
+@api_router.get("/wishes/incoming")
+async def get_incoming_wish(user: dict = Depends(get_current_user)):
+    """Get incoming wish request for a Genie"""
+    wish = await db.wishes.find_one({
+        "assigned_genie_id": user["user_id"],
+        "status": "matched"
+    })
+    
+    if wish:
+        wish["_id"] = str(wish["_id"])
+        # Get wisher info
+        wisher = await db.users.find_one({"user_id": wish["wisher_id"]})
+        if wisher:
+            wish["wisher"] = {
+                "name": wisher.get("name"),
+                "phone": wisher.get("phone"),
+                "rating": wisher.get("partner_rating", 5.0)
+            }
+    
+    return wish
+
+@api_router.get("/wishes/active")
+async def get_active_wish(user: dict = Depends(get_current_user)):
+    """Get currently active wish for a Genie"""
+    wish = await db.wishes.find_one({
+        "assigned_genie_id": user["user_id"],
+        "status": {"$in": ["accepted", "in_progress"]}
+    })
+    
+    if wish:
+        wish["_id"] = str(wish["_id"])
+        # Get wisher info
+        wisher = await db.users.find_one({"user_id": wish["wisher_id"]})
+        if wisher:
+            wish["wisher"] = {
+                "name": wisher.get("name"),
+                "phone": wisher.get("phone")
+            }
+    
+    return wish
 
 # Include the router in the main app
 app.include_router(api_router)
