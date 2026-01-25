@@ -311,17 +311,30 @@ export default function NavigationScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Real Map Preview using Leaflet/WebView */}
+        {/* Real Map Preview using Leaflet */}
         <View style={styles.mapContainer}>
-          <WebView
-            source={{ html: getMapHtml() }}
-            style={styles.mapWebView}
-            scrollEnabled={false}
-            showsHorizontalScrollIndicator={false}
-            showsVerticalScrollIndicator={false}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-          />
+          {Platform.OS === 'web' ? (
+            <iframe
+              srcDoc={getMapHtml()}
+              style={{ width: '100%', height: '100%', border: 'none' }}
+              title="Navigation Map"
+            />
+          ) : WebView ? (
+            <WebView
+              source={{ html: getMapHtml() }}
+              style={styles.mapWebView}
+              scrollEnabled={false}
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+            />
+          ) : (
+            <View style={styles.mapPlaceholder}>
+              <Ionicons name="map" size={40} color={COLORS.primary} />
+              <Text style={styles.mapText}>Map Loading...</Text>
+            </View>
+          )}
           
           {/* ETA Badge */}
           <View style={styles.etaBadge}>
