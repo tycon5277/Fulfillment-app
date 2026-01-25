@@ -830,7 +830,46 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
-  // Button styles - Gamified
+  // Button styles - Compact Pill Design
+  pillButtonContainer: {
+    position: 'absolute',
+    bottom: 16,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  pillButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 24,
+    gap: 8,
+  },
+  pillButtonOnline: {
+    backgroundColor: '#10B981',
+  },
+  pillButtonOffline: {
+    backgroundColor: '#6366F1',
+  },
+  pillDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  pillDotOnline: {
+    backgroundColor: '#FFF',
+  },
+  pillDotOffline: {
+    backgroundColor: 'rgba(255,255,255,0.7)',
+  },
+  pillButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFF',
+    letterSpacing: 0.3,
+  },
   buttonWrapper: {
     margin: 12,
   },
