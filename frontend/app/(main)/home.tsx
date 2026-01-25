@@ -30,18 +30,14 @@ const MOCK_LOCATION = {
   longitude: 77.5946,
 };
 
-// OpenStreetMap tile URL generator
-const getMapTileUrl = (lat: number, lon: number, zoom: number = 15) => {
-  // Using OpenStreetMap static tiles
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${lon - 0.01}%2C${lat - 0.01}%2C${lon + 0.01}%2C${lat + 0.01}&layer=mapnik&marker=${lat}%2C${lon}`;
-};
-
-// Static map image URL using OpenStreetMap tiles
-const getStaticMapUrl = (lat: number, lon: number, zoom: number = 16, width: number = 400, height: number = 250) => {
-  // Using a static map tile service
-  const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
-  const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
-  return `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
+// Use Carto basemaps (free, no API key required, allows direct tile access)
+const getCartoTileUrl = (lat: number, lon: number, zoom: number = 15) => {
+  const n = Math.pow(2, zoom);
+  const x = Math.floor((lon + 180) / 360 * n);
+  const latRad = lat * Math.PI / 180;
+  const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
+  // Using Carto dark matter basemap - free to use
+  return `https://basemaps.cartocdn.com/dark_all/${zoom}/${x}/${y}.png`;
 };
 
 export default function HomeScreen() {
