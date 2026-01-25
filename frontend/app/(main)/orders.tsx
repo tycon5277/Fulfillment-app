@@ -530,6 +530,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: THEME.cardBorder,
   },
+  statCardClickable: {
+    borderColor: THEME.success + '40',
+    backgroundColor: THEME.success + '08',
+    position: 'relative',
+  },
   statEmoji: {
     fontSize: 20,
     marginBottom: 4,
@@ -539,10 +544,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: THEME.text,
   },
+  statValueHighlight: {
+    color: THEME.success,
+  },
   statLabel: {
     fontSize: 11,
     color: THEME.textMuted,
     marginTop: 2,
+  },
+  statArrow: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
   },
   // List
   listContent: {
