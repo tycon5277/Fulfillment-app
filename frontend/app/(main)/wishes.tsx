@@ -679,7 +679,6 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH - 40,
     backgroundColor: COLORS.cardBg,
     borderRadius: 24,
-    overflow: 'hidden',
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
   },
