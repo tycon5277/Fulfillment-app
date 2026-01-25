@@ -1,11 +1,93 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, View, Platform } from 'react-native';
+import { StyleSheet, View, Platform, Animated, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../src/store';
 import THEME from '../../src/theme';
+
+// Animated Wishes Button Component with Pulsing Glow
+const WishesButton = ({ focused }: { focused: boolean }) => {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0.12)).current;
+
+  useEffect(() => {
+    // Create pulsing animation
+    const pulseAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.08,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    // Create glow animation
+    const glowAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 0.25,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0.12,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    pulseAnimation.start();
+    glowAnimation.start();
+
+    return () => {
+      pulseAnimation.stop();
+      glowAnimation.stop();
+    };
+  }, []);
+
+  return (
+    <View style={styles.wishesContainer}>
+      <Animated.View style={[styles.wishesFloatingContainer, { transform: [{ scale: pulseAnim }] }]}>
+        {/* Outer gradient ring - Blue to Cyan */}
+        <LinearGradient
+          colors={['#3B82F6', '#06B6D4', '#22D3EE']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.wishesOuterRing}
+        >
+          {/* Inner gradient ring - Yellow to Orange */}
+          <LinearGradient
+            colors={['#F59E0B', '#FBBF24', '#FCD34D']}
+            start={{ x: 0, y: 1 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.wishesInnerRing}
+          >
+            {/* Center button */}
+            <View style={[styles.wishesCenterButton, focused && styles.wishesCenterButtonActive]}>
+              <Ionicons 
+                name={focused ? "sparkles" : "sparkles-outline"} 
+                size={24} 
+                color={focused ? '#FBBF24' : '#FFF'} 
+              />
+            </View>
+          </LinearGradient>
+        </LinearGradient>
+        {/* Animated Glow effect */}
+        <Animated.View style={[styles.wishesGlow, { opacity: glowAnim }]} />
+      </Animated.View>
+      <Text style={styles.wishesLabel}>Wishes</Text>
+    </View>
+  );
+};
 
 export default function MainLayout() {
   const { user } = useAuthStore();
