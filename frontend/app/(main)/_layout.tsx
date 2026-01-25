@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../src/store';
 import THEME from '../../src/theme';
 
-// Animated Wishes Button Component with Pulsing Glow
+// Animated Wishes Button Component with Pulsing Glow - Violet/Purple Theme
 const WishesButton = ({ focused }: { focused: boolean }) => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0.12)).current;
@@ -33,12 +33,12 @@ const WishesButton = ({ focused }: { focused: boolean }) => {
     const glowAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(glowAnim, {
-          toValue: 0.25,
+          toValue: 0.3,
           duration: 1200,
           useNativeDriver: true,
         }),
         Animated.timing(glowAnim, {
-          toValue: 0.12,
+          toValue: 0.15,
           duration: 1200,
           useNativeDriver: true,
         }),
@@ -57,16 +57,16 @@ const WishesButton = ({ focused }: { focused: boolean }) => {
   return (
     <View style={styles.wishesContainer}>
       <Animated.View style={[styles.wishesFloatingContainer, { transform: [{ scale: pulseAnim }] }]}>
-        {/* Outer gradient ring - Blue to Cyan */}
+        {/* Outer gradient ring - Deep Violet to Purple */}
         <LinearGradient
-          colors={['#3B82F6', '#06B6D4', '#22D3EE']}
+          colors={['#7C3AED', '#8B5CF6', '#A78BFA']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.wishesOuterRing}
         >
-          {/* Inner gradient ring - Yellow to Orange */}
+          {/* Inner gradient ring - Magenta to Pink */}
           <LinearGradient
-            colors={['#F59E0B', '#FBBF24', '#FCD34D']}
+            colors={['#C026D3', '#D946EF', '#E879F9']}
             start={{ x: 0, y: 1 }}
             end={{ x: 1, y: 0 }}
             style={styles.wishesInnerRing}
@@ -76,12 +76,12 @@ const WishesButton = ({ focused }: { focused: boolean }) => {
               <Ionicons 
                 name={focused ? "sparkles" : "sparkles-outline"} 
                 size={24} 
-                color={focused ? '#FBBF24' : '#FFF'} 
+                color={focused ? '#D946EF' : '#FFF'} 
               />
             </View>
           </LinearGradient>
         </LinearGradient>
-        {/* Animated Glow effect */}
+        {/* Animated Glow effect - Violet */}
         <Animated.View style={[styles.wishesGlow, { opacity: glowAnim }]} />
       </Animated.View>
       <Text style={styles.wishesLabel}>Wishes</Text>
