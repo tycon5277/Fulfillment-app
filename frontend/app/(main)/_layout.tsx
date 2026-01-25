@@ -206,4 +206,27 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.primary + '20',
     borderRadius: 14,
   },
+  // Wishes tab - Larger and more prominent
+  wishesIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 52,
+    height: 36,
+    marginTop: -8,
+    borderRadius: 18,
+    backgroundColor: THEME.cardBg,
+    borderWidth: 2,
+    borderColor: THEME.cardBorder,
+  },
+  wishesIconContainerActive: {
+    backgroundColor: '#FBBF24' + '25',
+    borderColor: '#FBBF24',
+  },
+  wishesIconMobileGenie: {
+    shadowColor: '#FBBF24',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
 });
