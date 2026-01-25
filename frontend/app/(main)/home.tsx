@@ -187,6 +187,7 @@ export default function HomeScreen() {
   const fetchUser = async () => {
     try {
       const response = await api.getMe();
+      console.log('User data received:', JSON.stringify(response.data, null, 2));
       setUser(response.data);
     } catch (error) {
       console.error('Error fetching user:', error);
