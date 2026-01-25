@@ -7,7 +7,6 @@ import {
   ScrollView,
   Linking,
   Platform,
-  Alert,
   Animated,
   Image,
   Dimensions,
@@ -16,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import GameModal from '../src/components/GameModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
