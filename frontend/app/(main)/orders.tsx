@@ -427,8 +427,6 @@ export default function OrdersScreen() {
             <Ionicons name="chevron-forward" size={14} color={THEME.success} />
           </View>
         </TouchableOpacity>
-          <Text style={styles.statLabel}>Total Earn</Text>
-        </View>
       </View>
 
       {/* Orders List */}
