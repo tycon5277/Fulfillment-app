@@ -371,6 +371,46 @@ export default function NavigationScreen() {
           </LinearGradient>
         </TouchableOpacity>
       </View>
+
+      {/* Beautiful Game Modals */}
+      <GameModal
+        visible={showPickupModal}
+        type="confirm"
+        title="Confirm Pickup"
+        message="Have you picked up the order?"
+        emoji="📦"
+        primaryButtonText="Yes, Picked Up"
+        secondaryButtonText="Not Yet"
+        onPrimaryPress={handlePickupConfirm}
+        onSecondaryPress={() => setShowPickupModal(false)}
+        onClose={() => setShowPickupModal(false)}
+      />
+
+      <GameModal
+        visible={showDeliveryModal}
+        type="confirm"
+        title="Complete Delivery"
+        message="Has the order been delivered successfully?"
+        emoji="🎯"
+        primaryButtonText="Yes, Delivered"
+        secondaryButtonText="Not Yet"
+        onPrimaryPress={handleDeliveryConfirm}
+        onSecondaryPress={() => setShowDeliveryModal(false)}
+        onClose={() => setShowDeliveryModal(false)}
+      />
+
+      <GameModal
+        visible={showSuccessModal}
+        type="success"
+        title="Delivery Complete!"
+        message="Amazing work, Genie! You've successfully completed this delivery."
+        emoji="🎉"
+        xpReward={85}
+        coinsReward={120}
+        primaryButtonText="Continue"
+        onPrimaryPress={handleCompletion}
+        onClose={handleCompletion}
+      />
     </SafeAreaView>
   );
 }
