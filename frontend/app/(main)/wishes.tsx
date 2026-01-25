@@ -763,12 +763,12 @@ const styles = StyleSheet.create({
   wishTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: COLORS.text,
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   wishDescription: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: '#E0E0E0',
     lineHeight: 20,
     marginBottom: 16,
   },
