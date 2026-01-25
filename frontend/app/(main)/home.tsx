@@ -885,68 +885,141 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
-  // Button styles
+  // Button styles - Gamified
   buttonWrapper: {
     margin: 12,
   },
-  onlineButton: {
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
+  onlineButtonContainer: {
+    position: 'relative',
+  },
+  offlineButtonContainer: {
+    position: 'relative',
+  },
+  gamifiedButton: {
+    borderRadius: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  buttonRingsContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  offlineButton: {
-    borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
+  buttonRing: {
+    position: 'absolute',
+    borderRadius: 100,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  buttonRing1: {
+    width: 120,
+    height: 120,
+  },
+  buttonRing2: {
+    width: 180,
+    height: 180,
+  },
+  buttonContent: {
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  statusIconContainer: {
+    marginBottom: 8,
+  },
+  onlinePulseOuter: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  onlineDotContainer: {
-    marginRight: 14,
-  },
-  onlineDotOuter: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+  onlinePulseInner: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(255,255,255,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  onlineDotInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#FFF',
+  powerButtonOuter: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  powerIconContainer: {
-    marginRight: 14,
+  powerButtonInner: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  buttonTextContainer: {
-    flex: 1,
-  },
-  onlineButtonText: {
-    fontSize: 18,
-    fontWeight: '800',
+  gamifiedButtonTitle: {
+    fontSize: 22,
+    fontWeight: '900',
     color: '#FFF',
-    letterSpacing: 1,
+    letterSpacing: 2,
+    marginBottom: 4,
   },
-  onlineSubtext: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 2,
-  },
-  offlineButtonText: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#FFF',
-    letterSpacing: 1,
-  },
-  offlineSubtext: {
+  gamifiedButtonSubtitle: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 2,
+    color: 'rgba(255,255,255,0.85)',
+    marginBottom: 10,
+  },
+  xpBonusBadge: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  xpBonusText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  bonusBadge: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  bonusText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  buttonGlowGreen: {
+    position: 'absolute',
+    bottom: -10,
+    left: '10%',
+    right: '10%',
+    height: 20,
+    backgroundColor: '#10B981',
+    borderRadius: 20,
+    opacity: 0.4,
+    transform: [{ scaleY: 0.5 }],
+  },
+  buttonGlowPurple: {
+    position: 'absolute',
+    bottom: -10,
+    left: '10%',
+    right: '10%',
+    height: 20,
+    backgroundColor: '#7C3AED',
+    borderRadius: 20,
+    opacity: 0.4,
+    transform: [{ scaleY: 0.5 }],
   },
   // Quick Stats
   quickStats: {
