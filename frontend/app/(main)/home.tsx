@@ -791,7 +791,7 @@ const styles = StyleSheet.create({
   },
   mapDesertOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(210, 180, 140, 0.25)', // Sandal/desert tint
+    backgroundColor: 'rgba(255, 248, 240, 0.15)', // Light warm tint
   },
   pulseRing: {
     position: 'absolute',
