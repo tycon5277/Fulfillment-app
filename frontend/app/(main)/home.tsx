@@ -61,7 +61,7 @@ export default function HomeScreen() {
 
   const isMobileGenie = user?.agent_type === 'mobile';
 
-  // Generate map tiles for current location using Carto (dark theme)
+  // Generate map tiles for current location using Carto (light warm theme)
   useEffect(() => {
     const generateMapTiles = () => {
       const zoom = 15;
@@ -74,12 +74,12 @@ export default function HomeScreen() {
       const latRad = lat * Math.PI / 180;
       const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
       
-      // Generate 3x3 grid of Carto dark matter tiles
+      // Generate 3x3 grid of Carto Voyager tiles (light warm style like Google Maps)
       const tiles: string[] = [];
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
-          // Using Carto dark_all basemap - free to use with attribution
-          tiles.push(`https://basemaps.cartocdn.com/dark_all/${zoom}/${x + dx}/${y + dy}.png`);
+          // Using Carto Voyager basemap - warm light theme similar to Google Maps
+          tiles.push(`https://basemaps.cartocdn.com/rastertiles/voyager/${zoom}/${x + dx}/${y + dy}.png`);
         }
       }
       setMapTiles(tiles);
