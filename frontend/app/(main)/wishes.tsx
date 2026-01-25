@@ -796,6 +796,19 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 20,
   },
+  quickStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: 12,
+  },
+  statText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
   budgetLabel: {
     fontSize: 13,
     color: COLORS.textSecondary,
