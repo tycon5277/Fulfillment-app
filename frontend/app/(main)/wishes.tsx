@@ -1154,6 +1154,126 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.success,
   },
+  // New Earnings Modal Styles
+  earningsGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  earningsBox: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundSecondary,
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  earningsBoxLabel: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginBottom: 6,
+  },
+  earningsBoxValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.success,
+  },
+  earningsBoxSub: {
+    fontSize: 10,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  potentialCard: {
+    backgroundColor: COLORS.magenta + '15',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  potentialLabel: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+  },
+  potentialValue: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: COLORS.magenta,
+  },
+  potentialSub: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 6,
+  },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 12,
+  },
+  xpDisplay: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+  },
+  xpNumber: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: COLORS.urgent,
+  },
+  xpUnit: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.urgent,
+  },
+  levelBadge: {
+    flex: 1,
+    backgroundColor: COLORS.primary + '20',
+    padding: 12,
+    borderRadius: 12,
+  },
+  levelText: {
+    fontSize: 12,
+    color: COLORS.primaryLight,
+    fontWeight: '600',
+  },
+  levelTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginTop: 2,
+  },
+  xpBarContainer: {
+    height: 8,
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  xpBarFill: {
+    width: '65%',
+    height: '100%',
+    backgroundColor: COLORS.urgent,
+    borderRadius: 4,
+  },
+  xpToNext: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+  },
+  trendingList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  trendingItem: {
+    backgroundColor: COLORS.backgroundSecondary,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  trendingText: {
+    fontSize: 13,
+    color: COLORS.text,
+    fontWeight: '500',
+  },
   // Wish Detail Modal
   wishModalContent: {
     backgroundColor: COLORS.background,
