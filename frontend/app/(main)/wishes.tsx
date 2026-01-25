@@ -227,21 +227,11 @@ export default function WishesScreen() {
 
   // INCOMING STATE - New wish request received (direct ping)
   const renderIncomingState = () => (
-    <View style={styles.incomingContainer}>
-      {/* Animated rings */}
-      <Animated.View style={[
-        styles.incomingRing,
-        styles.incomingRing1,
-        { opacity: ringAnim.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] }),
-          transform: [{ scale: ringAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 2] }) }] }
-      ]} />
-      <Animated.View style={[
-        styles.incomingRing,
-        styles.incomingRing2,
-        { opacity: ringAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0.5, 0] }),
-          transform: [{ scale: ringAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.8] }) }] }
-      ]} />
-      
+    <ScrollView 
+      style={styles.incomingScrollContainer} 
+      contentContainerStyle={styles.incomingContainer}
+      showsVerticalScrollIndicator={false}
+    >
       <Animated.View style={[styles.incomingCard, { transform: [{ scale: pulseAnim }] }]}>
         <LinearGradient
           colors={[COLORS.primary, COLORS.magenta]}
