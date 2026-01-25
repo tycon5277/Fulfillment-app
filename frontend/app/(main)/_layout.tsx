@@ -157,28 +157,56 @@ export default function MainLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
+            <View style={[styles.iconContainer, focused && isAgent && styles.iconContainerActive]}>
               <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
             </View>
           ),
         }}
       />
 
-      {/* Orders - Agent & Vendor */}
+      {/* Skilled Home - For Skilled Genie only */}
+      <Tabs.Screen
+        name="skilled-home"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && isAgent && styles.iconContainerActive]}>
+              <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
+            </View>
+          ),
+          href: null, // Hidden - we use conditional redirect instead
+        }}
+      />
+
+      {/* Orders - Mobile Genie & Vendor */}
       <Tabs.Screen
         name="orders"
         options={{
           title: partnerType === 'vendor' ? 'Orders' : 'Hub Order',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
+            <View style={[styles.iconContainer, focused && isAgent && styles.iconContainerActive]}>
               <Ionicons name={focused ? "storefront" : "storefront-outline"} size={24} color={color} />
             </View>
           ),
-          href: partnerType === 'promoter' ? null : '/(main)/orders',
+          href: (partnerType === 'promoter' || isSkilledGenie) ? null : '/(main)/orders',
         }}
       />
 
-      {/* Wishes - Agent only - MAGICAL FLOATING BUTTON */}
+      {/* Service Requests - Skilled Genie only */}
+      <Tabs.Screen
+        name="service-requests"
+        options={{
+          title: 'Requests',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && isAgent && styles.iconContainerActive]}>
+              <Ionicons name={focused ? "briefcase" : "briefcase-outline"} size={24} color={color} />
+            </View>
+          ),
+          href: isSkilledGenie ? '/(main)/service-requests' : null,
+        }}
+      />
+
+      {/* Wishes - Mobile Genie only - MAGICAL FLOATING BUTTON */}
       <Tabs.Screen
         name="wishes"
         options={{
@@ -187,21 +215,35 @@ export default function MainLayout() {
             <WishesButton focused={focused} />
           ),
           tabBarLabel: () => null, // Label is part of the custom component
-          href: partnerType === 'agent' ? '/(main)/wishes' : null,
+          href: isMobileGenie ? '/(main)/wishes' : null,
         }}
       />
 
-      {/* Deliveries - Agent only */}
+      {/* Deliveries - Mobile Genie only */}
       <Tabs.Screen
         name="deliveries"
         options={{
           title: 'Deliveries',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[styles.iconContainer, focused && isMobileGenie && styles.iconContainerActive]}>
+            <View style={[styles.iconContainer, focused && isAgent && styles.iconContainerActive]}>
               <Ionicons name={focused ? "rocket" : "rocket-outline"} size={24} color={color} />
             </View>
           ),
-          href: partnerType === 'agent' ? '/(main)/deliveries' : null,
+          href: isMobileGenie ? '/(main)/deliveries' : null,
+        }}
+      />
+
+      {/* My Jobs - Skilled Genie only */}
+      <Tabs.Screen
+        name="my-jobs"
+        options={{
+          title: 'My Jobs',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && isAgent && styles.iconContainerActive]}>
+              <Ionicons name={focused ? "construct" : "construct-outline"} size={24} color={color} />
+            </View>
+          ),
+          href: isSkilledGenie ? '/(main)/my-jobs' : null,
         }}
       />
 
