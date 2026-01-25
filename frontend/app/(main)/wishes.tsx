@@ -109,6 +109,7 @@ const MOCK_MESSAGES = [
 
 export default function WishesScreen() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [wishState, setWishState] = useState<WishState>('waiting');
   const [showIncomingModal, setShowIncomingModal] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
@@ -116,21 +117,29 @@ export default function WishesScreen() {
   const [messages, setMessages] = useState(MOCK_MESSAGES);
   const [newMessage, setNewMessage] = useState('');
   const [activeTab, setActiveTab] = useState<'details' | 'chat'>('details');
+  const [isOnline, setIsOnline] = useState(true);
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const ringAnim = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Simulate incoming wish after 3 seconds (for demo)
+  // Check online status from user profile
   useEffect(() => {
-    if (wishState === 'waiting') {
+    if (user) {
+      setIsOnline(user.partner_status === 'available');
+    }
+  }, [user]);
+
+  // Simulate incoming wish after 3 seconds (for demo) - only when online
+  useEffect(() => {
+    if (wishState === 'waiting' && isOnline) {
       const timer = setTimeout(() => {
         setWishState('incoming');
         startIncomingAnimation();
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [wishState]);
+  }, [wishState, isOnline]);
 
   const startIncomingAnimation = () => {
     Animated.loop(
