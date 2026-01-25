@@ -171,6 +171,124 @@ export default function NavigationScreen() {
     return `https://basemaps.cartocdn.com/rastertiles/voyager/${zoom}/${Math.floor((lng + 180) / 360 * Math.pow(2, zoom))}/${Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom))}.png`;
   };
 
+  // Generate Leaflet HTML for interactive map
+  const getMapHtml = () => {
+    const pickup = navigationPoints[0];
+    const dropoff = navigationPoints[1];
+    const current = currentPoint;
+    
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
+        #map { width: 100%; height: 100%; }
+        .custom-marker {
+          background: none;
+          border: none;
+        }
+        .marker-pin {
+          width: 36px;
+          height: 36px;
+          border-radius: 50% 50% 50% 0;
+          position: absolute;
+          transform: rotate(-45deg);
+          left: 50%;
+          top: 50%;
+          margin: -20px 0 0 -18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .marker-pin::after {
+          content: '';
+          width: 20px;
+          height: 20px;
+          margin: auto;
+          position: absolute;
+          border-radius: 50%;
+          background: white;
+        }
+        .marker-icon {
+          position: absolute;
+          z-index: 1;
+          transform: rotate(45deg);
+          font-size: 16px;
+        }
+        .pickup-pin { background: #06B6D4; }
+        .dropoff-pin { background: #34D399; }
+        .route-line { stroke: #8B5CF6; stroke-width: 4; }
+      </style>
+    </head>
+    <body>
+      <div id="map"></div>
+      <script>
+        // Initialize map centered between pickup and dropoff
+        const centerLat = (${pickup.coordinates.lat} + ${dropoff.coordinates.lat}) / 2;
+        const centerLng = (${pickup.coordinates.lng} + ${dropoff.coordinates.lng}) / 2;
+        
+        const map = L.map('map', {
+          zoomControl: false,
+          attributionControl: false
+        }).setView([centerLat, centerLng], 14);
+        
+        // Use Carto Voyager tiles (free, no API key)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+          maxZoom: 19
+        }).addTo(map);
+        
+        // Custom icons
+        const pickupIcon = L.divIcon({
+          className: 'custom-marker',
+          html: '<div class="marker-pin pickup-pin"><span class="marker-icon">📦</span></div>',
+          iconSize: [36, 42],
+          iconAnchor: [18, 42]
+        });
+        
+        const dropoffIcon = L.divIcon({
+          className: 'custom-marker',
+          html: '<div class="marker-pin dropoff-pin"><span class="marker-icon">📍</span></div>',
+          iconSize: [36, 42],
+          iconAnchor: [18, 42]
+        });
+        
+        // Add markers
+        L.marker([${pickup.coordinates.lat}, ${pickup.coordinates.lng}], { icon: pickupIcon })
+          .bindPopup('<b>Pickup</b><br>${pickup.name}')
+          .addTo(map);
+        
+        L.marker([${dropoff.coordinates.lat}, ${dropoff.coordinates.lng}], { icon: dropoffIcon })
+          .bindPopup('<b>Drop-off</b><br>${dropoff.name}')
+          .addTo(map);
+        
+        // Draw route line
+        const routeLine = L.polyline([
+          [${pickup.coordinates.lat}, ${pickup.coordinates.lng}],
+          [${dropoff.coordinates.lat}, ${dropoff.coordinates.lng}]
+        ], {
+          color: '#8B5CF6',
+          weight: 4,
+          opacity: 0.8,
+          dashArray: '10, 10'
+        }).addTo(map);
+        
+        // Fit bounds to show both markers
+        const bounds = L.latLngBounds([
+          [${pickup.coordinates.lat}, ${pickup.coordinates.lng}],
+          [${dropoff.coordinates.lat}, ${dropoff.coordinates.lng}]
+        ]);
+        map.fitBounds(bounds, { padding: [40, 40] });
+      </script>
+    </body>
+    </html>
+    `;
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
