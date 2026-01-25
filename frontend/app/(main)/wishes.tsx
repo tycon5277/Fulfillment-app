@@ -237,50 +237,46 @@ export default function WishesScreen() {
 
   // INCOMING STATE - New wish request received (direct ping)
   const renderIncomingState = () => (
-    <View style={styles.incomingWrapper}>
-      <ScrollView 
-        style={styles.incomingScrollContainer} 
-        contentContainerStyle={styles.incomingContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.incomingCard}>
-          <LinearGradient
-            colors={[COLORS.primary, COLORS.magenta]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.incomingHeader}
-          >
-            <Text style={styles.incomingLabel}>✨ NEW WISH REQUEST</Text>
-          </LinearGradient>
+    <View style={{ flex: 1, backgroundColor: COLORS.background, padding: 20, justifyContent: 'center' }}>
+      <View style={{ backgroundColor: COLORS.cardBg, borderRadius: 24, borderWidth: 1, borderColor: COLORS.cardBorder }}>
+        <LinearGradient
+          colors={[COLORS.primary, COLORS.magenta]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ paddingVertical: 14, alignItems: 'center', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+        >
+          <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFF' }}>✨ NEW WISH REQUEST</Text>
+        </LinearGradient>
+        
+        <View style={{ padding: 20, backgroundColor: COLORS.cardBg }}>
+          <Text style={{ fontSize: 20, color: '#FF0000', marginBottom: 10 }}>TEST RED TEXT</Text>
+          <Text style={{ fontSize: 18, color: '#00FF00', marginBottom: 10 }}>Test Wisher Name</Text>
+          <Text style={{ fontSize: 16, color: '#FFFFFF', marginBottom: 10 }}>This is a test wish description</Text>
           
-          <View style={styles.incomingBody}>
-            <Text style={{ fontSize: 20, color: '#FF0000', marginBottom: 10 }}>TEST RED TEXT</Text>
-            <Text style={{ fontSize: 18, color: '#00FF00', marginBottom: 10 }}>Test Wisher Name</Text>
-            <Text style={{ fontSize: 16, color: '#FFFFFF', marginBottom: 10 }}>This is a test wish description</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: COLORS.green + '15', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, marginBottom: 20 }}>
+            <Text style={{ fontSize: 13, color: COLORS.textSecondary }}>Budget</Text>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.green }}>₹200 - ₹400</Text>
+          </View>
+          
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <TouchableOpacity 
+              style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 14, backgroundColor: COLORS.red + '15' }}
+              onPress={handleDeclineWish}
+            >
+              <Text style={{ color: COLORS.red, fontSize: 16 }}>Decline</Text>
+            </TouchableOpacity>
             
-            <View style={styles.budgetRow}>
-              <Text style={styles.budgetLabel}>Budget</Text>
-              <Text style={styles.budgetValue}>₹200 - ₹400</Text>
-            </View>
-            
-            {/* Action Buttons */}
-            <View style={styles.incomingActions}>
-              <TouchableOpacity style={styles.declineBtn} onPress={handleDeclineWish}>
-                <Text style={{ color: '#FF6B6B', fontSize: 16 }}>Decline</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.acceptBtn} onPress={handleAcceptWish}>
-                <LinearGradient
-                  colors={[COLORS.green, '#16A34A']}
-                  style={styles.acceptBtnGradient}
-                >
-                  <Text style={{ color: '#FFFFFF', fontSize: 16 }}>Accept</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={{ flex: 1.5, borderRadius: 14, overflow: 'hidden' }} onPress={handleAcceptWish}>
+              <LinearGradient
+                colors={[COLORS.green, '#16A34A']}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, gap: 8 }}
+              >
+                <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>Accept</Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+      </View>
     </View>
   );
 
