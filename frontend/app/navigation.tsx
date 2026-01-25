@@ -60,6 +60,11 @@ export default function NavigationScreen() {
   const [estimatedTime, setEstimatedTime] = useState(12);
   const [distance, setDistance] = useState(2.5);
   
+  // Modal states
+  const [showPickupModal, setShowPickupModal] = useState(false);
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  
   // Mock navigation points
   const navigationPoints: NavigationPoint[] = [
     {
