@@ -668,6 +668,10 @@ const styles = StyleSheet.create({
   },
   
   // Incoming State
+  incomingWrapper: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
   incomingScrollContainer: {
     flex: 1,
   },
