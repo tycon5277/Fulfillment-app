@@ -333,8 +333,6 @@ export default function HomeScreen() {
                     <Text style={styles.mapPlaceholderText}>Loading map...</Text>
                   </View>
                 )}
-                {/* Desert/Sandal color overlay */}
-                <View style={styles.mapDesertOverlay} />
               </View>
 
               {/* Pulse rings when online */}
