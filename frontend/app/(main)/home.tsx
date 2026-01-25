@@ -414,7 +414,7 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            {/* Go Online Button - Distinctive Design */}
+            {/* Go Online Button - Gamified Design */}
             <Animated.View style={[styles.buttonWrapper, { transform: [{ scale: buttonScale }] }]}>
               <TouchableOpacity
                 onPress={toggleOnlineStatus}
@@ -424,49 +424,69 @@ export default function HomeScreen() {
                 activeOpacity={1}
               >
                 {isOnline ? (
-                  <LinearGradient
-                    colors={['#34D399', '#10B981']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.onlineButton}
-                  >
-                    {statusLoading ? (
-                      <ActivityIndicator color="#FFF" size="small" />
-                    ) : (
-                      <>
-                        <View style={styles.onlineDotContainer}>
-                          <View style={styles.onlineDotOuter}>
-                            <View style={styles.onlineDotInner} />
+                  <View style={styles.onlineButtonContainer}>
+                    <LinearGradient
+                      colors={['#10B981', '#059669', '#047857']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.gamifiedButton}
+                    >
+                      {/* Animated rings */}
+                      <View style={styles.buttonRingsContainer}>
+                        <Animated.View style={[styles.buttonRing, styles.buttonRing1, { opacity: dotGlow }]} />
+                        <Animated.View style={[styles.buttonRing, styles.buttonRing2, { opacity: dotGlow }]} />
+                      </View>
+                      
+                      {statusLoading ? (
+                        <ActivityIndicator color="#FFF" size="large" />
+                      ) : (
+                        <View style={styles.buttonContent}>
+                          <View style={styles.statusIconContainer}>
+                            <View style={styles.onlinePulseOuter}>
+                              <View style={styles.onlinePulseInner}>
+                                <Ionicons name="radio" size={24} color="#FFF" />
+                              </View>
+                            </View>
+                          </View>
+                          <Text style={styles.gamifiedButtonTitle}>🟢 ONLINE</Text>
+                          <Text style={styles.gamifiedButtonSubtitle}>Scanning for wishes...</Text>
+                          <View style={styles.xpBonusBadge}>
+                            <Text style={styles.xpBonusText}>+2 XP/min</Text>
                           </View>
                         </View>
-                        <View style={styles.buttonTextContainer}>
-                          <Text style={styles.onlineButtonText}>ONLINE</Text>
-                          <Text style={styles.onlineSubtext}>Tap to go offline</Text>
-                        </View>
-                      </>
-                    )}
-                  </LinearGradient>
+                      )}
+                    </LinearGradient>
+                    {/* Glow effect */}
+                    <View style={styles.buttonGlowGreen} />
+                  </View>
                 ) : (
-                  <LinearGradient
-                    colors={['#6366F1', '#8B5CF6']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.offlineButton}
-                  >
-                    {statusLoading ? (
-                      <ActivityIndicator color="#FFF" size="small" />
-                    ) : (
-                      <>
-                        <View style={styles.powerIconContainer}>
-                          <Ionicons name="power" size={32} color="#FFF" />
+                  <View style={styles.offlineButtonContainer}>
+                    <LinearGradient
+                      colors={['#4F46E5', '#7C3AED', '#9333EA']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.gamifiedButton}
+                    >
+                      {statusLoading ? (
+                        <ActivityIndicator color="#FFF" size="large" />
+                      ) : (
+                        <View style={styles.buttonContent}>
+                          <View style={styles.powerButtonOuter}>
+                            <View style={styles.powerButtonInner}>
+                              <Ionicons name="power" size={32} color="#FFF" />
+                            </View>
+                          </View>
+                          <Text style={styles.gamifiedButtonTitle}>⚡ GO ONLINE</Text>
+                          <Text style={styles.gamifiedButtonSubtitle}>Start your genie journey!</Text>
+                          <View style={styles.bonusBadge}>
+                            <Text style={styles.bonusText}>🎁 Earn ₹500+ today</Text>
+                          </View>
                         </View>
-                        <View style={styles.buttonTextContainer}>
-                          <Text style={styles.offlineButtonText}>GO ONLINE</Text>
-                          <Text style={styles.offlineSubtext}>Start accepting wishes</Text>
-                        </View>
-                      </>
-                    )}
-                  </LinearGradient>
+                      )}
+                    </LinearGradient>
+                    {/* Glow effect */}
+                    <View style={styles.buttonGlowPurple} />
+                  </View>
                 )}
               </TouchableOpacity>
             </Animated.View>
