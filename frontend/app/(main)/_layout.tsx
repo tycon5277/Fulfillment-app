@@ -225,27 +225,50 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.primary + '20',
     borderRadius: 14,
   },
-  // Wishes tab - Larger and more prominent
-  wishesIconContainer: {
+  // Magical Floating Wishes Button
+  wishesFloatingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 52,
-    height: 36,
-    marginTop: -8,
-    borderRadius: 18,
+    marginTop: -30,
+    position: 'relative',
+  },
+  wishesOuterRing: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 4,
+  },
+  wishesInnerRing: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 4,
+  },
+  wishesCenterButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: THEME.cardBg,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 2,
     borderColor: THEME.cardBorder,
   },
-  wishesIconContainerActive: {
-    backgroundColor: '#FBBF24' + '25',
+  wishesCenterButtonActive: {
+    backgroundColor: THEME.backgroundSecondary,
     borderColor: '#FBBF24',
   },
-  wishesIconMobileGenie: {
-    shadowColor: '#FBBF24',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+  wishesGlow: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#3B82F6',
+    opacity: 0.15,
+    zIndex: -1,
   },
 });
