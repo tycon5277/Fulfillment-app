@@ -269,7 +269,7 @@ export default function WishesScreen() {
     );
   }
 
-  // Earnings Detail Modal
+  // Earnings Detail Modal - Simplified
   const EarningsModal = () => (
     <Modal visible={showEarningsModal} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
@@ -278,81 +278,91 @@ export default function WishesScreen() {
             colors={[COLORS.primaryDark, COLORS.primary]}
             style={styles.modalHeader}
           >
-            <Text style={styles.modalTitle}>📊 Area Insights</Text>
-            <Text style={styles.modalSubtitle}>{AREA_POTENTIAL.radius} radius</Text>
+            <Text style={styles.modalTitle}>💰 My Earnings</Text>
+            <Text style={styles.modalSubtitle}>Track your magic journey</Text>
             <TouchableOpacity style={styles.modalClose} onPress={() => setShowEarningsModal(false)}>
               <Ionicons name="close" size={24} color="#FFF" />
             </TouchableOpacity>
           </LinearGradient>
 
           <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-            {/* Potential Earnings Card */}
+            {/* Actual Earnings - Till Now */}
             <View style={styles.insightCard}>
               <View style={styles.insightHeader}>
-                <Ionicons name="trending-up" size={24} color={COLORS.success} />
-                <Text style={styles.insightTitle}>Earning Potential</Text>
+                <Ionicons name="wallet" size={24} color={COLORS.success} />
+                <Text style={styles.insightTitle}>Earnings Till Now</Text>
               </View>
-              <Text style={styles.bigNumber}>{AREA_POTENTIAL.historicAvg}</Text>
-              <Text style={styles.insightLabel}>Average daily earnings in your area</Text>
               
-              <View style={styles.timeSlots}>
-                {Object.entries(AREA_POTENTIAL.potentialEarnings).map(([time, amount]) => (
-                  <View key={time} style={styles.timeSlot}>
-                    <Text style={styles.timeLabel}>{time.charAt(0).toUpperCase() + time.slice(1)}</Text>
-                    <Text style={styles.timeAmount}>{amount}</Text>
+              <View style={styles.earningsGrid}>
+                <View style={styles.earningsBox}>
+                  <Text style={styles.earningsBoxLabel}>Today</Text>
+                  <Text style={styles.earningsBoxValue}>₹450</Text>
+                  <Text style={styles.earningsBoxSub}>3 wishes</Text>
+                </View>
+                <View style={styles.earningsBox}>
+                  <Text style={styles.earningsBoxLabel}>This Week</Text>
+                  <Text style={styles.earningsBoxValue}>₹3,250</Text>
+                  <Text style={styles.earningsBoxSub}>18 wishes</Text>
+                </View>
+                <View style={styles.earningsBox}>
+                  <Text style={styles.earningsBoxLabel}>This Month</Text>
+                  <Text style={styles.earningsBoxValue}>₹12,800</Text>
+                  <Text style={styles.earningsBoxSub}>67 wishes</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Potential Earnings */}
+            <View style={styles.insightCard}>
+              <View style={styles.insightHeader}>
+                <Ionicons name="sparkles" size={24} color={COLORS.magenta} />
+                <Text style={styles.insightTitle}>Potential Earnings</Text>
+              </View>
+              <View style={styles.potentialCard}>
+                <Text style={styles.potentialLabel}>Available wishes near you</Text>
+                <Text style={styles.potentialValue}>₹{totalEarnings}</Text>
+                <Text style={styles.potentialSub}>{wishes.length} wishes within 10 km</Text>
+              </View>
+            </View>
+
+            {/* XP & Level */}
+            <View style={styles.insightCard}>
+              <View style={styles.insightHeader}>
+                <Ionicons name="trophy" size={24} color={COLORS.urgent} />
+                <Text style={styles.insightTitle}>Your Progress</Text>
+              </View>
+              <View style={styles.progressRow}>
+                <View style={styles.xpDisplay}>
+                  <Text style={styles.xpNumber}>2,450</Text>
+                  <Text style={styles.xpUnit}>XP</Text>
+                </View>
+                <View style={styles.levelBadge}>
+                  <Text style={styles.levelText}>Level 5</Text>
+                  <Text style={styles.levelTitle}>Rising Genie ⭐</Text>
+                </View>
+              </View>
+              <View style={styles.xpBarContainer}>
+                <View style={styles.xpBarFill} />
+              </View>
+              <Text style={styles.xpToNext}>550 XP to Level 6</Text>
+            </View>
+
+            {/* Trending Categories - Simple List */}
+            <View style={styles.insightCard}>
+              <View style={styles.insightHeader}>
+                <Ionicons name="flame" size={24} color={COLORS.cyan} />
+                <Text style={styles.insightTitle}>Trending Now</Text>
+              </View>
+              <View style={styles.trendingList}>
+                {['🍔 Food Delivery', '🛒 Errands', '🎁 Surprise Gifts', '📄 Courier', '💊 Pharmacy'].map((cat, i) => (
+                  <View key={cat} style={styles.trendingItem}>
+                    <Text style={styles.trendingText}>{cat}</Text>
                   </View>
                 ))}
               </View>
             </View>
 
-            {/* Area Stats */}
-            <View style={styles.insightCard}>
-              <View style={styles.insightHeader}>
-                <Ionicons name="people" size={24} color={COLORS.cyan} />
-                <Text style={styles.insightTitle}>Wisher Activity</Text>
-              </View>
-              <View style={styles.statsGrid}>
-                <View style={styles.statBox}>
-                  <Text style={styles.statNumber}>{AREA_POTENTIAL.activeWishers}</Text>
-                  <Text style={styles.statLabel}>Active Wishers</Text>
-                </View>
-                <View style={styles.statBox}>
-                  <Text style={styles.statNumber}>{AREA_POTENTIAL.avgWishesPerHour}</Text>
-                  <Text style={styles.statLabel}>Wishes/Hour</Text>
-                </View>
-              </View>
-              <View style={styles.peakBadge}>
-                <Ionicons name="time" size={16} color={COLORS.urgent} />
-                <Text style={styles.peakText}>Peak: {AREA_POTENTIAL.peakHours}</Text>
-              </View>
-            </View>
-
-            {/* Top Categories */}
-            <View style={styles.insightCard}>
-              <View style={styles.insightHeader}>
-                <Ionicons name="flame" size={24} color={COLORS.magenta} />
-                <Text style={styles.insightTitle}>Trending Categories</Text>
-              </View>
-              {AREA_POTENTIAL.topCategories.map((cat, i) => (
-                <View key={cat} style={styles.categoryRow}>
-                  <Text style={styles.categoryRank}>#{i + 1}</Text>
-                  <Text style={styles.categoryName}>{cat}</Text>
-                  <View style={[styles.categoryBar, { width: `${80 - i * 20}%` }]} />
-                </View>
-              ))}
-            </View>
-
-            {/* Population Density */}
-            <View style={styles.insightCard}>
-              <View style={styles.insightHeader}>
-                <Ionicons name="location" size={24} color={COLORS.primary} />
-                <Text style={styles.insightTitle}>Area Profile</Text>
-              </View>
-              <View style={styles.densityBadge}>
-                <Text style={styles.densityLabel}>Population Density</Text>
-                <Text style={styles.densityValue}>{AREA_POTENTIAL.populationDensity}</Text>
-              </View>
-            </View>
+            <View style={{ height: 30 }} />
           </ScrollView>
         </View>
       </View>
