@@ -30,14 +30,14 @@ const MOCK_LOCATION = {
   longitude: 77.5946,
 };
 
-// Use Carto basemaps with desert/sandal color (light voyager with sepia tint)
+// Use Carto basemaps with light warm tones (like the reference screenshot)
 const getCartoTileUrl = (lat: number, lon: number, zoom: number = 15) => {
   const n = Math.pow(2, zoom);
   const x = Math.floor((lon + 180) / 360 * n);
   const latRad = lat * Math.PI / 180;
   const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
-  // Using Carto voyager basemap with warmer tones
-  return `https://basemaps.cartocdn.com/rastertiles/voyager/${zoom}/${x}/${y}.png`;
+  // Using Carto Positron (light warm style) - similar to the reference
+  return `https://basemaps.cartocdn.com/light_all/${zoom}/${x}/${y}.png`;
 };
 
 export default function HomeScreen() {
