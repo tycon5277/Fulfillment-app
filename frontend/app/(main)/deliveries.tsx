@@ -163,6 +163,17 @@ export default function DeliveriesScreen() {
     return hubXP + wishXP;
   };
 
+  const handleDeliveryPress = (delivery: Delivery) => {
+    router.push({
+      pathname: '/navigation',
+      params: {
+        type: delivery.type,
+        orderId: delivery.id,
+        title: delivery.title,
+      }
+    });
+  };
+
   const renderDeliveryCard = (delivery: Delivery) => {
     const isHubOrder = delivery.type === 'hub_order';
     const steps = isHubOrder ? HUB_ORDER_STEPS : WISH_STEPS;
@@ -176,6 +187,7 @@ export default function DeliveriesScreen() {
       <TouchableOpacity 
         key={delivery.id} 
         activeOpacity={0.9}
+        onPress={() => handleDeliveryPress(delivery)}
         style={[styles.deliveryCard, delivery.isUrgent && styles.urgentCard]}
       >
         {/* Urgent Badge */}
