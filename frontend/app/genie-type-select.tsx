@@ -221,6 +221,7 @@ export default function GenieTypeSelectScreen() {
                         <View style={styles.emojiContainer}>
                           <Text style={styles.genieEmoji}>{genie.emoji}</Text>
                           <Text style={styles.magicEmoji}>{genie.magicEmoji}</Text>
+                          <Text style={styles.carpetEmoji}>{genie.carpetEmoji}</Text>
                         </View>
                         <View style={styles.titleContainer}>
                           <Text style={styles.genieTitle}>{genie.title}</Text>
