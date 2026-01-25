@@ -130,6 +130,13 @@ export default function OrdersScreen() {
 
   useEffect(() => {
     fetchOrders();
+    
+    // Real-time updates simulation - refresh every 30 seconds
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const onRefresh = useCallback(async () => {
