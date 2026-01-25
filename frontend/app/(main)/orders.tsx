@@ -84,6 +84,7 @@ interface ExpandedOrder {
 
 export default function OrdersScreen() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -91,6 +92,7 @@ export default function OrdersScreen() {
   const [expanded, setExpanded] = useState<ExpandedOrder>({});
   const [myLocation, setMyLocation] = useState(MOCK_LOCATION);
   const [stats, setStats] = useState({ total: 0, pending: 0, earnings: 0 });
+  const [isOnline, setIsOnline] = useState(true);
   
   // Modal states
   const [showAcceptModal, setShowAcceptModal] = useState(false);
@@ -98,6 +100,13 @@ export default function OrdersScreen() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Check online status from user profile
+  useEffect(() => {
+    if (user) {
+      setIsOnline(user.partner_status === 'available');
+    }
+  }, [user]);
 
   // Get user location
   useEffect(() => {
