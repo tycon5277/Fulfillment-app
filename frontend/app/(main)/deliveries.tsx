@@ -284,9 +284,9 @@ export default function DeliveriesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header with Stats */}
+      {/* Header with Stats - Soothing Deep Blue */}
       <LinearGradient
-        colors={[COLORS.primaryDark, COLORS.primary]}
+        colors={['#1E293B', '#334155', '#475569']}
         style={styles.header}
       >
         <View style={styles.headerTop}>
