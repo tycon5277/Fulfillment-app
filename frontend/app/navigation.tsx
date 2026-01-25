@@ -137,44 +137,30 @@ export default function NavigationScreen() {
   // Update status
   const handleStatusUpdate = () => {
     if (currentStep === 0) {
-      // Arrived at pickup
-      Alert.alert(
-        '📦 Confirm Pickup',
-        'Have you picked up the order?',
-        [
-          { text: 'Not Yet', style: 'cancel' },
-          { 
-            text: 'Yes, Picked Up', 
-            onPress: () => {
-              setCurrentStep(1);
-              setEstimatedTime(15);
-              setDistance(3.8);
-              // Here we would update the database
-            }
-          },
-        ]
-      );
+      setShowPickupModal(true);
     } else {
-      // Arrived at dropoff
-      Alert.alert(
-        '🎉 Complete Delivery',
-        'Has the order been delivered?',
-        [
-          { text: 'Not Yet', style: 'cancel' },
-          { 
-            text: 'Yes, Delivered', 
-            onPress: () => {
-              // Here we would update the database
-              Alert.alert(
-                '✨ Delivery Complete!',
-                'Great job! +85 XP earned',
-                [{ text: 'Continue', onPress: () => router.back() }]
-              );
-            }
-          },
-        ]
-      );
+      setShowDeliveryModal(true);
     }
+  };
+
+  // Handle pickup confirmation
+  const handlePickupConfirm = () => {
+    setShowPickupModal(false);
+    setCurrentStep(1);
+    setEstimatedTime(15);
+    setDistance(3.8);
+  };
+
+  // Handle delivery confirmation  
+  const handleDeliveryConfirm = () => {
+    setShowDeliveryModal(false);
+    setShowSuccessModal(true);
+  };
+
+  // Handle completion
+  const handleCompletion = () => {
+    setShowSuccessModal(false);
+    router.back();
   };
 
   // Map tile URL
