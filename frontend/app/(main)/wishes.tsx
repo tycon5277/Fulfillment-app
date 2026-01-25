@@ -15,18 +15,6 @@ import { useRouter } from 'expo-router';
 import * as api from '../../src/api';
 import THEME from '../../src/theme';
 
-const COLORS = {
-  primary: '#7C3AED',
-  secondary: '#0EA5E9',
-  background: '#F8F9FA',
-  white: '#FFFFFF',
-  text: '#212529',
-  textSecondary: '#6C757D',
-  success: '#22C55E',
-  amber: '#F59E0B',
-  border: '#E5E7EB',
-};
-
 interface Wish {
   wish_id: string;
   user_id: string;
