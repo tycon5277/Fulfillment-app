@@ -179,8 +179,8 @@ export default function AgentSetupScreen() {
   const renderStep1 = () => (
     <>
       <View style={styles.stepHeader}>
-        <Text style={styles.stepEmoji}>🪄</Text>
-        <Text style={styles.stepTitle}>Choose Your Carpet</Text>
+        <Text style={styles.stepEmoji}>🛸</Text>
+        <Text style={styles.stepTitle}>Choose Your Magic Carpet</Text>
         <Text style={styles.stepSubtitle}>What magical ride will carry you?</Text>
       </View>
       
