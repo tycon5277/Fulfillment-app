@@ -281,10 +281,13 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   // Magical Floating Wishes Button
+  wishesContainer: {
+    alignItems: 'center',
+    marginTop: -20,
+  },
   wishesFloatingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -28,
     position: 'relative',
   },
   wishesOuterRing: {
@@ -325,7 +328,12 @@ const styles = StyleSheet.create({
     height: 90,
     borderRadius: 45,
     backgroundColor: '#FBBF24',
-    opacity: 0.12,
     zIndex: -1,
+  },
+  wishesLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FBBF24',
+    marginTop: 4,
   },
 });
