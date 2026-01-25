@@ -22,6 +22,7 @@ import * as api from '../../src/api';
 import THEME from '../../src/theme';
 import type { Order } from '../../src/types';
 import GameModal from '../../src/components/GameModal';
+import { useAuthStore } from '../../src/store';
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
