@@ -787,10 +787,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 8,
   },
-  mapOverlayDark: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(13, 13, 18, 0.3)',
-  },
   pulseRing: {
     position: 'absolute',
     width: 60,
