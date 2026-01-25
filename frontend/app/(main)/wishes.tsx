@@ -688,6 +688,18 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: COLORS.cardBg,
   },
+  wisherInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: 12,
+  },
+  wisherTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
   wisherInfo: {
     flexDirection: 'row',
     alignItems: 'center',
