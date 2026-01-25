@@ -789,6 +789,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 8,
   },
+  mapDesertOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(210, 180, 140, 0.25)', // Sandal/desert tint
+  },
   pulseRing: {
     position: 'absolute',
     width: 60,
