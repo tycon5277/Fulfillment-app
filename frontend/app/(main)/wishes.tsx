@@ -632,16 +632,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  incomingRing: {
-    position: 'absolute',
-    width: SCREEN_WIDTH - 40,
-    height: SCREEN_WIDTH - 40,
-    borderRadius: (SCREEN_WIDTH - 40) / 2,
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-  },
-  incomingRing1: {},
-  incomingRing2: {},
   incomingCard: {
     width: SCREEN_WIDTH - 40,
     backgroundColor: COLORS.cardBg,
