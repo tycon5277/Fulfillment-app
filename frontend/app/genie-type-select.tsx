@@ -436,6 +436,12 @@ const styles = StyleSheet.create({
     right: -5,
     fontSize: 18,
   },
+  carpetEmoji: {
+    position: 'absolute',
+    bottom: -5,
+    left: -5,
+    fontSize: 16,
+  },
   titleContainer: {
     marginLeft: 16,
     flex: 1,
