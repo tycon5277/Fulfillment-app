@@ -237,28 +237,66 @@ export default function WishesScreen() {
 
   // INCOMING STATE - New wish request received (direct ping)
   const renderIncomingState = () => (
-    <View style={{ flex: 1, backgroundColor: '#FF00FF', padding: 20, justifyContent: 'center' }}>
-      <View style={{ backgroundColor: '#00FFFF', borderRadius: 24, borderWidth: 1, borderColor: '#FFFFFF' }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.background, padding: 20, justifyContent: 'center' }}>
+      <View style={{ backgroundColor: COLORS.cardBg, borderRadius: 24, borderWidth: 1, borderColor: COLORS.cardBorder }}>
         <LinearGradient
           colors={[COLORS.primary, COLORS.magenta]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{ paddingVertical: 14, alignItems: 'center', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
         >
-          <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFFFFF' }}>✨ NEW WISH REQUEST</Text>
+          <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFFFFF', letterSpacing: 1 }}>✨ NEW WISH REQUEST</Text>
         </LinearGradient>
         
-        <View style={{ padding: 20, backgroundColor: '#FFFF00' }}>
-          <Text style={{ fontSize: 20, color: '#FF0000', marginBottom: 10 }}>TEST RED TEXT</Text>
-          <Text style={{ fontSize: 18, color: '#0000FF', marginBottom: 10 }}>Test Wisher Name</Text>
-          <Text style={{ fontSize: 16, color: '#000000', marginBottom: 10 }}>This is a test wish description</Text>
+        <View style={{ padding: 20 }}>
+          {/* Wisher Info */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, padding: 12, backgroundColor: COLORS.backgroundSecondary, borderRadius: 12 }}>
+            <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={{ fontSize: 20, fontWeight: '700', color: '#FFFFFF' }}>{MOCK_INCOMING_WISH.wisher.avatar}</Text>
+            </View>
+            <View style={{ marginLeft: 12, flex: 1 }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.text }}>{MOCK_INCOMING_WISH.wisher.name}</Text>
+              <Text style={{ fontSize: 13, color: COLORS.amber, marginTop: 2 }}>⭐ {MOCK_INCOMING_WISH.wisher.rating} • {MOCK_INCOMING_WISH.wisher.totalWishes} wishes</Text>
+            </View>
+            <View style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: COLORS.primary + '30', borderRadius: 12 }}>
+              <Text style={{ fontSize: 16 }}>{MOCK_INCOMING_WISH.emoji}</Text>
+            </View>
+          </View>
           
-          <View style={{ flexDirection: 'row', gap: 12, marginTop: 10 }}>
+          {/* Wish Details */}
+          <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.text, marginBottom: 8 }}>{MOCK_INCOMING_WISH.title}</Text>
+          <Text style={{ fontSize: 14, color: COLORS.textSecondary, lineHeight: 20, marginBottom: 16 }}>{MOCK_INCOMING_WISH.description}</Text>
+          
+          {/* Stats Row */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: COLORS.backgroundSecondary, borderRadius: 12 }}>
+            <View style={{ alignItems: 'center' }}>
+              <Ionicons name="location" size={18} color={COLORS.cyan} />
+              <Text style={{ fontSize: 13, color: COLORS.textSecondary, marginTop: 4 }}>{MOCK_INCOMING_WISH.location.distance} km</Text>
+            </View>
+            <View style={{ alignItems: 'center' }}>
+              <Ionicons name="time" size={18} color={COLORS.amber} />
+              <Text style={{ fontSize: 13, color: COLORS.textSecondary, marginTop: 4 }}>{MOCK_INCOMING_WISH.estimatedTime}</Text>
+            </View>
+            <View style={{ alignItems: 'center' }}>
+              <Ionicons name="flash" size={18} color={COLORS.magenta} />
+              <Text style={{ fontSize: 13, color: COLORS.textSecondary, marginTop: 4 }}>+{MOCK_INCOMING_WISH.xpReward} XP</Text>
+            </View>
+          </View>
+          
+          {/* Budget Row */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: COLORS.green + '15', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, marginBottom: 20 }}>
+            <Text style={{ fontSize: 13, color: COLORS.textSecondary }}>Wisher's Budget</Text>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.green }}>₹{MOCK_INCOMING_WISH.budget.min} - ₹{MOCK_INCOMING_WISH.budget.max}</Text>
+          </View>
+          
+          {/* Action Buttons */}
+          <View style={{ flexDirection: 'row', gap: 12 }}>
             <TouchableOpacity 
-              style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 14, backgroundColor: '#FF6666' }}
+              style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 14, backgroundColor: COLORS.red + '15', gap: 8 }}
               onPress={handleDeclineWish}
             >
-              <Text style={{ color: '#000000', fontSize: 16, fontWeight: '600' }}>Decline</Text>
+              <Ionicons name="close" size={22} color={COLORS.red} />
+              <Text style={{ color: COLORS.red, fontSize: 16, fontWeight: '600' }}>Decline</Text>
             </TouchableOpacity>
             
             <TouchableOpacity style={{ flex: 1.5, borderRadius: 14, overflow: 'hidden' }} onPress={handleAcceptWish}>
@@ -266,7 +304,8 @@ export default function WishesScreen() {
                 colors={[COLORS.green, '#16A34A']}
                 style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, gap: 8 }}
               >
-                <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>Accept</Text>
+                <Ionicons name="checkmark" size={22} color="#FFFFFF" />
+                <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>Accept Wish</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
