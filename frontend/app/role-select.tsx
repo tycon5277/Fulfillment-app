@@ -164,7 +164,7 @@ export default function RoleSelectScreen() {
             <View style={styles.infoCard}>
               <Ionicons name="information-circle" size={20} color={COLORS.primary} />
               <Text style={styles.infoText}>
-                As a Genie, you can be a <Text style={styles.infoBold}>Mobile Genie</Text> (deliveries, rides, errands) 
+                As a Genie, you can be a <Text style={styles.infoBold}>Carpet Genie</Text> (deliveries, rides, errands with your vehicle) 
                 or a <Text style={styles.infoBold}>Skilled Genie</Text> (electrician, plumber, painter, etc.)
               </Text>
             </View>
