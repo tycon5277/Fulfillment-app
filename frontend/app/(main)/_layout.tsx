@@ -94,11 +94,13 @@ export default function MainLayout() {
   const partnerType = user?.partner_type;
   const agentType = user?.agent_type;
   const isMobileGenie = partnerType === 'agent' && agentType === 'mobile';
+  const isSkilledGenie = partnerType === 'agent' && agentType === 'skilled';
+  const isAgent = partnerType === 'agent';
   const insets = useSafeAreaInsets();
 
   // Get role-specific colors
   const getThemeColors = () => {
-    if (isMobileGenie) {
+    if (isAgent) {
       return {
         background: THEME.backgroundSecondary,
         border: THEME.cardBorder,
