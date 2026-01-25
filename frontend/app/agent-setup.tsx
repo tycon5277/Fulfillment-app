@@ -87,6 +87,7 @@ const SERVICES = [
   { id: 'rides', label: 'Rides', emoji: '🚕', desc: 'Passenger transport', color: '#8B5CF6', xp: '+60 XP' },
   { id: 'errands', label: 'Errands', emoji: '🛒', desc: 'Shopping & tasks', color: '#F59E0B', xp: '+45 XP' },
   { id: 'surprise', label: 'Surprise', emoji: '🎁', desc: 'Gift deliveries', color: '#EC4899', xp: '+55 XP' },
+  { id: 'beverages', label: 'Beverages 21+', emoji: '🍺', desc: 'Alcohol & tobacco (18+ only)', color: '#EF4444', xp: '+75 XP', special: true },
 ];
 
 export default function AgentSetupScreen() {
