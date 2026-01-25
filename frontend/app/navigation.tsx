@@ -306,19 +306,17 @@ export default function NavigationScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Map Preview */}
+        {/* Real Map Preview using Leaflet/WebView */}
         <View style={styles.mapContainer}>
-          <Image
-            source={{ uri: `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${currentPoint.coordinates.lng},${currentPoint.coordinates.lat},14,0/400x250?access_token=pk.placeholder` }}
-            style={styles.mapImage}
-            defaultSource={{ uri: 'https://via.placeholder.com/400x250/1E293B/64748B?text=Loading+Map' }}
+          <WebView
+            source={{ html: getMapHtml() }}
+            style={styles.mapWebView}
+            scrollEnabled={false}
+            showsHorizontalScrollIndicator={false}
+            showsVerticalScrollIndicator={false}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
           />
-          <View style={styles.mapOverlay}>
-            <View style={styles.mapPlaceholder}>
-              <Ionicons name="location" size={40} color={COLORS.primary} />
-              <Text style={styles.mapText}>Map Preview</Text>
-            </View>
-          </View>
           
           {/* ETA Badge */}
           <View style={styles.etaBadge}>
