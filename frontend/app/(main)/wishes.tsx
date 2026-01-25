@@ -494,25 +494,58 @@ export default function WishesScreen() {
     </View>
   );
 
+  // OFFLINE STATE - Genie is offline
+  const renderOfflineState = () => (
+    <View style={styles.offlineContainer}>
+      <LinearGradient
+        colors={[COLORS.cardBg, COLORS.backgroundSecondary]}
+        style={styles.offlineGradient}
+      >
+        <View style={styles.offlineIconContainer}>
+          <Ionicons name="moon" size={64} color={COLORS.textMuted} />
+        </View>
+        <Text style={styles.offlineTitle}>You're Offline</Text>
+        <Text style={styles.offlineSubtitle}>
+          Go online from the Home screen to start receiving wish requests from nearby wishers
+        </Text>
+        <TouchableOpacity 
+          style={styles.goOnlineButton}
+          onPress={() => router.push('/(main)/home')}
+        >
+          <LinearGradient
+            colors={[COLORS.primary, COLORS.magenta]}
+            style={styles.goOnlineGradient}
+          >
+            <Ionicons name="power" size={18} color="#FFF" />
+            <Text style={styles.goOnlineText}>Go to Home</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </LinearGradient>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Main Header */}
-      {wishState === 'waiting' && (
+      {(wishState === 'waiting' || !isOnline) && (
         <LinearGradient
           colors={[COLORS.headerBg, COLORS.background]}
           style={styles.header}
         >
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>✨ Wishes</Text>
-            <Text style={styles.headerSubtitle}>Grant wishes, earn magic!</Text>
+            <Text style={styles.headerSubtitle}>
+              {isOnline ? 'Grant wishes, earn magic!' : 'You are currently offline'}
+            </Text>
           </View>
         </LinearGradient>
       )}
       
-      {/* Render based on state */}
-      {wishState === 'waiting' && renderWaitingState()}
-      {wishState === 'incoming' && renderIncomingState()}
-      {(wishState === 'connected' || wishState === 'in_progress') && renderConnectedState()}
+      {/* Render based on state - Show offline if not online */}
+      {!isOnline && renderOfflineState()}
+      {isOnline && wishState === 'waiting' && renderWaitingState()}
+      {isOnline && wishState === 'incoming' && renderIncomingState()}
+      {isOnline && (wishState === 'connected' || wishState === 'in_progress') && renderConnectedState()}
       
       {/* Game Modals */}
       <GameModal
