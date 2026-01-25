@@ -1255,4 +1255,32 @@ const styles = StyleSheet.create({
     color: THEME.textSecondary,
     fontWeight: '500',
   },
+  // Offline Notice
+  offlineNotice: {
+    marginTop: 8,
+    marginBottom: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
+  },
+  offlineGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 14,
+  },
+  offlineTextContainer: {
+    flex: 1,
+  },
+  offlineTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: THEME.text,
+  },
+  offlineSubtitle: {
+    fontSize: 13,
+    color: THEME.textMuted,
+    marginTop: 2,
+  },
 });
