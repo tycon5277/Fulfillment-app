@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
   wisherName: {
     fontSize: 18,
     fontWeight: '700',
-    color: COLORS.text,
+    color: '#FFFFFF',
   },
   wisherRating: {
     flexDirection: 'row',
@@ -737,7 +737,7 @@ const styles = StyleSheet.create({
   wisherRatingText: {
     fontSize: 13,
     fontWeight: '600',
-    color: COLORS.amber,
+    color: '#FFD700',
   },
   wisherWishes: {
     fontSize: 13,
