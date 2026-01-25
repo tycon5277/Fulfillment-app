@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,64 +10,88 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Easing,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/store';
 import * as api from '../../src/api';
-import THEME from '../../src/theme';
-import type { EarningsSummary, Earning, ChatRoom } from '../../src/types';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Theme
+const COLORS = {
+  background: '#08080C',
+  backgroundSecondary: '#0F0F14',
+  cardBg: '#16161E',
+  cardBorder: '#252530',
+  primary: '#8B5CF6',
+  primaryLight: '#A78BFA',
+  cyan: '#06B6D4',
+  blue: '#3B82F6',
+  green: '#34D399',
+  amber: '#F59E0B',
+  magenta: '#D946EF',
+  pink: '#EC4899',
+  text: '#F8FAFC',
+  textSecondary: '#94A3B8',
+  textMuted: '#64748B',
+  error: '#F87171',
+};
+
+// Mock earnings data
+const MOCK_EARNINGS = {
+  hub_orders: {
+    today: 320,
+    week: 2150,
+    month: 8500,
+    total: 45200,
+    count: { today: 4, week: 28, month: 112 },
+  },
+  wishes: {
+    today: 450,
+    week: 2800,
+    month: 11200,
+    total: 58600,
+    count: { today: 3, week: 18, month: 72 },
+  },
+};
+
+const ACHIEVEMENTS = [
+  { id: 'first_delivery', title: 'First Delivery', emoji: '🎉', unlocked: true },
+  { id: 'speed_demon', title: 'Speed Demon', emoji: '⚡', unlocked: true },
+  { id: 'five_star', title: '5-Star Genie', emoji: '⭐', unlocked: true },
+  { id: 'hundred_club', title: '100 Deliveries', emoji: '💯', unlocked: false },
+  { id: 'night_owl', title: 'Night Owl', emoji: '🦉', unlocked: false },
+  { id: 'streak_master', title: '7-Day Streak', emoji: '🔥', unlocked: true },
+];
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, logout, setUser } = useAuthStore();
-  const [earnings, setEarnings] = useState<EarningsSummary | null>(null);
-  const [earningsHistory, setEarningsHistory] = useState<Earning[]>([]);
-  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'earnings' | 'chats'>('earnings');
+  const [selectedEarningsTab, setSelectedEarningsTab] = useState<'all' | 'hub' | 'wishes'>('all');
   
   // Animations
-  const pulseAnim = React.useRef(new Animated.Value(1)).current;
-  
-  const isMobileGenie = user?.partner_type === 'agent' && user?.agent_type === 'mobile';
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
 
-  // Pulse animation for online indicator
   useEffect(() => {
-    if (isMobileGenie) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.2,
-            duration: 1000,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 1000,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    }
-  }, [isMobileGenie]);
+    // Pulse animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.1, duration: 1000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
 
   const fetchData = async () => {
     try {
-      const [earningsRes, historyRes, chatsRes, meRes] = await Promise.all([
-        api.getEarningsSummary(),
-        api.getEarningsHistory(20),
-        api.getChatRooms(),
-        api.getMe(),
-      ]);
-      setEarnings(earningsRes.data);
-      setEarningsHistory(historyRes.data);
-      setChatRooms(chatsRes.data);
+      const meRes = await api.getMe();
       setUser(meRes.data);
     } catch (error) {
       console.error('Error fetching profile data:', error);
@@ -105,327 +129,325 @@ export default function ProfileScreen() {
     ]);
   };
 
+  // Calculate stats
+  const totalTasks = user?.agent_total_deliveries || 184;
+  const currentLevel = Math.floor(totalTasks / 25) + 1;
+  const xpProgress = (totalTasks % 25) / 25;
+  const xpCurrent = (totalTasks % 25) * 40;
+  const xpNeeded = 1000;
+
+  // Get earnings based on selected tab
+  const getEarnings = (period: 'today' | 'week' | 'month' | 'total') => {
+    if (selectedEarningsTab === 'hub') return MOCK_EARNINGS.hub_orders[period];
+    if (selectedEarningsTab === 'wishes') return MOCK_EARNINGS.wishes[period];
+    return MOCK_EARNINGS.hub_orders[period] + MOCK_EARNINGS.wishes[period];
+  };
+
+  const getCount = (period: 'today' | 'week' | 'month') => {
+    if (selectedEarningsTab === 'hub') return MOCK_EARNINGS.hub_orders.count[period];
+    if (selectedEarningsTab === 'wishes') return MOCK_EARNINGS.wishes.count[period];
+    return MOCK_EARNINGS.hub_orders.count[period] + MOCK_EARNINGS.wishes.count[period];
+  };
+
   // Get vehicle display
   const getVehicleDisplay = () => {
-    const make = user?.agent_vehicle_make || '';
-    const model = user?.agent_vehicle_model || '';
-    if (make && model) return `${make} ${model}`;
-    if (make) return make;
-    if (model) return model;
-    return (user?.agent_vehicle || 'Vehicle').charAt(0).toUpperCase() + (user?.agent_vehicle || '').slice(1);
+    const make = user?.agent_vehicle_make || 'Honda';
+    const model = user?.agent_vehicle_model || 'Activa 6G';
+    return `${make} ${model}`;
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, isMobileGenie && styles.containerDark]}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={isMobileGenie ? THEME.primary : '#7C3AED'} />
+          <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
       </SafeAreaView>
     );
   }
 
-  // Calculate level and XP
-  const totalTasks = user?.agent_total_deliveries || 0;
-  const currentLevel = Math.floor(totalTasks / 10) + 1;
-  const xpInLevel = (totalTasks % 10) * 100;
-  const xpNeeded = 1000;
-
-  // Mobile Genie Dark Theme Profile
-  if (isMobileGenie) {
-    return (
-      <SafeAreaView style={styles.containerDark}>
-        <ScrollView
-          contentContainerStyle={styles.content}
-          refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
-              onRefresh={onRefresh}
-              tintColor={THEME.primary}
-            />
-          }
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Header */}
-          <View style={styles.headerDark}>
-            <Text style={styles.headerTitle}>Profile</Text>
-            <TouchableOpacity style={styles.settingsBtn}>
-              <Ionicons name="settings-outline" size={24} color={THEME.text} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Profile Card */}
-          <View style={styles.profileCardDark}>
-            <View style={styles.avatarContainer}>
-              {user?.picture ? (
-                <Image source={{ uri: user.picture }} style={styles.avatarDark} />
-              ) : (
-                <View style={styles.avatarPlaceholderDark}>
-                  <Text style={styles.avatarTextDark}>{user?.name?.charAt(0) || 'G'}</Text>
-                </View>
-              )}
-              <Animated.View style={[styles.onlineIndicator, { transform: [{ scale: pulseAnim }] }]} />
-            </View>
-            
-            <Text style={styles.userNameDark}>{user?.name || 'Genie'}</Text>
-            <Text style={styles.userPhoneDark}>{user?.phone || 'Mobile Genie'}</Text>
-            
-            {/* Level Badge */}
-            <View style={styles.levelBadgeLarge}>
-              <Ionicons name="flash" size={16} color={THEME.accent2} />
-              <Text style={styles.levelBadgeLargeText}>Level {currentLevel}</Text>
-            </View>
-
-            {/* XP Progress */}
-            <View style={styles.xpSection}>
-              <View style={styles.xpHeaderRow}>
-                <Text style={styles.xpLabel}>Experience</Text>
-                <Text style={styles.xpValue}>{xpInLevel} / {xpNeeded} XP</Text>
-              </View>
-              <View style={styles.xpBarTrackDark}>
-                <View style={[styles.xpBarFillDark, { width: `${(xpInLevel / xpNeeded) * 100}%` }]} />
-              </View>
-            </View>
-          </View>
-
-          {/* Stats Row */}
-          <View style={styles.statsRowDark}>
-            <View style={styles.statItemDark}>
-              <Text style={styles.statEmojiDark}>⭐</Text>
-              <Text style={styles.statValueDark}>{user?.agent_rating?.toFixed(1) || '5.0'}</Text>
-              <Text style={styles.statLabelDark}>Rating</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItemDark}>
-              <Text style={styles.statEmojiDark}>🚀</Text>
-              <Text style={styles.statValueDark}>{totalTasks}</Text>
-              <Text style={styles.statLabelDark}>Deliveries</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItemDark}>
-              <Text style={styles.statEmojiDark}>🔥</Text>
-              <Text style={styles.statValueDark}>3</Text>
-              <Text style={styles.statLabelDark}>Streak</Text>
-            </View>
-          </View>
-
-          {/* Vehicle Card */}
-          <View style={styles.vehicleCardDark}>
-            <View style={styles.vehicleHeaderDark}>
-              <View style={styles.vehicleIconBgDark}>
-                <Text style={styles.vehicleEmojiDark}>
-                  {user?.agent_vehicle === 'car' ? '🚗' : user?.agent_vehicle === 'motorbike' ? '🏍️' : '🛵'}
-                </Text>
-              </View>
-              <View style={styles.vehicleInfoDark}>
-                <Text style={styles.vehicleNameDark}>{getVehicleDisplay()}</Text>
-                <Text style={styles.vehicleRegDark}>{user?.agent_vehicle_registration || 'N/A'}</Text>
-              </View>
-              {user?.agent_is_electric && (
-                <View style={styles.evBadgeDark}>
-                  <Text style={styles.evEmojiDark}>⚡</Text>
-                  <Text style={styles.evTextDark}>EV</Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* Earnings Summary */}
-          <Text style={styles.sectionTitleDark}>💰 Earnings</Text>
-          <View style={styles.earningsGridDark}>
-            <View style={[styles.earningsCardDark, { borderColor: THEME.primary + '40' }]}>
-              <Text style={styles.earningsLabelDark}>Today</Text>
-              <Text style={[styles.earningsValueDark, { color: THEME.primary }]}>₹{earnings?.today?.toFixed(0) || '0'}</Text>
-            </View>
-            <View style={[styles.earningsCardDark, { borderColor: THEME.accent3 + '40' }]}>
-              <Text style={styles.earningsLabelDark}>This Week</Text>
-              <Text style={[styles.earningsValueDark, { color: THEME.accent3 }]}>₹{earnings?.week?.toFixed(0) || '0'}</Text>
-            </View>
-            <View style={[styles.earningsCardDark, { borderColor: THEME.accent2 + '40' }]}>
-              <Text style={styles.earningsLabelDark}>This Month</Text>
-              <Text style={[styles.earningsValueDark, { color: THEME.accent2 }]}>₹{earnings?.month?.toFixed(0) || '0'}</Text>
-            </View>
-            <View style={[styles.earningsCardDark, { borderColor: THEME.success + '40' }]}>
-              <Text style={styles.earningsLabelDark}>Total</Text>
-              <Text style={[styles.earningsValueDark, { color: THEME.success }]}>₹{earnings?.total?.toFixed(0) || '0'}</Text>
-            </View>
-          </View>
-
-          {/* Tabs */}
-          <View style={styles.tabContainerDark}>
-            <TouchableOpacity
-              style={[styles.tabDark, activeTab === 'earnings' && styles.tabActiveDark]}
-              onPress={() => setActiveTab('earnings')}
-            >
-              <Ionicons 
-                name="wallet-outline" 
-                size={18} 
-                color={activeTab === 'earnings' ? THEME.primary : THEME.textMuted} 
-              />
-              <Text style={[styles.tabTextDark, activeTab === 'earnings' && styles.tabTextActiveDark]}>
-                History
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tabDark, activeTab === 'chats' && styles.tabActiveDark]}
-              onPress={() => setActiveTab('chats')}
-            >
-              <Ionicons 
-                name="chatbubbles-outline" 
-                size={18} 
-                color={activeTab === 'chats' ? THEME.primary : THEME.textMuted} 
-              />
-              <Text style={[styles.tabTextDark, activeTab === 'chats' && styles.tabTextActiveDark]}>
-                Chats ({chatRooms.length})
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Tab Content */}
-          {activeTab === 'earnings' ? (
-            <View style={styles.historyListDark}>
-              {earningsHistory.length === 0 ? (
-                <View style={styles.emptyHistoryDark}>
-                  <Text style={styles.emptyEmojiDark}>💸</Text>
-                  <Text style={styles.emptyTextDark}>No earnings yet</Text>
-                  <Text style={styles.emptySubtextDark}>Complete deliveries to earn!</Text>
-                </View>
-              ) : (
-                earningsHistory.map((item) => (
-                  <View key={item.earning_id} style={styles.historyItemDark}>
-                    <View style={styles.historyIconBgDark}>
-                      <Ionicons
-                        name={item.type === 'delivery' ? 'cube' : 'star'}
-                        size={16}
-                        color={THEME.primary}
-                      />
-                    </View>
-                    <View style={styles.historyInfoDark}>
-                      <Text style={styles.historyTitleDark}>{item.description}</Text>
-                      <Text style={styles.historyDateDark}>
-                        {new Date(item.created_at).toLocaleDateString()}
-                      </Text>
-                    </View>
-                    <Text style={styles.historyAmountDark}>+₹{item.amount}</Text>
-                  </View>
-                ))
-              )}
-            </View>
-          ) : (
-            <View style={styles.chatListDark}>
-              {chatRooms.length === 0 ? (
-                <View style={styles.emptyHistoryDark}>
-                  <Text style={styles.emptyEmojiDark}>💬</Text>
-                  <Text style={styles.emptyTextDark}>No chats yet</Text>
-                  <Text style={styles.emptySubtextDark}>Accept a wish to start chatting!</Text>
-                </View>
-              ) : (
-                chatRooms.map((room) => (
-                  <TouchableOpacity
-                    key={room.room_id}
-                    style={styles.chatItemDark}
-                    onPress={() => router.push(`/chat/${room.room_id}`)}
-                  >
-                    <View style={styles.chatAvatarDark}>
-                      <Ionicons name="person" size={20} color={THEME.background} />
-                    </View>
-                    <View style={styles.chatInfoDark}>
-                      <Text style={styles.chatNameDark}>{room.wisher?.name || 'Customer'}</Text>
-                      <Text style={styles.chatPreviewDark} numberOfLines={1}>
-                        {room.wish_title || 'Wish request'}
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color={THEME.textMuted} />
-                  </TouchableOpacity>
-                ))
-              )}
-            </View>
-          )}
-
-          {/* Logout Button */}
-          <TouchableOpacity style={styles.logoutButtonDark} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={20} color={THEME.error} />
-            <Text style={styles.logoutTextDark}>Logout</Text>
-          </TouchableOpacity>
-
-          <View style={{ height: 40 }} />
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
-  // Default Light Theme Profile (for non-Mobile Genies)
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
         }
+        showsVerticalScrollIndicator={false}
       >
-        {/* Profile Header */}
-        <View style={styles.profileHeader}>
-          {user?.picture ? (
-            <Image source={{ uri: user.picture }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person" size={40} color="#FFFFFF" />
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>👤 Profile</Text>
+          <TouchableOpacity style={styles.settingsBtn}>
+            <Ionicons name="settings-outline" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Profile Card */}
+        <View style={styles.profileCard}>
+          <LinearGradient
+            colors={['#1E293B', '#334155']}
+            style={styles.profileGradient}
+          >
+            <View style={styles.avatarSection}>
+              <View style={styles.avatarContainer}>
+                {user?.picture ? (
+                  <Image source={{ uri: user.picture }} style={styles.avatar} />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'G'}</Text>
+                  </View>
+                )}
+                <Animated.View style={[styles.onlineIndicator, { transform: [{ scale: pulseAnim }] }]} />
+              </View>
+              
+              <View style={styles.profileInfo}>
+                <Text style={styles.userName}>{user?.name || 'Carpet Genie'}</Text>
+                <Text style={styles.userPhone}>{user?.phone || '+91 85457 89652'}</Text>
+                <View style={styles.levelRow}>
+                  <LinearGradient
+                    colors={[COLORS.amber, '#F59E0B']}
+                    style={styles.levelBadge}
+                  >
+                    <Ionicons name="flash" size={12} color="#FFF" />
+                    <Text style={styles.levelText}>Level {currentLevel}</Text>
+                  </LinearGradient>
+                  <View style={styles.ratingBadge}>
+                    <Ionicons name="star" size={12} color={COLORS.amber} />
+                    <Text style={styles.ratingText}>{user?.agent_rating?.toFixed(1) || '4.9'}</Text>
+                  </View>
+                </View>
+              </View>
             </View>
-          )}
-          <Text style={styles.userName}>{user?.name || 'Agent'}</Text>
-          <Text style={styles.userEmail}>{user?.email || user?.phone}</Text>
-          <View style={styles.badgeRow}>
-            <View style={styles.badge}>
-              <Ionicons name="star" size={14} color="#F59E0B" />
-              <Text style={styles.badgeText}>{user?.agent_rating?.toFixed(1) || '5.0'}</Text>
+
+            {/* XP Progress */}
+            <View style={styles.xpContainer}>
+              <View style={styles.xpHeader}>
+                <Text style={styles.xpLabel}>Experience Points</Text>
+                <Text style={styles.xpValue}>{xpCurrent} / {xpNeeded} XP</Text>
+              </View>
+              <View style={styles.xpTrack}>
+                <LinearGradient
+                  colors={[COLORS.primary, COLORS.magenta]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[styles.xpFill, { width: `${xpProgress * 100}%` }]}
+                />
+              </View>
             </View>
-            <View style={styles.badge}>
-              <Ionicons name="bicycle" size={14} color="#7C3AED" />
-              <Text style={styles.badgeText}>{user?.agent_total_deliveries || 0} deliveries</Text>
-            </View>
+          </LinearGradient>
+        </View>
+
+        {/* Quick Stats */}
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={styles.statEmoji}>🚀</Text>
+            <Text style={styles.statValue}>{totalTasks}</Text>
+            <Text style={styles.statLabel}>Deliveries</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statEmoji}>🔥</Text>
+            <Text style={styles.statValue}>7</Text>
+            <Text style={styles.statLabel}>Day Streak</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statEmoji}>🏆</Text>
+            <Text style={styles.statValue}>4</Text>
+            <Text style={styles.statLabel}>Achievements</Text>
           </View>
         </View>
 
-        {/* Earnings Summary */}
-        <View style={styles.earningsSummary}>
-          <Text style={styles.sectionTitle}>Earnings</Text>
+        {/* Dedicated Earnings Section */}
+        <View style={styles.earningsSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>💰 Earnings</Text>
+          </View>
+
+          {/* Earnings Tabs */}
+          <View style={styles.earningsTabs}>
+            {(['all', 'hub', 'wishes'] as const).map((tab) => (
+              <TouchableOpacity
+                key={tab}
+                style={[styles.earningsTab, selectedEarningsTab === tab && styles.earningsTabActive]}
+                onPress={() => setSelectedEarningsTab(tab)}
+              >
+                <Ionicons
+                  name={tab === 'all' ? 'wallet' : tab === 'hub' ? 'cube' : 'sparkles'}
+                  size={16}
+                  color={selectedEarningsTab === tab 
+                    ? (tab === 'hub' ? COLORS.blue : tab === 'wishes' ? COLORS.magenta : COLORS.green)
+                    : COLORS.textMuted
+                  }
+                />
+                <Text style={[
+                  styles.earningsTabText,
+                  selectedEarningsTab === tab && styles.earningsTabTextActive,
+                  selectedEarningsTab === tab && { 
+                    color: tab === 'hub' ? COLORS.blue : tab === 'wishes' ? COLORS.magenta : COLORS.green 
+                  }
+                ]}>
+                  {tab === 'all' ? 'All' : tab === 'hub' ? 'Hub Orders' : 'Wishes'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Earnings Grid */}
           <View style={styles.earningsGrid}>
-            <View style={[styles.earningsCard, { backgroundColor: '#E8D9F4' }]}>
-              <Text style={styles.earningsLabel}>Today</Text>
-              <Text style={styles.earningsValue}>₹{earnings?.today?.toFixed(2) || '0.00'}</Text>
-            </View>
-            <View style={[styles.earningsCard, { backgroundColor: '#D0E9F7' }]}>
-              <Text style={styles.earningsLabel}>This Week</Text>
-              <Text style={styles.earningsValue}>₹{earnings?.week?.toFixed(2) || '0.00'}</Text>
-            </View>
-            <View style={[styles.earningsCard, { backgroundColor: '#FCE9C6' }]}>
-              <Text style={styles.earningsLabel}>This Month</Text>
-              <Text style={styles.earningsValue}>₹{earnings?.month?.toFixed(2) || '0.00'}</Text>
-            </View>
-            <View style={[styles.earningsCard, { backgroundColor: '#F0FDF4' }]}>
-              <Text style={styles.earningsLabel}>Total</Text>
-              <Text style={[styles.earningsValue, { color: '#22C55E' }]}>
-                ₹{earnings?.total?.toFixed(2) || '0.00'}
+            <View style={[styles.earningsCard, styles.earningsCardLarge]}>
+              <View style={styles.earningsCardHeader}>
+                <Text style={styles.earningsCardLabel}>Total Earnings</Text>
+                <View style={[styles.earningsIconBg, { backgroundColor: COLORS.green + '20' }]}>
+                  <Ionicons name="trending-up" size={18} color={COLORS.green} />
+                </View>
+              </View>
+              <Text style={[styles.earningsCardValue, { color: COLORS.green }]}>
+                ₹{getEarnings('total').toLocaleString()}
               </Text>
             </View>
+
+            <View style={styles.earningsCardRow}>
+              <View style={styles.earningsCardSmall}>
+                <Text style={styles.earningsSmallLabel}>Today</Text>
+                <Text style={styles.earningsSmallValue}>₹{getEarnings('today')}</Text>
+                <Text style={styles.earningsSmallCount}>{getCount('today')} orders</Text>
+              </View>
+              <View style={styles.earningsCardSmall}>
+                <Text style={styles.earningsSmallLabel}>This Week</Text>
+                <Text style={styles.earningsSmallValue}>₹{getEarnings('week').toLocaleString()}</Text>
+                <Text style={styles.earningsSmallCount}>{getCount('week')} orders</Text>
+              </View>
+              <View style={styles.earningsCardSmall}>
+                <Text style={styles.earningsSmallLabel}>This Month</Text>
+                <Text style={styles.earningsSmallValue}>₹{getEarnings('month').toLocaleString()}</Text>
+                <Text style={styles.earningsSmallCount}>{getCount('month')} orders</Text>
+              </View>
+            </View>
           </View>
+
+          {/* Earnings Breakdown */}
+          {selectedEarningsTab === 'all' && (
+            <View style={styles.earningsBreakdown}>
+              <Text style={styles.breakdownTitle}>Breakdown</Text>
+              <View style={styles.breakdownRow}>
+                <View style={styles.breakdownItem}>
+                  <View style={[styles.breakdownIcon, { backgroundColor: COLORS.blue + '20' }]}>
+                    <Ionicons name="cube" size={18} color={COLORS.blue} />
+                  </View>
+                  <View style={styles.breakdownInfo}>
+                    <Text style={styles.breakdownLabel}>Hub Orders</Text>
+                    <Text style={[styles.breakdownValue, { color: COLORS.blue }]}>
+                      ₹{MOCK_EARNINGS.hub_orders.total.toLocaleString()}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.breakdownItem}>
+                  <View style={[styles.breakdownIcon, { backgroundColor: COLORS.magenta + '20' }]}>
+                    <Ionicons name="sparkles" size={18} color={COLORS.magenta} />
+                  </View>
+                  <View style={styles.breakdownInfo}>
+                    <Text style={styles.breakdownLabel}>Wishes</Text>
+                    <Text style={[styles.breakdownValue, { color: COLORS.magenta }]}>
+                      ₹{MOCK_EARNINGS.wishes.total.toLocaleString()}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Vehicle Card */}
+        <View style={styles.vehicleCard}>
+          <View style={styles.vehicleHeader}>
+            <View style={styles.vehicleIconBg}>
+              <Text style={styles.vehicleEmoji}>
+                {user?.agent_vehicle === 'car' ? '🚗' : user?.agent_vehicle === 'motorbike' ? '🏍️' : '🛵'}
+              </Text>
+            </View>
+            <View style={styles.vehicleInfo}>
+              <Text style={styles.vehicleName}>{getVehicleDisplay()}</Text>
+              <Text style={styles.vehicleReg}>{user?.agent_vehicle_registration || 'KA-01-AB-1234'}</Text>
+            </View>
+            {user?.agent_is_electric && (
+              <View style={styles.evBadge}>
+                <Text style={styles.evEmoji}>⚡</Text>
+                <Text style={styles.evText}>EV</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Achievements */}
+        <View style={styles.achievementsSection}>
+          <Text style={styles.sectionTitle}>🏆 Achievements</Text>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.achievementsScroll}
+          >
+            {ACHIEVEMENTS.map((achievement) => (
+              <View 
+                key={achievement.id} 
+                style={[styles.achievementCard, !achievement.unlocked && styles.achievementLocked]}
+              >
+                <Text style={[styles.achievementEmoji, !achievement.unlocked && { opacity: 0.3 }]}>
+                  {achievement.emoji}
+                </Text>
+                <Text style={[styles.achievementTitle, !achievement.unlocked && { color: COLORS.textMuted }]}>
+                  {achievement.title}
+                </Text>
+                {achievement.unlocked && (
+                  <View style={styles.achievementUnlocked}>
+                    <Ionicons name="checkmark-circle" size={14} color={COLORS.green} />
+                  </View>
+                )}
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity style={styles.actionItem}>
+            <View style={[styles.actionIcon, { backgroundColor: COLORS.cyan + '20' }]}>
+              <Ionicons name="document-text" size={22} color={COLORS.cyan} />
+            </View>
+            <Text style={styles.actionText}>Documents</Text>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionItem}>
+            <View style={[styles.actionIcon, { backgroundColor: COLORS.amber + '20' }]}>
+              <Ionicons name="help-circle" size={22} color={COLORS.amber} />
+            </View>
+            <Text style={styles.actionText}>Help & Support</Text>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionItem}>
+            <View style={[styles.actionIcon, { backgroundColor: COLORS.primary + '20' }]}>
+              <Ionicons name="information-circle" size={22} color={COLORS.primary} />
+            </View>
+            <Text style={styles.actionText}>About</Text>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+          </TouchableOpacity>
         </View>
 
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out" size={20} color="#EF4444" />
+          <Ionicons name="log-out-outline" size={20} color={COLORS.error} />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
+
+        <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  // Light theme styles
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: COLORS.background,
   },
   loadingContainer: {
     flex: 1,
@@ -434,479 +456,450 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 100,
   },
-  profileHeader: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: 12,
-  },
-  avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#7C3AED',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  userName: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#212529',
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 14,
-    color: '#6C757D',
-    marginBottom: 12,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#F8F9FA',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  badgeText: {
-    fontSize: 12,
-    color: '#212529',
-    fontWeight: '500',
-  },
-  earningsSummary: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#212529',
-    marginBottom: 12,
-  },
-  earningsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  earningsCard: {
-    width: '48.5%',
-    padding: 16,
-    borderRadius: 12,
-  },
-  earningsLabel: {
-    fontSize: 12,
-    color: '#6C757D',
-    marginBottom: 4,
-  },
-  earningsValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#212529',
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#FEE2E2',
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#EF4444',
-  },
-
-  // Dark theme styles (Mobile Genie)
-  containerDark: {
-    flex: 1,
-    backgroundColor: THEME.background,
-  },
-  headerDark: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '800',
-    color: THEME.text,
+    color: COLORS.text,
   },
   settingsBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: THEME.cardBg,
+    backgroundColor: COLORS.cardBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  profileCardDark: {
-    backgroundColor: THEME.cardBg,
-    borderRadius: 24,
-    padding: 24,
-    alignItems: 'center',
+  profileCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: THEME.cardBorder,
+  },
+  profileGradient: {
+    padding: 20,
+  },
+  avatarSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: 16,
   },
-  avatarDark: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     borderWidth: 3,
-    borderColor: THEME.primary,
+    borderColor: COLORS.primary,
   },
-  avatarPlaceholderDark: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: THEME.primary,
+  avatarPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarTextDark: {
-    fontSize: 40,
+  avatarText: {
+    fontSize: 32,
     fontWeight: '700',
-    color: THEME.background,
+    color: '#FFF',
   },
   onlineIndicator: {
     position: 'absolute',
-    bottom: 4,
-    right: 4,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: THEME.success,
+    bottom: 2,
+    right: 2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: COLORS.green,
     borderWidth: 3,
-    borderColor: THEME.cardBg,
+    borderColor: '#334155',
   },
-  userNameDark: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: THEME.text,
-    marginBottom: 4,
-  },
-  userPhoneDark: {
-    fontSize: 14,
-    color: THEME.textSecondary,
-    marginBottom: 16,
-  },
-  levelBadgeLarge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: THEME.accent2 + '25',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
-    marginBottom: 20,
-  },
-  levelBadgeLargeText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: THEME.accent2,
-  },
-  xpSection: {
-    width: '100%',
-  },
-  xpHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  xpLabel: {
-    fontSize: 13,
-    color: THEME.textSecondary,
-  },
-  xpValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: THEME.primary,
-  },
-  xpBarTrackDark: {
-    height: 8,
-    backgroundColor: THEME.cardBorder,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  xpBarFillDark: {
-    height: '100%',
-    backgroundColor: THEME.primary,
-    borderRadius: 4,
-  },
-  statsRowDark: {
-    flexDirection: 'row',
-    backgroundColor: THEME.cardBg,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: THEME.cardBorder,
-  },
-  statItemDark: {
+  profileInfo: {
+    marginLeft: 16,
     flex: 1,
-    alignItems: 'center',
   },
-  statDivider: {
-    width: 1,
-    backgroundColor: THEME.cardBorder,
-  },
-  statEmojiDark: {
-    fontSize: 24,
-    marginBottom: 8,
-  },
-  statValueDark: {
+  userName: {
     fontSize: 22,
     fontWeight: '800',
-    color: THEME.text,
+    color: '#FFF',
   },
-  statLabelDark: {
-    fontSize: 12,
-    color: THEME.textSecondary,
-    marginTop: 4,
-  },
-  vehicleCardDark: {
-    backgroundColor: THEME.cardBg,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: THEME.cardBorder,
-  },
-  vehicleHeaderDark: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  vehicleIconBgDark: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: THEME.primary + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  vehicleEmojiDark: {
-    fontSize: 24,
-  },
-  vehicleInfoDark: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  vehicleNameDark: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: THEME.text,
-  },
-  vehicleRegDark: {
-    fontSize: 13,
-    color: THEME.textSecondary,
+  userPhone: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
     marginTop: 2,
   },
-  evBadgeDark: {
+  levelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.success + '20',
+    gap: 8,
+    marginTop: 10,
+  },
+  levelBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     gap: 4,
   },
-  evEmojiDark: {
-    fontSize: 12,
-  },
-  evTextDark: {
+  levelText: {
     fontSize: 12,
     fontWeight: '700',
-    color: THEME.success,
+    color: '#FFF',
   },
-  sectionTitleDark: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: THEME.text,
-    marginBottom: 12,
-  },
-  earningsGridDark: {
+  ratingBadge: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  ratingText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  xpContainer: {
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderRadius: 12,
+    padding: 14,
+  },
+  xpHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  xpLabel: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+  },
+  xpValue: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  xpTrack: {
+    height: 8,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  xpFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  statsRow: {
+    flexDirection: 'row',
     gap: 10,
     marginBottom: 20,
   },
-  earningsCardDark: {
-    width: '48%',
-    backgroundColor: THEME.cardBg,
+  statCard: {
+    flex: 1,
+    backgroundColor: COLORS.cardBg,
     borderRadius: 16,
     padding: 16,
+    alignItems: 'center',
     borderWidth: 1,
+    borderColor: COLORS.cardBorder,
   },
-  earningsLabelDark: {
-    fontSize: 12,
-    color: THEME.textSecondary,
-    marginBottom: 4,
+  statEmoji: {
+    fontSize: 24,
+    marginBottom: 8,
   },
-  earningsValueDark: {
+  statValue: {
     fontSize: 22,
     fontWeight: '800',
+    color: COLORS.text,
   },
-  tabContainerDark: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 12,
-  },
-  tabDark: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: THEME.cardBg,
-    borderWidth: 1,
-    borderColor: THEME.cardBorder,
-  },
-  tabActiveDark: {
-    backgroundColor: THEME.primary + '20',
-    borderColor: THEME.primary + '50',
-  },
-  tabTextDark: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: THEME.textMuted,
-  },
-  tabTextActiveDark: {
-    color: THEME.primary,
-  },
-  historyListDark: {
-    backgroundColor: THEME.cardBg,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: THEME.cardBorder,
-  },
-  emptyHistoryDark: {
-    alignItems: 'center',
-    padding: 32,
-  },
-  emptyEmojiDark: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  emptyTextDark: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: THEME.text,
-  },
-  emptySubtextDark: {
-    fontSize: 14,
-    color: THEME.textMuted,
+  statLabel: {
+    fontSize: 11,
+    color: COLORS.textMuted,
     marginTop: 4,
   },
-  historyItemDark: {
+  earningsSection: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  sectionHeader: {
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  earningsTabs: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  earningsTab: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.cardBorder,
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: COLORS.backgroundSecondary,
+    gap: 6,
   },
-  historyIconBgDark: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: THEME.primary + '20',
+  earningsTabActive: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  earningsTabText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textMuted,
+  },
+  earningsTabTextActive: {
+    fontWeight: '700',
+  },
+  earningsGrid: {
+    gap: 12,
+  },
+  earningsCardLarge: {
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: 14,
+    padding: 16,
+  },
+  earningsCard: {},
+  earningsCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  earningsCardLabel: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  earningsIconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  historyInfoDark: {
+  earningsCardValue: {
+    fontSize: 32,
+    fontWeight: '800',
+  },
+  earningsCardRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  earningsCardSmall: {
     flex: 1,
-    marginLeft: 12,
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: 12,
+    padding: 12,
   },
-  historyTitleDark: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: THEME.text,
+  earningsSmallLabel: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginBottom: 6,
   },
-  historyDateDark: {
-    fontSize: 12,
-    color: THEME.textMuted,
-    marginTop: 2,
-  },
-  historyAmountDark: {
+  earningsSmallValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: THEME.success,
+    color: COLORS.text,
   },
-  chatListDark: {
-    backgroundColor: THEME.cardBg,
+  earningsSmallCount: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    marginTop: 4,
+  },
+  earningsBreakdown: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.cardBorder,
+  },
+  breakdownTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textMuted,
+    marginBottom: 12,
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  breakdownItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.backgroundSecondary,
+    padding: 12,
+    borderRadius: 12,
+    gap: 10,
+  },
+  breakdownIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  breakdownInfo: {
+    flex: 1,
+  },
+  breakdownLabel: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
+  breakdownValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  vehicleCard: {
+    backgroundColor: COLORS.cardBg,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: THEME.cardBorder,
+    borderColor: COLORS.cardBorder,
   },
-  chatItemDark: {
+  vehicleHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.cardBorder,
   },
-  chatAvatarDark: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: THEME.primary,
+  vehicleIconBg: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.primary + '20',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  chatInfoDark: {
+  vehicleEmoji: {
+    fontSize: 24,
+  },
+  vehicleInfo: {
     flex: 1,
     marginLeft: 12,
   },
-  chatNameDark: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: THEME.text,
+  vehicleName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
   },
-  chatPreviewDark: {
+  vehicleReg: {
     fontSize: 13,
-    color: THEME.textSecondary,
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
-  logoutButtonDark: {
+  evBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.green + '20',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  evEmoji: {
+    fontSize: 12,
+  },
+  evText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.green,
+  },
+  achievementsSection: {
+    marginBottom: 16,
+  },
+  achievementsScroll: {
+    paddingTop: 12,
+    gap: 10,
+  },
+  achievementCard: {
+    width: 100,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 14,
+    padding: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    position: 'relative',
+  },
+  achievementLocked: {
+    opacity: 0.6,
+  },
+  achievementEmoji: {
+    fontSize: 28,
+    marginBottom: 8,
+  },
+  achievementTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  achievementUnlocked: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
+  quickActions: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    padding: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  actionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 12,
+  },
+  actionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: THEME.error + '15',
+    backgroundColor: COLORS.error + '15',
     paddingVertical: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: THEME.error + '30',
+    borderColor: COLORS.error + '30',
   },
-  logoutTextDark: {
+  logoutText: {
     fontSize: 16,
     fontWeight: '600',
-    color: THEME.error,
+    color: COLORS.error,
   },
 });
