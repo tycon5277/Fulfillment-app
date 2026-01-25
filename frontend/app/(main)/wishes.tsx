@@ -503,9 +503,9 @@ export default function WishesScreen() {
       <EarningsModal />
       <WishDetailModal />
 
-      {/* Magical Header */}
+      {/* Magical Header - Soothing Deep Blue */}
       <LinearGradient
-        colors={[COLORS.primaryDark, COLORS.primary, COLORS.magenta]}
+        colors={['#1E293B', '#334155', '#475569']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
