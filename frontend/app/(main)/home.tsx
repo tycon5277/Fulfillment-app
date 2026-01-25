@@ -719,7 +719,7 @@ const styles = StyleSheet.create({
     borderColor: THEME.cardBorder,
   },
   mapContainer: {
-    height: 280,
+    height: 320,
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
