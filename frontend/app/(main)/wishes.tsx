@@ -421,15 +421,32 @@ export default function WishesScreen() {
         </KeyboardAvoidingView>
       ) : (
         <ScrollView style={styles.termsContainer} showsVerticalScrollIndicator={false}>
+          {/* Wish Summary Card */}
+          <View style={styles.wishSummaryCard}>
+            <View style={styles.wishSummaryHeader}>
+              <Text style={styles.wishSummaryEmoji}>{MOCK_INCOMING_WISH.emoji}</Text>
+              <View style={styles.wishSummaryInfo}>
+                <Text style={styles.wishSummaryTitle}>{MOCK_INCOMING_WISH.title}</Text>
+                <Text style={styles.wishSummaryWisher}>For {MOCK_INCOMING_WISH.wisher.name}</Text>
+              </View>
+            </View>
+            <Text style={styles.wishSummaryDesc}>{MOCK_INCOMING_WISH.description}</Text>
+            <View style={styles.wisherBudgetHint}>
+              <Ionicons name="wallet-outline" size={16} color={COLORS.amber} />
+              <Text style={styles.wisherBudgetText}>Wisher's budget: ₹{MOCK_INCOMING_WISH.budget.min} - ₹{MOCK_INCOMING_WISH.budget.max}</Text>
+            </View>
+          </View>
+          
+          {/* Price Offer */}
           <View style={styles.termsCard}>
-            <Text style={styles.termsTitle}>📝 Contract Terms</Text>
-            <Text style={styles.termsSubtitle}>Fill in the agreed details to create a contract</Text>
+            <Text style={styles.termsTitle}>💰 Your Offer</Text>
+            <Text style={styles.termsSubtitle}>Enter the price you've agreed upon in the chat</Text>
             
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Agreed Price (₹) *</Text>
+            <View style={styles.priceInputContainer}>
+              <Text style={styles.currencySymbol}>₹</Text>
               <TextInput
-                style={styles.termsInput}
-                placeholder="e.g., 350"
+                style={styles.priceInput}
+                placeholder="Enter amount"
                 placeholderTextColor={COLORS.textMuted}
                 value={agreedPrice}
                 onChangeText={setAgreedPrice}
@@ -438,37 +455,13 @@ export default function WishesScreen() {
             </View>
             
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Items/Tasks</Text>
+              <Text style={styles.inputLabel}>What's included? (Optional)</Text>
               <TextInput
                 style={[styles.termsInput, styles.termsInputMulti]}
-                placeholder="List items or tasks agreed upon..."
+                placeholder="Brief summary of items/tasks..."
                 placeholderTextColor={COLORS.textMuted}
                 value={agreedItems}
                 onChangeText={setAgreedItems}
-                multiline
-                numberOfLines={3}
-              />
-            </View>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Estimated Completion Time</Text>
-              <TextInput
-                style={styles.termsInput}
-                placeholder="e.g., 1 hour"
-                placeholderTextColor={COLORS.textMuted}
-                value={agreedTime}
-                onChangeText={setAgreedTime}
-              />
-            </View>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Special Notes</Text>
-              <TextInput
-                style={[styles.termsInput, styles.termsInputMulti]}
-                placeholder="Any special instructions or conditions..."
-                placeholderTextColor={COLORS.textMuted}
-                value={specialNotes}
-                onChangeText={setSpecialNotes}
                 multiline
                 numberOfLines={2}
               />
@@ -480,11 +473,11 @@ export default function WishesScreen() {
               disabled={!agreedPrice}
             >
               <LinearGradient 
-                colors={agreedPrice ? [COLORS.primary, COLORS.magenta] : [COLORS.textMuted, COLORS.textMuted]} 
+                colors={agreedPrice ? [COLORS.green, COLORS.cyan] : [COLORS.textMuted, COLORS.textMuted]} 
                 style={styles.sendContractBtnGradient}
               >
-                <Ionicons name="paper-plane" size={18} color="#FFF" />
-                <Text style={styles.sendContractBtnText}>Send Contract to Wisher</Text>
+                <Ionicons name="checkmark-circle" size={18} color="#FFF" />
+                <Text style={styles.sendContractBtnText}>Confirm & Send to Wisher</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
