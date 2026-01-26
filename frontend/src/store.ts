@@ -62,11 +62,13 @@ interface AuthState {
   sessionToken: string | null;
   isLoading: boolean;
   stats: PartnerStats | null;
+  isOnline: boolean;
   
   setUser: (user: User | null) => void;
   setSessionToken: (token: string | null) => void;
   setIsLoading: (loading: boolean) => void;
   setStats: (stats: PartnerStats | null) => void;
+  setIsOnline: (online: boolean) => void;
   logout: () => void;
   loadStoredAuth: () => Promise<void>;
 }
@@ -76,6 +78,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   sessionToken: null,
   isLoading: true,
   stats: null,
+  isOnline: false,
   
   setUser: (user) => set({ user }),
   setSessionToken: async (token) => {
@@ -88,10 +91,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   setIsLoading: (loading) => set({ isLoading: loading }),
   setStats: (stats) => set({ stats }),
+  setIsOnline: (online) => set({ isOnline: online }),
   
   logout: async () => {
     await AsyncStorage.removeItem('session_token');
-    set({ user: null, sessionToken: null, stats: null });
+    set({ user: null, sessionToken: null, stats: null, isOnline: false });
   },
   
   loadStoredAuth: async () => {
