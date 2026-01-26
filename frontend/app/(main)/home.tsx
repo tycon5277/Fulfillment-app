@@ -42,8 +42,8 @@ const getCartoTileUrl = (lat: number, lon: number, zoom: number = 15) => {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user, setUser } = useAuthStore();
-  const [isOnline, setIsOnline] = useState(false);
+  const { user, setUser, isOnline: storeIsOnline, setIsOnline: setStoreIsOnline } = useAuthStore();
+  const [isOnline, setIsOnline] = useState(storeIsOnline);
   const [stats, setStats] = useState<PartnerStats | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
