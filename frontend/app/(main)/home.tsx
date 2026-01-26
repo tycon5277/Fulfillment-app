@@ -226,6 +226,12 @@ export default function HomeScreen() {
   };
 
   const toggleOnlineStatus = async () => {
+    // Check if trying to go offline and has active work
+    if (isOnline && activeWork.length > 0) {
+      setShowActiveWorkWarning(true);
+      return;
+    }
+    
     setStatusLoading(true);
     const newStatus = isOnline ? 'offline' : 'available';
     try {
@@ -233,6 +239,27 @@ export default function HomeScreen() {
       const newOnlineState = !isOnline;
       setIsOnline(newOnlineState);
       setStoreIsOnline(newOnlineState); // Update Zustand store
+      await fetchStats();
+    } catch (error) {
+      console.error('Error updating status:', error);
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  const handleForceOffline = async () => {
+    setShowActiveWorkWarning(false);
+    setShowAssignModal(true);
+  };
+
+  const handleAssignAndGoOffline = async () => {
+    // In a real app, this would call API to assign work to another genie
+    setShowAssignModal(false);
+    setStatusLoading(true);
+    try {
+      await api.updatePartnerStatus('offline');
+      setIsOnline(false);
+      setStoreIsOnline(false);
       await fetchStats();
     } catch (error) {
       console.error('Error updating status:', error);
