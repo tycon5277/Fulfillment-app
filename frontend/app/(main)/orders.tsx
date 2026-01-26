@@ -580,8 +580,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     paddingTop: 8,
+    gap: 12,
   },
-  headerLeft: {},
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: THEME.cardBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: THEME.cardBorder,
+  },
+  headerLeft: {
+    flex: 1,
+  },
   title: {
     fontSize: 26,
     fontWeight: '800',
