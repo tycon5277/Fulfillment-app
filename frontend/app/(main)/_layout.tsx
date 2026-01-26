@@ -221,7 +221,7 @@ export default function MainLayout() {
 
       {/* My Quests - Mobile Genie only */}
       <Tabs.Screen
-        name="deliveries"
+        name="my-quests"
         options={{
           title: 'My Quests',
           tabBarIcon: ({ color, focused }) => (
@@ -229,7 +229,7 @@ export default function MainLayout() {
               <Ionicons name={focused ? "trophy" : "trophy-outline"} size={24} color={color} />
             </View>
           ),
-          href: isMobileGenie ? '/(main)/deliveries' : null,
+          href: isMobileGenie ? '/(main)/my-quests' : null,
         }}
       />
 
