@@ -410,6 +410,9 @@ export default function OrdersScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color={THEME.text} />
+        </TouchableOpacity>
         <View style={styles.headerLeft}>
           <Text style={styles.title}>Hub Orders</Text>
           <Text style={styles.subtitle}>{stats.total} orders available</Text>
