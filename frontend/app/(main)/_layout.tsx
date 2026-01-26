@@ -264,7 +264,35 @@ export default function MainLayout() {
         }}
       />
 
-      {/* My Jobs - Skilled Genie only */}
+      {/* Appointments - Skilled Genie only (replaces My Jobs) */}
+      <Tabs.Screen
+        name="appointments"
+        options={{
+          title: 'Schedule',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && styles.iconContainerSkilledActive]}>
+              <Ionicons name={focused ? "calendar" : "calendar-outline"} size={24} color={color} />
+            </View>
+          ),
+          href: isSkilledGenie ? '/(main)/appointments' : null,
+        }}
+      />
+
+      {/* Skilled Chats - Skilled Genie only */}
+      <Tabs.Screen
+        name="skilled-chats"
+        options={{
+          title: 'Chats',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && styles.iconContainerSkilledActive]}>
+              <Ionicons name={focused ? "chatbubbles" : "chatbubbles-outline"} size={24} color={color} />
+            </View>
+          ),
+          href: isSkilledGenie ? '/(main)/skilled-chats' : null,
+        }}
+      />
+
+      {/* My Jobs - Hidden, replaced by appointments */}
       <Tabs.Screen
         name="my-jobs"
         options={{
@@ -274,7 +302,7 @@ export default function MainLayout() {
               <Ionicons name={focused ? "construct" : "construct-outline"} size={24} color={color} />
             </View>
           ),
-          href: isSkilledGenie ? '/(main)/my-jobs' : null,
+          href: null, // Hidden - replaced by appointments
         }}
       />
 
