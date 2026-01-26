@@ -209,7 +209,21 @@ export default function MainLayout() {
         }}
       />
 
-      {/* Service Requests - Skilled Genie only */}
+      {/* Nearby Wishes - Skilled Genie only (replaces Service Requests) */}
+      <Tabs.Screen
+        name="nearby-wishes"
+        options={{
+          title: 'Nearby',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && styles.iconContainerSkilledActive]}>
+              <Ionicons name={focused ? "location" : "location-outline"} size={24} color={color} />
+            </View>
+          ),
+          href: isSkilledGenie ? '/(main)/nearby-wishes' : null,
+        }}
+      />
+
+      {/* Service Requests - Hidden now, replaced by nearby-wishes */}
       <Tabs.Screen
         name="service-requests"
         options={{
@@ -219,7 +233,7 @@ export default function MainLayout() {
               <Ionicons name={focused ? "briefcase" : "briefcase-outline"} size={24} color={color} />
             </View>
           ),
-          href: isSkilledGenie ? '/(main)/service-requests' : null,
+          href: null, // Hidden - replaced by nearby-wishes
         }}
       />
 
