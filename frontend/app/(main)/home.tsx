@@ -45,15 +45,10 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user, setUser, isOnline: storeIsOnline, setIsOnline: setStoreIsOnline, activeWork } = useAuthStore();
   
-  // Redirect Skilled Genie to their own dashboard
+  // Skilled Genie uses a different screen - handled in _layout.tsx
   const isSkilledGenie = user?.partner_type === 'agent' && user?.agent_type === 'skilled';
-  useEffect(() => {
-    if (isSkilledGenie) {
-      router.replace('/(main)/skilled-home');
-    }
-  }, [isSkilledGenie]);
   
-  // If skilled genie, don't render the mobile genie UI
+  // If skilled genie accidentally lands here, show nothing (redirect handled in layout)
   if (isSkilledGenie) {
     return null;
   }
