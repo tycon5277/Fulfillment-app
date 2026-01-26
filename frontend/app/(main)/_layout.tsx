@@ -168,7 +168,7 @@ export default function MainLayout() {
         },
       }}
     >
-      {/* Home - All partners */}
+      {/* Home - For Mobile Genie & non-Agent partners */}
       <Tabs.Screen
         name="home"
         options={{
@@ -178,20 +178,21 @@ export default function MainLayout() {
               <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
             </View>
           ),
+          href: isSkilledGenie ? null : '/(main)/home',
         }}
       />
 
-      {/* Skilled Home - For Skilled Genie only */}
+      {/* Skilled Home - For Skilled Genie only (shown in tab bar) */}
       <Tabs.Screen
         name="skilled-home"
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <View style={[styles.iconContainer, focused && isAgent && styles.iconContainerActive]}>
+            <View style={[styles.iconContainer, focused && styles.iconContainerSkilledActive]}>
               <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
             </View>
           ),
-          href: null, // Hidden - we use conditional redirect instead
+          href: isSkilledGenie ? '/(main)/skilled-home' : null,
         }}
       />
 
