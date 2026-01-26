@@ -1274,6 +1274,54 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
+  wishSummaryCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  wishSummaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
+  },
+  wishSummaryEmoji: {
+    fontSize: 36,
+  },
+  wishSummaryInfo: {
+    flex: 1,
+  },
+  wishSummaryTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  wishSummaryWisher: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  wishSummaryDesc: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  wisherBudgetHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: COLORS.amber + '15',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  wisherBudgetText: {
+    fontSize: 13,
+    color: COLORS.amber,
+    fontWeight: '500',
+  },
   termsCard: {
     backgroundColor: COLORS.cardBg,
     borderRadius: 16,
