@@ -76,7 +76,7 @@ const INITIAL_MESSAGES = [
 
 export default function WishesScreen() {
   const router = useRouter();
-  const { user, isOnline } = useAuthStore();
+  const { user, isOnline, addActiveWork, removeActiveWork } = useAuthStore();
   const scrollViewRef = useRef<ScrollView>(null);
   
   const [wishState, setWishState] = useState<WishState>('waiting');
