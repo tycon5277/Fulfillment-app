@@ -173,7 +173,9 @@ export default function HomeScreen() {
     try {
       const response = await api.getPartnerStats();
       setStats(response.data);
-      setIsOnline(response.data.status === 'available');
+      const onlineState = response.data.status === 'available';
+      setIsOnline(onlineState);
+      setStoreIsOnline(onlineState); // Sync with Zustand store
     } catch (error) {
       console.error('Error fetching stats:', error);
     } finally {
