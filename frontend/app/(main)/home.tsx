@@ -43,7 +43,7 @@ const getCartoTileUrl = (lat: number, lon: number, zoom: number = 15) => {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user, setUser, isOnline: storeIsOnline, setIsOnline: setStoreIsOnline } = useAuthStore();
+  const { user, setUser, isOnline: storeIsOnline, setIsOnline: setStoreIsOnline, activeWork } = useAuthStore();
   const [isOnline, setIsOnline] = useState(storeIsOnline);
   const [stats, setStats] = useState<PartnerStats | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -52,6 +52,10 @@ export default function HomeScreen() {
   const [location, setLocation] = useState(MOCK_LOCATION);
   const [locationError, setLocationError] = useState(false);
   const [mapTiles, setMapTiles] = useState<string[]>([]);
+  
+  // Modal states for active work warning
+  const [showActiveWorkWarning, setShowActiveWorkWarning] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
   
   // Animation refs
   const pulseAnim = useRef(new Animated.Value(1)).current;
