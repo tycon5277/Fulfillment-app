@@ -8,6 +8,7 @@ import {
   Animated,
   Dimensions,
   RefreshControl,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -17,24 +18,25 @@ import { useAuthStore } from '../../src/store';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+// Professional Light Theme Colors for Skilled Genie
 const COLORS = {
-  background: '#08080C',
-  backgroundSecondary: '#0F0F14',
-  cardBg: '#16161E',
-  cardBorder: '#252530',
-  primary: '#8B5CF6',
-  primaryLight: '#A78BFA',
-  cyan: '#06B6D4',
-  green: '#34D399',
-  amber: '#F59E0B',
-  magenta: '#D946EF',
-  pink: '#EC4899',
-  blue: '#3B82F6',
-  red: '#F87171',
-  orange: '#F97316',
-  text: '#F8FAFC',
-  textSecondary: '#94A3B8',
-  textMuted: '#64748B',
+  background: '#F8FAFC',
+  backgroundSecondary: '#FFFFFF',
+  cardBg: '#FFFFFF',
+  cardBorder: '#E2E8F0',
+  primary: '#2563EB',        // Professional Blue
+  primaryLight: '#3B82F6',
+  primaryDark: '#1D4ED8',
+  secondary: '#0EA5E9',      // Cyan accent
+  success: '#10B981',        // Green
+  warning: '#F59E0B',        // Amber
+  error: '#EF4444',          // Red
+  purple: '#7C3AED',
+  text: '#0F172A',           // Dark text
+  textSecondary: '#475569',
+  textMuted: '#94A3B8',
+  border: '#E2E8F0',
+  shadowColor: '#64748B',
 };
 
 // Skill mapping for display
@@ -48,14 +50,17 @@ const SKILL_INFO: { [key: string]: { name: string; emoji: string; color: string 
   phone_repair: { name: 'Phone Repair', emoji: '📱', color: '#06B6D4' },
   yoga: { name: 'Yoga', emoji: '🧘', color: '#EC4899' },
   massage: { name: 'Massage', emoji: '💆', color: '#EC4899' },
-  photography: { name: 'Photography', emoji: '📸', color: '#D946EF' },
+  photography: { name: 'Photography', emoji: '📸', color: '#8B5CF6' },
   cooking: { name: 'Home Cook', emoji: '👨‍🍳', color: '#EF4444' },
   tutoring: { name: 'Tutoring', emoji: '📚', color: '#8B5CF6' },
   pet_grooming: { name: 'Pet Grooming', emoji: '🛁', color: '#F97316' },
   gardening: { name: 'Gardening', emoji: '🌱', color: '#22C55E' },
+  personal_driver: { name: 'Personal Driver', emoji: '🚗', color: '#6366F1' },
+  wedding_photography: { name: 'Wedding Photo', emoji: '📸', color: '#EC4899' },
+  drone_photography: { name: 'Drone Photo', emoji: '🚁', color: '#06B6D4' },
 };
 
-// Mock data for skilled genie dashboard
+// Mock data
 const MOCK_STATS = {
   todayEarnings: 2400,
   weekEarnings: 12800,
@@ -68,8 +73,7 @@ const MOCK_STATS = {
   level: 12,
   xp: 2680,
   xpToNext: 3000,
-  rank: 'Gold Genie',
-  nextRank: 'Platinum Genie',
+  rank: 'Expert Professional',
   streakDays: 7,
 };
 
@@ -129,7 +133,6 @@ const MOCK_UPCOMING_JOBS = [
     duration: '2 hours',
     earnings: 1200,
     status: 'confirmed',
-    address: 'Flat 402, Tower B, Sector 14',
   },
   {
     id: 'j2',
@@ -141,27 +144,7 @@ const MOCK_UPCOMING_JOBS = [
     duration: '1.5 hours',
     earnings: 800,
     status: 'confirmed',
-    address: 'Office 12, Tech Park',
   },
-  {
-    id: 'j3',
-    service: 'Car Wash',
-    skillId: 'car_wash',
-    customer: 'Ankit Verma',
-    location: 'MG Road',
-    time: 'Tomorrow, 8:00 AM',
-    duration: '1 hour',
-    earnings: 500,
-    status: 'pending',
-    address: 'Basement Parking, Central Mall',
-  },
-];
-
-const ACHIEVEMENTS = [
-  { id: 'streak7', name: '7 Day Streak', emoji: '🔥', unlocked: true },
-  { id: 'jobs50', name: '50 Jobs Done', emoji: '🏆', unlocked: true },
-  { id: 'rating5', name: '5 Star Rating', emoji: '⭐', unlocked: true },
-  { id: 'speedy', name: 'Speed Demon', emoji: '⚡', unlocked: false },
 ];
 
 export default function SkilledHomeScreen() {
@@ -170,34 +153,15 @@ export default function SkilledHomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showAllRequests, setShowAllRequests] = useState(false);
   
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const statusGlow = useRef(new Animated.Value(0.5)).current;
-  const streakGlow = useRef(new Animated.Value(0.8)).current;
+  const statusAnim = useRef(new Animated.Value(isOnline ? 1 : 0)).current;
 
   useEffect(() => {
-    if (isOnline) {
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(statusGlow, { toValue: 1, duration: 1000, useNativeDriver: true }),
-          Animated.timing(statusGlow, { toValue: 0.5, duration: 1000, useNativeDriver: true }),
-        ])
-      );
-      pulse.start();
-      return () => pulse.stop();
-    }
+    Animated.timing(statusAnim, {
+      toValue: isOnline ? 1 : 0,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
   }, [isOnline]);
-
-  useEffect(() => {
-    // Streak fire animation
-    const streakAnim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(streakGlow, { toValue: 1, duration: 600, useNativeDriver: true }),
-        Animated.timing(streakGlow, { toValue: 0.8, duration: 600, useNativeDriver: true }),
-      ])
-    );
-    streakAnim.start();
-    return () => streakAnim.stop();
-  }, []);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -212,33 +176,23 @@ export default function SkilledHomeScreen() {
     return SKILL_INFO[skillId] || { name: skillId, emoji: '🔧', color: COLORS.primary };
   };
 
-  const getLevelTitle = (level: number) => {
-    if (level < 5) return 'Apprentice Genie';
-    if (level < 10) return 'Rising Genie';
-    if (level < 20) return 'Expert Genie';
-    if (level < 30) return 'Master Genie';
-    return 'Legendary Genie';
-  };
-
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.greeting}>Welcome back,</Text>
-          <View style={styles.userNameRow}>
-            <Text style={styles.userName}>{user?.name || 'Skilled Genie'}</Text>
-            <Text style={styles.genieStar}>✨</Text>
-          </View>
+          <Text style={styles.userName}>{user?.name || 'Professional'}</Text>
           <View style={styles.rankBadge}>
-            <Text style={styles.rankText}>🏆 {MOCK_STATS.rank}</Text>
+            <Ionicons name="shield-checkmark" size={12} color={COLORS.primary} />
+            <Text style={styles.rankText}>{MOCK_STATS.rank}</Text>
           </View>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.notificationBtn}>
             <Ionicons name="notifications-outline" size={24} color={COLORS.text} />
             <View style={styles.notificationBadge}>
-              <Text style={styles.notificationCount}>5</Text>
+              <Text style={styles.notificationCount}>3</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -249,146 +203,83 @@ export default function SkilledHomeScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
         }
+        contentContainerStyle={styles.scrollContent}
       >
-        {/* Availability Toggle */}
-        <TouchableOpacity 
-          style={styles.availabilityCard}
-          onPress={toggleAvailability}
-          activeOpacity={0.9}
-        >
-          <LinearGradient
-            colors={isOnline ? [COLORS.green + '25', COLORS.cyan + '15'] : [COLORS.cardBg, COLORS.cardBg]}
-            style={styles.availabilityGradient}
-          >
-            <View style={styles.availabilityLeft}>
-              <Animated.View style={[
-                styles.statusDot,
-                { backgroundColor: isOnline ? COLORS.green : COLORS.textMuted },
-                isOnline && { opacity: statusGlow }
-              ]} />
-              <View>
-                <Text style={styles.availabilityTitle}>
-                  {isOnline ? '🟢 You\'re Online' : '⚫ You\'re Offline'}
-                </Text>
-                <Text style={styles.availabilitySubtitle}>
-                  {isOnline ? 'Accepting new service requests' : 'Tap to start accepting requests'}
-                </Text>
-              </View>
+        {/* Online Status Card */}
+        <View style={styles.statusCard}>
+          <View style={styles.statusLeft}>
+            <View style={[styles.statusDot, { backgroundColor: isOnline ? COLORS.success : COLORS.textMuted }]} />
+            <View>
+              <Text style={styles.statusTitle}>
+                {isOnline ? 'You\'re Available' : 'You\'re Offline'}
+              </Text>
+              <Text style={styles.statusSubtitle}>
+                {isOnline ? 'Accepting service requests' : 'Not accepting requests'}
+              </Text>
             </View>
-            <View style={[
-              styles.toggleTrack,
-              { backgroundColor: isOnline ? COLORS.green : COLORS.cardBorder }
-            ]}>
-              <Animated.View style={[
-                styles.toggleThumb,
-                { transform: [{ translateX: isOnline ? 22 : 0 }] }
-              ]} />
-            </View>
-          </LinearGradient>
-        </TouchableOpacity>
+          </View>
+          <Switch
+            value={isOnline}
+            onValueChange={toggleAvailability}
+            trackColor={{ false: '#E2E8F0', true: COLORS.success + '40' }}
+            thumbColor={isOnline ? COLORS.success : '#F1F5F9'}
+            ios_backgroundColor="#E2E8F0"
+          />
+        </View>
 
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <LinearGradient
-              colors={[COLORS.green + '25', COLORS.green + '08']}
-              style={styles.statGradient}
-            >
-              <Text style={styles.statEmoji}>💰</Text>
-              <Text style={styles.statValue}>₹{MOCK_STATS.todayEarnings.toLocaleString()}</Text>
-              <Text style={styles.statLabel}>Today's Earnings</Text>
-            </LinearGradient>
+        {/* Stats Cards */}
+        <View style={styles.statsRow}>
+          <View style={[styles.statCard, styles.statCardPrimary]}>
+            <Text style={styles.statIcon}>💰</Text>
+            <Text style={styles.statValue}>₹{MOCK_STATS.todayEarnings.toLocaleString()}</Text>
+            <Text style={styles.statLabel}>Today's Earnings</Text>
           </View>
           <View style={styles.statCard}>
-            <LinearGradient
-              colors={[COLORS.blue + '25', COLORS.blue + '08']}
-              style={styles.statGradient}
-            >
-              <Text style={styles.statEmoji}>✅</Text>
-              <Text style={styles.statValue}>{MOCK_STATS.completedJobs}</Text>
-              <Text style={styles.statLabel}>Jobs Completed</Text>
-            </LinearGradient>
+            <Text style={styles.statIcon}>✅</Text>
+            <Text style={[styles.statValue, { color: COLORS.text }]}>{MOCK_STATS.completedJobs}</Text>
+            <Text style={styles.statLabel}>Jobs Done</Text>
           </View>
           <View style={styles.statCard}>
-            <LinearGradient
-              colors={[COLORS.amber + '25', COLORS.amber + '08']}
-              style={styles.statGradient}
-            >
-              <Text style={styles.statEmoji}>⭐</Text>
-              <Text style={styles.statValue}>{MOCK_STATS.rating}</Text>
-              <Text style={styles.statLabel}>{MOCK_STATS.totalReviews} Reviews</Text>
-            </LinearGradient>
-          </View>
-          <View style={styles.statCard}>
-            <LinearGradient
-              colors={[COLORS.orange + '25', COLORS.orange + '08']}
-              style={styles.statGradient}
-            >
-              <Animated.Text style={[styles.statEmoji, { opacity: streakGlow }]}>🔥</Animated.Text>
-              <Text style={styles.statValue}>{MOCK_STATS.streakDays}</Text>
-              <Text style={styles.statLabel}>Day Streak</Text>
-            </LinearGradient>
+            <Text style={styles.statIcon}>⭐</Text>
+            <Text style={[styles.statValue, { color: COLORS.text }]}>{MOCK_STATS.rating}</Text>
+            <Text style={styles.statLabel}>Rating</Text>
           </View>
         </View>
 
-        {/* Level Progress Card */}
-        <View style={styles.levelCard}>
-          <LinearGradient
-            colors={[COLORS.primary + '20', COLORS.magenta + '12']}
-            style={styles.levelGradient}
-          >
-            <View style={styles.levelHeader}>
-              <View style={styles.levelBadge}>
-                <LinearGradient
-                  colors={[COLORS.primary, COLORS.magenta]}
-                  style={styles.levelBadgeGradient}
-                >
-                  <Text style={styles.levelNumber}>{MOCK_STATS.level}</Text>
-                </LinearGradient>
-              </View>
-              <View style={styles.levelInfo}>
-                <Text style={styles.levelTitle}>{getLevelTitle(MOCK_STATS.level)}</Text>
-                <Text style={styles.levelXP}>{MOCK_STATS.xp.toLocaleString()} / {MOCK_STATS.xpToNext.toLocaleString()} XP</Text>
-                <Text style={styles.nextRankText}>Next: {MOCK_STATS.nextRank}</Text>
-              </View>
-              <Text style={styles.levelEmoji}>🧞</Text>
-            </View>
-            <View style={styles.progressTrack}>
-              <LinearGradient
-                colors={[COLORS.primary, COLORS.magenta]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[styles.progressFill, { width: `${(MOCK_STATS.xp / MOCK_STATS.xpToNext) * 100}%` }]}
-              />
-            </View>
-            <View style={styles.achievementsRow}>
-              {ACHIEVEMENTS.map((ach) => (
-                <View 
-                  key={ach.id} 
-                  style={[styles.achievementBadge, !ach.unlocked && styles.achievementLocked]}
-                >
-                  <Text style={[styles.achievementEmoji, !ach.unlocked && { opacity: 0.3 }]}>
-                    {ach.emoji}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </LinearGradient>
+        {/* Quick Stats Banner */}
+        <View style={styles.quickStatsBanner}>
+          <View style={styles.quickStatItem}>
+            <Ionicons name="calendar-outline" size={18} color={COLORS.primary} />
+            <Text style={styles.quickStatValue}>{MOCK_STATS.pendingJobs}</Text>
+            <Text style={styles.quickStatLabel}>Pending</Text>
+          </View>
+          <View style={styles.quickStatDivider} />
+          <View style={styles.quickStatItem}>
+            <Ionicons name="trending-up-outline" size={18} color={COLORS.success} />
+            <Text style={styles.quickStatValue}>₹{(MOCK_STATS.weekEarnings / 1000).toFixed(1)}K</Text>
+            <Text style={styles.quickStatLabel}>This Week</Text>
+          </View>
+          <View style={styles.quickStatDivider} />
+          <View style={styles.quickStatItem}>
+            <Ionicons name="chatbubbles-outline" size={18} color={COLORS.warning} />
+            <Text style={styles.quickStatValue}>{MOCK_STATS.totalReviews}</Text>
+            <Text style={styles.quickStatLabel}>Reviews</Text>
+          </View>
         </View>
 
-        {/* New Service Requests */}
-        {isOnline && (
+        {/* New Requests Section */}
+        {isOnline && MOCK_NEW_REQUESTS.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>
-                <Text style={styles.sectionEmoji}>🔔</Text>
+                <Ionicons name="flash" size={20} color={COLORS.warning} />
                 <Text style={styles.sectionTitle}>New Requests</Text>
-                <View style={styles.requestsBadge}>
-                  <Text style={styles.requestsCount}>{MOCK_NEW_REQUESTS.length}</Text>
+                <View style={styles.requestCountBadge}>
+                  <Text style={styles.requestCountText}>{MOCK_NEW_REQUESTS.length}</Text>
                 </View>
               </View>
-              <TouchableOpacity onPress={() => router.push('/(main)/service-requests')}>
-                <Text style={styles.seeAllText}>See All →</Text>
+              <TouchableOpacity>
+                <Text style={styles.seeAllText}>See All</Text>
               </TouchableOpacity>
             </View>
 
@@ -398,67 +289,47 @@ export default function SkilledHomeScreen() {
                 <TouchableOpacity 
                   key={request.id} 
                   style={styles.requestCard}
-                  activeOpacity={0.8}
+                  activeOpacity={0.7}
                 >
-                  <View style={styles.requestHeader}>
-                    <View style={styles.requestService}>
-                      <View style={[styles.requestIconBg, { backgroundColor: skillInfo.color + '20' }]}>
-                        <Text style={styles.requestEmoji}>{skillInfo.emoji}</Text>
-                      </View>
-                      <View style={styles.requestServiceInfo}>
-                        <Text style={styles.requestServiceName}>{request.service}</Text>
-                        <View style={styles.customerRow}>
-                          <Text style={styles.requestCustomer}>{request.customer}</Text>
-                          <View style={styles.customerRating}>
-                            <Ionicons name="star" size={10} color={COLORS.amber} />
-                            <Text style={styles.customerRatingText}>{request.customerRating}</Text>
+                  <View style={styles.requestTop}>
+                    <View style={[styles.requestIconBg, { backgroundColor: skillInfo.color + '15' }]}>
+                      <Text style={styles.requestEmoji}>{skillInfo.emoji}</Text>
+                    </View>
+                    <View style={styles.requestInfo}>
+                      <View style={styles.requestTitleRow}>
+                        <Text style={styles.requestService}>{request.service}</Text>
+                        {request.urgent && (
+                          <View style={styles.urgentBadge}>
+                            <Text style={styles.urgentText}>URGENT</Text>
                           </View>
-                        </View>
+                        )}
+                      </View>
+                      <Text style={styles.requestCustomer}>{request.customer}</Text>
+                      <View style={styles.requestMeta}>
+                        <Ionicons name="location-outline" size={12} color={COLORS.textMuted} />
+                        <Text style={styles.requestMetaText}>{request.distance}</Text>
+                        <Text style={styles.requestMetaDot}>•</Text>
+                        <Ionicons name="time-outline" size={12} color={COLORS.textMuted} />
+                        <Text style={styles.requestMetaText}>{request.postedTime}</Text>
                       </View>
                     </View>
-                    {request.urgent && (
-                      <View style={styles.urgentBadge}>
-                        <Ionicons name="flash" size={12} color="#FFF" />
-                        <Text style={styles.urgentText}>Urgent</Text>
-                      </View>
-                    )}
+                    <View style={styles.requestRight}>
+                      <Text style={styles.requestBudget}>{request.budget}</Text>
+                    </View>
                   </View>
                   
                   <Text style={styles.requestDescription} numberOfLines={2}>
                     {request.description}
                   </Text>
-                  
-                  <View style={styles.requestDetails}>
-                    <View style={styles.requestMeta}>
-                      <Ionicons name="location-outline" size={14} color={COLORS.textMuted} />
-                      <Text style={styles.requestMetaText}>{request.distance}</Text>
-                    </View>
-                    <View style={styles.requestMeta}>
-                      <Ionicons name="time-outline" size={14} color={COLORS.textMuted} />
-                      <Text style={styles.requestMetaText}>{request.estimatedDuration}</Text>
-                    </View>
-                    <View style={styles.requestMeta}>
-                      <Ionicons name="hourglass-outline" size={14} color={COLORS.textMuted} />
-                      <Text style={styles.requestMetaText}>{request.postedTime}</Text>
-                    </View>
-                  </View>
 
-                  <View style={styles.requestFooter}>
-                    <Text style={styles.requestBudget}>{request.budget}</Text>
-                    <View style={styles.requestActions}>
-                      <TouchableOpacity style={styles.declineBtn}>
-                        <Ionicons name="close" size={18} color={COLORS.textSecondary} />
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.acceptBtn}>
-                        <LinearGradient
-                          colors={[COLORS.green, '#16A34A']}
-                          style={styles.acceptBtnGradient}
-                        >
-                          <Text style={styles.acceptBtnText}>Accept</Text>
-                          <Ionicons name="checkmark" size={16} color="#FFF" />
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    </View>
+                  <View style={styles.requestActions}>
+                    <TouchableOpacity style={styles.declineBtn}>
+                      <Text style={styles.declineBtnText}>Decline</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.acceptBtn}>
+                      <Text style={styles.acceptBtnText}>Accept Request</Text>
+                      <Ionicons name="arrow-forward" size={16} color="#FFF" />
+                    </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
               );
@@ -470,7 +341,7 @@ export default function SkilledHomeScreen() {
                 onPress={() => setShowAllRequests(!showAllRequests)}
               >
                 <Text style={styles.showMoreText}>
-                  {showAllRequests ? 'Show Less' : `Show ${MOCK_NEW_REQUESTS.length - 2} More`}
+                  {showAllRequests ? 'Show Less' : `View ${MOCK_NEW_REQUESTS.length - 2} More Requests`}
                 </Text>
                 <Ionicons 
                   name={showAllRequests ? "chevron-up" : "chevron-down"} 
@@ -482,28 +353,17 @@ export default function SkilledHomeScreen() {
           </View>
         )}
 
-        {/* Offline Message */}
+        {/* Offline State */}
         {!isOnline && (
           <View style={styles.offlineCard}>
-            <LinearGradient
-              colors={[COLORS.cardBg, COLORS.backgroundSecondary]}
-              style={styles.offlineGradient}
-            >
-              <Text style={styles.offlineEmoji}>😴</Text>
-              <Text style={styles.offlineTitle}>You're Currently Offline</Text>
-              <Text style={styles.offlineText}>
-                Go online to start receiving new service requests and earn money!
-              </Text>
-              <TouchableOpacity style={styles.goOnlineBtn} onPress={toggleAvailability}>
-                <LinearGradient
-                  colors={[COLORS.green, '#16A34A']}
-                  style={styles.goOnlineBtnGradient}
-                >
-                  <Text style={styles.goOnlineBtnText}>Go Online Now</Text>
-                  <Ionicons name="flash" size={18} color="#FFF" />
-                </LinearGradient>
-              </TouchableOpacity>
-            </LinearGradient>
+            <Ionicons name="pause-circle-outline" size={48} color={COLORS.textMuted} />
+            <Text style={styles.offlineTitle}>You're Currently Offline</Text>
+            <Text style={styles.offlineText}>
+              Turn on availability to start receiving service requests from customers.
+            </Text>
+            <TouchableOpacity style={styles.goOnlineBtn} onPress={toggleAvailability}>
+              <Text style={styles.goOnlineBtnText}>Go Online</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -511,11 +371,11 @@ export default function SkilledHomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Text style={styles.sectionEmoji}>📅</Text>
+              <Ionicons name="calendar" size={20} color={COLORS.primary} />
               <Text style={styles.sectionTitle}>Upcoming Jobs</Text>
             </View>
-            <TouchableOpacity onPress={() => router.push('/(main)/my-jobs')}>
-              <Text style={styles.seeAllText}>See All →</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAllText}>View All</Text>
             </TouchableOpacity>
           </View>
 
@@ -525,138 +385,66 @@ export default function SkilledHomeScreen() {
               <TouchableOpacity 
                 key={job.id} 
                 style={styles.jobCard}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
-                <View style={styles.jobTop}>
-                  <View style={[styles.jobIconBg, { backgroundColor: skillInfo.color + '20' }]}>
-                    <Text style={styles.jobEmoji}>{skillInfo.emoji}</Text>
-                  </View>
-                  <View style={styles.jobInfo}>
-                    <Text style={styles.jobService}>{job.service}</Text>
-                    <Text style={styles.jobCustomer}>{job.customer}</Text>
-                    <View style={styles.jobLocationRow}>
-                      <Ionicons name="location-outline" size={12} color={COLORS.textMuted} />
-                      <Text style={styles.jobLocation}>{job.location}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.jobRight}>
-                    <Text style={styles.jobEarnings}>₹{job.earnings}</Text>
-                    <View style={[
-                      styles.jobStatus,
-                      { backgroundColor: job.status === 'confirmed' ? COLORS.green + '20' : COLORS.amber + '20' }
-                    ]}>
-                      <Text style={[
-                        styles.jobStatusText,
-                        { color: job.status === 'confirmed' ? COLORS.green : COLORS.amber }
-                      ]}>
-                        {job.status === 'confirmed' ? '✓ Confirmed' : '⏳ Pending'}
-                      </Text>
-                    </View>
+                <View style={[styles.jobIconBg, { backgroundColor: skillInfo.color + '15' }]}>
+                  <Text style={styles.jobEmoji}>{skillInfo.emoji}</Text>
+                </View>
+                <View style={styles.jobInfo}>
+                  <Text style={styles.jobService}>{job.service}</Text>
+                  <Text style={styles.jobCustomer}>{job.customer}</Text>
+                  <View style={styles.jobMeta}>
+                    <Ionicons name="time-outline" size={12} color={COLORS.primary} />
+                    <Text style={styles.jobTime}>{job.time}</Text>
                   </View>
                 </View>
-                <View style={styles.jobBottom}>
-                  <View style={styles.jobTimeRow}>
-                    <Ionicons name="time-outline" size={14} color={COLORS.primary} />
-                    <Text style={styles.jobTime}>{job.time}</Text>
-                    <Text style={styles.jobDuration}>• {job.duration}</Text>
+                <View style={styles.jobRight}>
+                  <Text style={styles.jobEarnings}>₹{job.earnings}</Text>
+                  <View style={styles.confirmedBadge}>
+                    <Text style={styles.confirmedText}>Confirmed</Text>
                   </View>
-                  <TouchableOpacity style={styles.navigateBtn}>
-                    <Ionicons name="navigate" size={16} color={COLORS.primary} />
-                  </TouchableOpacity>
                 </View>
               </TouchableOpacity>
             );
           })}
-        </View>
 
-        {/* Earnings Summary */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <Text style={styles.sectionEmoji}>💵</Text>
-              <Text style={styles.sectionTitle}>Earnings</Text>
+          {MOCK_UPCOMING_JOBS.length === 0 && (
+            <View style={styles.emptyJobs}>
+              <Ionicons name="calendar-outline" size={40} color={COLORS.textMuted} />
+              <Text style={styles.emptyText}>No upcoming jobs</Text>
             </View>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>Details →</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.earningsCard}>
-            <LinearGradient
-              colors={[COLORS.green + '15', COLORS.cyan + '08']}
-              style={styles.earningsGradient}
-            >
-              <View style={styles.earningsRow}>
-                <View style={styles.earningsItem}>
-                  <Text style={styles.earningsLabel}>This Week</Text>
-                  <Text style={styles.earningsValue}>₹{MOCK_STATS.weekEarnings.toLocaleString()}</Text>
-                </View>
-                <View style={styles.earningsDivider} />
-                <View style={styles.earningsItem}>
-                  <Text style={styles.earningsLabel}>This Month</Text>
-                  <Text style={styles.earningsValue}>₹{MOCK_STATS.monthEarnings.toLocaleString()}</Text>
-                </View>
-              </View>
-              <View style={styles.earningsChart}>
-                <View style={styles.chartBar} />
-                <View style={[styles.chartBar, { height: 45 }]} />
-                <View style={[styles.chartBar, { height: 60 }]} />
-                <View style={[styles.chartBar, { height: 35 }]} />
-                <View style={[styles.chartBar, { height: 55 }]} />
-                <View style={[styles.chartBar, { height: 70, backgroundColor: COLORS.green }]} />
-                <View style={[styles.chartBar, { height: 50 }]} />
-              </View>
-              <View style={styles.chartLabels}>
-                <Text style={styles.chartLabel}>Mon</Text>
-                <Text style={styles.chartLabel}>Tue</Text>
-                <Text style={styles.chartLabel}>Wed</Text>
-                <Text style={styles.chartLabel}>Thu</Text>
-                <Text style={styles.chartLabel}>Fri</Text>
-                <Text style={[styles.chartLabel, { color: COLORS.green }]}>Sat</Text>
-                <Text style={styles.chartLabel}>Sun</Text>
-              </View>
-            </LinearGradient>
-          </View>
+          )}
         </View>
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>
-          <TouchableOpacity style={styles.quickActionBtn}>
-            <LinearGradient
-              colors={[COLORS.primary + '20', COLORS.primary + '10']}
-              style={styles.quickActionGradient}
-            >
-              <Ionicons name="calendar-outline" size={24} color={COLORS.primary} />
+          <Text style={styles.quickActionsTitle}>Quick Actions</Text>
+          <View style={styles.quickActionsGrid}>
+            <TouchableOpacity style={styles.quickActionBtn}>
+              <View style={[styles.quickActionIcon, { backgroundColor: COLORS.primary + '15' }]}>
+                <Ionicons name="calendar-outline" size={22} color={COLORS.primary} />
+              </View>
               <Text style={styles.quickActionText}>Schedule</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickActionBtn}>
-            <LinearGradient
-              colors={[COLORS.cyan + '20', COLORS.cyan + '10']}
-              style={styles.quickActionGradient}
-            >
-              <Ionicons name="construct-outline" size={24} color={COLORS.cyan} />
-              <Text style={styles.quickActionText}>My Skills</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickActionBtn}>
-            <LinearGradient
-              colors={[COLORS.amber + '20', COLORS.amber + '10']}
-              style={styles.quickActionGradient}
-            >
-              <Ionicons name="star-outline" size={24} color={COLORS.amber} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.quickActionBtn}>
+              <View style={[styles.quickActionIcon, { backgroundColor: COLORS.success + '15' }]}>
+                <Ionicons name="wallet-outline" size={22} color={COLORS.success} />
+              </View>
+              <Text style={styles.quickActionText}>Earnings</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.quickActionBtn}>
+              <View style={[styles.quickActionIcon, { backgroundColor: COLORS.warning + '15' }]}>
+                <Ionicons name="star-outline" size={22} color={COLORS.warning} />
+              </View>
               <Text style={styles.quickActionText}>Reviews</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickActionBtn}>
-            <LinearGradient
-              colors={[COLORS.pink + '20', COLORS.pink + '10']}
-              style={styles.quickActionGradient}
-            >
-              <Ionicons name="help-circle-outline" size={24} color={COLORS.pink} />
-              <Text style={styles.quickActionText}>Help</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.quickActionBtn}>
+              <View style={[styles.quickActionIcon, { backgroundColor: COLORS.purple + '15' }]}>
+                <Ionicons name="settings-outline" size={22} color={COLORS.purple} />
+              </View>
+              <Text style={styles.quickActionText}>Settings</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={{ height: 100 }} />
@@ -676,60 +464,56 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingHorizontal: 20,
     paddingVertical: 16,
+    backgroundColor: COLORS.backgroundSecondary,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   headerLeft: {},
-  headerRight: {
-    alignItems: 'flex-end',
-  },
+  headerRight: {},
   greeting: {
     fontSize: 14,
     color: COLORS.textSecondary,
   },
-  userNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
   userName: {
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: '700',
     color: COLORS.text,
     marginTop: 2,
   },
-  genieStar: {
-    fontSize: 20,
-  },
   rankBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 6,
-    backgroundColor: COLORS.amber + '20',
+    backgroundColor: COLORS.primary + '10',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     alignSelf: 'flex-start',
+    gap: 4,
   },
   rankText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.amber,
+    color: COLORS.primary,
   },
   notificationBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.cardBg,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: COLORS.border,
   },
   notificationBadge: {
     position: 'absolute',
     top: 8,
     right: 8,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: COLORS.red,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: COLORS.error,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -738,21 +522,27 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFF',
   },
-  availabilityCard: {
-    marginHorizontal: 20,
-    marginBottom: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+  scrollContent: {
+    paddingTop: 16,
   },
-  availabilityGradient: {
+  statusCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginBottom: 16,
     padding: 16,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  availabilityLeft: {
+  statusLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -762,173 +552,111 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
   },
-  availabilityTitle: {
+  statusTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: COLORS.text,
   },
-  availabilitySubtitle: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  toggleTrack: {
-    width: 52,
-    height: 30,
-    borderRadius: 15,
-    padding: 2,
-  },
-  toggleThumb: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#FFF',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 20,
-    gap: 10,
-    marginBottom: 16,
-  },
-  statCard: {
-    width: (SCREEN_WIDTH - 50) / 2,
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  statGradient: {
-    padding: 14,
-    alignItems: 'center',
-  },
-  statEmoji: {
-    fontSize: 24,
-    marginBottom: 6,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: COLORS.text,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  levelCard: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  levelGradient: {
-    padding: 16,
-  },
-  levelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  levelBadge: {
-    marginRight: 12,
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-  levelBadgeGradient: {
-    width: 48,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  levelNumber: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#FFF',
-  },
-  levelInfo: {
-    flex: 1,
-  },
-  levelTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  levelXP: {
+  statusSubtitle: {
     fontSize: 13,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
-  nextRankText: {
+  statsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 12,
+    marginBottom: 16,
+  },
+  statCard: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statCardPrimary: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  statIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFF',
+  },
+  statLabel: {
     fontSize: 11,
-    color: COLORS.primary,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  quickStatsBanner: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  quickStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  quickStatDivider: {
+    width: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 4,
+  },
+  quickStatValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginTop: 6,
+  },
+  quickStatLabel: {
+    fontSize: 11,
+    color: COLORS.textMuted,
     marginTop: 2,
   },
-  levelEmoji: {
-    fontSize: 36,
-  },
-  progressTrack: {
-    height: 8,
-    backgroundColor: COLORS.cardBorder,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 14,
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  achievementsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  achievementBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.cardBg,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.amber,
-  },
-  achievementLocked: {
-    borderColor: COLORS.cardBorder,
-  },
-  achievementEmoji: {
-    fontSize: 18,
-  },
   section: {
-    paddingHorizontal: 20,
     marginBottom: 24,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    paddingHorizontal: 20,
+    marginBottom: 12,
   },
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  sectionEmoji: {
-    fontSize: 20,
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: COLORS.text,
   },
-  requestsBadge: {
-    backgroundColor: COLORS.red,
+  requestCountBadge: {
+    backgroundColor: COLORS.error,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
   },
-  requestsCount: {
+  requestCountText: {
     fontSize: 12,
     fontWeight: '700',
     color: '#FFF',
@@ -939,23 +667,23 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   requestCard: {
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 16,
     backgroundColor: COLORS.cardBg,
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: COLORS.border,
+    shadowColor: COLORS.shadowColor,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  requestHeader: {
+  requestTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  requestService: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    marginBottom: 12,
   },
   requestIconBg: {
     width: 48,
@@ -963,112 +691,99 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
   },
   requestEmoji: {
     fontSize: 24,
   },
-  requestServiceInfo: {
+  requestInfo: {
     flex: 1,
   },
-  requestServiceName: {
+  requestTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  requestService: {
     fontSize: 16,
     fontWeight: '700',
     color: COLORS.text,
   },
-  customerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 2,
-  },
-  requestCustomer: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-  },
-  customerRating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  customerRatingText: {
-    fontSize: 11,
-    color: COLORS.amber,
-    fontWeight: '600',
-  },
   urgentBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.amber,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
+    backgroundColor: COLORS.error,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   urgentText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: '#FFF',
   },
-  requestDescription: {
+  requestCustomer: {
     fontSize: 14,
     color: COLORS.textSecondary,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  requestDetails: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    marginBottom: 14,
+    marginTop: 2,
   },
   requestMeta: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 6,
     gap: 4,
   },
   requestMetaText: {
     fontSize: 12,
     color: COLORS.textMuted,
   },
-  requestFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  requestMetaDot: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginHorizontal: 4,
+  },
+  requestRight: {
+    alignItems: 'flex-end',
   },
   requestBudget: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.green,
+    color: COLORS.success,
+  },
+  requestDescription: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+    marginBottom: 16,
   },
   requestActions: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
   },
   declineBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.backgroundSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+  },
+  declineBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
   },
   acceptBtn: {
-    borderRadius: 22,
-    overflow: 'hidden',
-  },
-  acceptBtnGradient: {
+    flex: 2,
     flexDirection: 'row',
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
     gap: 6,
   },
   acceptBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#FFF',
   },
   showMoreBtn: {
@@ -1076,6 +791,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
+    marginHorizontal: 20,
     gap: 6,
   },
   showMoreText: {
@@ -1085,43 +801,33 @@ const styles = StyleSheet.create({
   },
   offlineCard: {
     marginHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: 24,
+    padding: 32,
+    backgroundColor: COLORS.cardBg,
     borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  offlineGradient: {
-    padding: 24,
     alignItems: 'center',
-  },
-  offlineEmoji: {
-    fontSize: 48,
-    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   offlineTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: COLORS.text,
+    marginTop: 16,
     marginBottom: 8,
   },
   offlineText: {
     fontSize: 14,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 16,
     lineHeight: 20,
+    marginBottom: 20,
   },
   goOnlineBtn: {
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  goOnlineBtnGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingVertical: 14,
-    paddingHorizontal: 24,
-    gap: 8,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    backgroundColor: COLORS.success,
   },
   goOnlineBtnText: {
     fontSize: 16,
@@ -1129,17 +835,15 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   jobCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 10,
+    padding: 14,
     backgroundColor: COLORS.cardBg,
     borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  jobTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    borderColor: COLORS.border,
   },
   jobIconBg: {
     width: 44,
@@ -1150,14 +854,14 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   jobEmoji: {
-    fontSize: 22,
+    fontSize: 20,
   },
   jobInfo: {
     flex: 1,
   },
   jobService: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
     color: COLORS.text,
   },
   jobCustomer: {
@@ -1165,140 +869,83 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
   },
-  jobLocationRow: {
+  jobMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
     marginTop: 4,
+    gap: 4,
   },
-  jobLocation: {
+  jobTime: {
     fontSize: 12,
-    color: COLORS.textMuted,
+    color: COLORS.primary,
+    fontWeight: '500',
   },
   jobRight: {
     alignItems: 'flex-end',
   },
   jobEarnings: {
     fontSize: 16,
-    fontWeight: '800',
-    color: COLORS.green,
+    fontWeight: '700',
+    color: COLORS.success,
   },
-  jobStatus: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-    marginTop: 6,
+  confirmedBadge: {
+    backgroundColor: COLORS.success + '15',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginTop: 4,
   },
-  jobStatusText: {
+  confirmedText: {
     fontSize: 11,
     fontWeight: '600',
+    color: COLORS.success,
   },
-  jobBottom: {
-    flexDirection: 'row',
+  emptyJobs: {
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.cardBorder,
-  },
-  jobTimeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  jobTime: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  jobDuration: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-  },
-  navigateBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.primary + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  earningsCard: {
+    padding: 32,
+    marginHorizontal: 20,
+    backgroundColor: COLORS.cardBg,
     borderRadius: 16,
-    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    borderColor: COLORS.border,
   },
-  earningsGradient: {
-    padding: 16,
-  },
-  earningsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  earningsItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  earningsLabel: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginBottom: 4,
-  },
-  earningsValue: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: COLORS.green,
-  },
-  earningsDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: COLORS.cardBorder,
-    marginHorizontal: 16,
-  },
-  earningsChart: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    height: 80,
-    paddingHorizontal: 8,
-  },
-  chartBar: {
-    width: 28,
-    height: 40,
-    backgroundColor: COLORS.primary + '50',
-    borderRadius: 4,
-  },
-  chartLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    paddingHorizontal: 4,
-  },
-  chartLabel: {
-    fontSize: 10,
+  emptyText: {
+    fontSize: 14,
     color: COLORS.textMuted,
-    width: 28,
-    textAlign: 'center',
+    marginTop: 12,
   },
   quickActions: {
-    flexDirection: 'row',
     paddingHorizontal: 20,
-    gap: 10,
+  },
+  quickActionsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    gap: 12,
   },
   quickActionBtn: {
     flex: 1,
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  quickActionGradient: {
     alignItems: 'center',
-    paddingVertical: 16,
-    gap: 8,
+    padding: 16,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  quickActionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   quickActionText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: COLORS.text,
   },
