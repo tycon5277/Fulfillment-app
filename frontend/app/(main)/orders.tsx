@@ -100,13 +100,6 @@ export default function OrdersScreen() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Check online status from user profile
-  useEffect(() => {
-    if (user) {
-      setIsOnline(user.partner_status === 'available');
-    }
-  }, [user]);
-
   // Get user location
   useEffect(() => {
     (async () => {
