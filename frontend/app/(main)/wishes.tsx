@@ -187,6 +187,13 @@ export default function WishesScreen() {
   };
 
   const handleStartWish = () => {
+    // Add to active work - prevents going offline
+    addActiveWork({
+      type: 'wish',
+      id: MOCK_INCOMING_WISH.id,
+      title: MOCK_INCOMING_WISH.title,
+      status: 'in_progress',
+    });
     setWishState('in_progress');
   };
 
@@ -195,6 +202,8 @@ export default function WishesScreen() {
   };
 
   const confirmComplete = () => {
+    // Remove from active work
+    removeActiveWork(MOCK_INCOMING_WISH.id);
     setShowCompleteModal(false);
     setWishState('completed');
   };
