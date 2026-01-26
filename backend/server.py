@@ -1364,6 +1364,89 @@ async def seed_skilled_genie_user(response: Response):
         "user": skilled_user
     }
 
+
+@api_router.post("/seed/mobile-genie")
+async def seed_mobile_genie_user(response: Response):
+    """Create a test Mobile/Carpet Genie user with active session for testing"""
+    user_id = f"user_mobile_test"
+    session_token = f"session_mobile_{uuid.uuid4().hex[:16]}"
+    
+    # Create or update the mobile genie user
+    mobile_user = {
+        "user_id": user_id,
+        "phone": "9888777666",
+        "name": "Ravi Singh",
+        "email": "ravi@test.com",
+        "picture": None,
+        "date_of_birth": "1995-08-20",
+        "address": "Sector 15, Delhi",
+        "addresses": [],
+        "partner_type": "agent",
+        "partner_status": "available",
+        "partner_rating": 4.6,
+        "partner_total_tasks": 120,
+        "partner_total_earnings": 85000.0,
+        "agent_type": "mobile",  # MOBILE/CARPET GENIE
+        "agent_vehicle": "bike",
+        "agent_vehicle_registration": "DL1AB1234",
+        "agent_vehicle_make": "Honda",
+        "agent_vehicle_model": "Activa 6G",
+        "agent_vehicle_color": "Black",
+        "agent_is_electric": False,
+        "agent_services": ["delivery", "pickup", "errands"],
+        "agent_skills": [],
+        "agent_has_vehicle": True,
+        "agent_rating": 4.7,
+        "agent_total_deliveries": 115,
+        "vendor_shop_name": None,
+        "vendor_shop_type": None,
+        "vendor_shop_address": None,
+        "vendor_shop_location": None,
+        "vendor_can_deliver": False,
+        "vendor_categories": [],
+        "vendor_is_verified": False,
+        "promoter_business_name": None,
+        "promoter_type": None,
+        "promoter_description": None,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.users.update_one(
+        {"user_id": user_id},
+        {"$set": mobile_user},
+        upsert=True
+    )
+    
+    # Create session
+    session = {
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": datetime.now(timezone.utc) + timedelta(days=30),
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.user_sessions.update_one(
+        {"user_id": user_id},
+        {"$set": session},
+        upsert=True
+    )
+    
+    # Set session cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=30 * 24 * 60 * 60
+    )
+    
+    return {
+        "message": "Mobile Genie test user created",
+        "session_token": session_token,
+        "user": mobile_user
+    }
+
 @api_router.post("/seed/orders")
 async def seed_sample_orders():
     """Seed sample orders for testing"""
