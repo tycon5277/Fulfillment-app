@@ -623,6 +623,34 @@ export default function HomeScreen() {
           )}
 
         </ScrollView>
+        
+        {/* Active Work Warning Modal */}
+        <GameModal
+          visible={showActiveWorkWarning}
+          type="warning"
+          title="Active Work in Progress"
+          message={`You have ${activeWork.length} active ${activeWork.length === 1 ? 'task' : 'tasks'} that must be completed before going offline.\n\n${activeWork.map(w => `• ${w.title}`).join('\n')}`}
+          emoji="⚠️"
+          primaryButtonText="Stay Online"
+          secondaryButtonText="Emergency: Assign to Other"
+          onPrimaryPress={() => setShowActiveWorkWarning(false)}
+          onSecondaryPress={handleForceOffline}
+          onClose={() => setShowActiveWorkWarning(false)}
+        />
+        
+        {/* Assign Work Modal */}
+        <GameModal
+          visible={showAssignModal}
+          type="confirm"
+          title="Assign Work to Nearby Genie?"
+          message="In case of emergency, you can assign your active work to another available Genie in your area. The wisher/vendor will be notified.\n\nNote: Frequent reassignments may affect your rating."
+          emoji="🔄"
+          primaryButtonText="Yes, Assign & Go Offline"
+          secondaryButtonText="Cancel"
+          onPrimaryPress={handleAssignAndGoOffline}
+          onSecondaryPress={() => setShowAssignModal(false)}
+          onClose={() => setShowAssignModal(false)}
+        />
       </SafeAreaView>
     );
   }
