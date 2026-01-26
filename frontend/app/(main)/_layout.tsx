@@ -90,7 +90,7 @@ const WishesButton = ({ focused }: { focused: boolean }) => {
 };
 
 export default function MainLayout() {
-  const { user } = useAuthStore();
+  const { user, isLoading } = useAuthStore();
   const partnerType = user?.partner_type;
   const agentType = user?.agent_type;
   const isMobileGenie = partnerType === 'agent' && agentType === 'mobile';
@@ -129,6 +129,9 @@ export default function MainLayout() {
 
   const colors = getThemeColors();
   const tabBarHeight = isSkilledGenie ? 56 + insets.bottom : 65 + insets.bottom;
+
+  // Hide Orders tab if user is not loaded yet (to prevent flash of wrong tabs)
+  const hideOrdersTab = !user || partnerType === 'promoter' || isSkilledGenie;
 
   return (
     <Tabs
