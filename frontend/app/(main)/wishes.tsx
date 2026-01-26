@@ -18,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import GameModal from '../../src/components/GameModal';
 import { useAuthStore } from '../../src/store';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const COLORS = {
   background: '#08080C',
@@ -40,10 +40,10 @@ const COLORS = {
   headerBg: '#1E3A5F',
 };
 
-// Wish states
-type WishState = 'waiting' | 'incoming' | 'connected' | 'in_progress';
+// Wish states flow: waiting → incoming → negotiating → contract → in_progress → completed
+type WishState = 'waiting' | 'incoming' | 'negotiating' | 'contract' | 'in_progress' | 'completed';
 
-// Mock incoming wish request (simulating direct ping)
+// Mock incoming wish request
 const MOCK_INCOMING_WISH = {
   id: 'wish_001',
   wisher: {
@@ -68,74 +68,59 @@ const MOCK_INCOMING_WISH = {
   xpReward: 120,
 };
 
-// Mock active wish (when connected)
-const MOCK_ACTIVE_WISH = {
-  id: 'wish_002',
-  wisher: {
-    name: 'Rahul Verma',
-    avatar: 'R',
-    rating: 4.9,
-    phone: '+91 87654 32109',
-  },
-  category: 'Surprise',
-  emoji: '🎁',
-  title: 'Birthday Surprise for Wife',
-  description: 'Need a cake from Theobroma and flowers from the nearby florist. It\'s her birthday today!',
-  budget: { min: 500, max: 800 },
-  items: [
-    { name: 'Chocolate Truffle Cake (1kg)', status: 'pending' },
-    { name: 'Red Roses Bouquet (24 stems)', status: 'pending' },
-    { name: 'Birthday Card', status: 'pending' },
-  ],
-  location: {
-    pickup: 'Theobroma, Cyber Hub',
-    dropoff: 'Apt 1204, Palm Springs',
-    distance: 4.5,
-  },
-  status: 'shopping', // shopping | picked_up | delivering | delivered
-  earnings: 650,
-  xpReward: 150,
-  connectedAt: '15 min ago',
-};
-
 // Mock chat messages
-const MOCK_MESSAGES = [
-  { id: '1', sender: 'wisher', text: 'Hi! Thanks for accepting my wish 🙏', time: '2:30 PM' },
-  { id: '2', sender: 'genie', text: 'Hello! Happy to help. I\'m heading to Theobroma now.', time: '2:31 PM' },
-  { id: '3', sender: 'wisher', text: 'Great! Please get the chocolate truffle cake. Make sure they write "Happy Birthday Neha" on it', time: '2:32 PM' },
-  { id: '4', sender: 'genie', text: 'Got it! Any specific message style?', time: '2:33 PM' },
-  { id: '5', sender: 'wisher', text: 'Simple cursive would be perfect. Thank you!', time: '2:34 PM' },
+const INITIAL_MESSAGES = [
+  { id: '1', sender: 'wisher', text: 'Hi! Thanks for accepting. Can you help me with groceries?', time: '10:30 AM' },
+  { id: '2', sender: 'genie', text: 'Yes, absolutely! What items do you need?', time: '10:31 AM' },
 ];
 
 export default function WishesScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const [wishState, setWishState] = useState<WishState>('waiting');
-  const [showIncomingModal, setShowIncomingModal] = useState(false);
-  const [showDeclineModal, setShowDeclineModal] = useState(false);
-  const [showAcceptModal, setShowAcceptModal] = useState(false);
-  const [messages, setMessages] = useState(MOCK_MESSAGES);
-  const [newMessage, setNewMessage] = useState('');
-  const [activeTab, setActiveTab] = useState<'details' | 'chat'>('details');
-  const [isOnline, setIsOnline] = useState(true);
+  const { user, isOnline } = useAuthStore();
+  const scrollViewRef = useRef<ScrollView>(null);
   
+  const [wishState, setWishState] = useState<WishState>('waiting');
+  const [activeTab, setActiveTab] = useState<'chat' | 'terms'>('chat');
+  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+  const [newMessage, setNewMessage] = useState('');
+  
+  // Contract terms
+  const [agreedPrice, setAgreedPrice] = useState('');
+  const [agreedItems, setAgreedItems] = useState('');
+  const [agreedTime, setAgreedTime] = useState('');
+  const [specialNotes, setSpecialNotes] = useState('');
+  
+  // Modals
+  const [showAcceptModal, setShowAcceptModal] = useState(false);
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [showContractModal, setShowContractModal] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  
+  // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const ringAnim = useRef(new Animated.Value(0)).current;
-  const scrollViewRef = useRef<ScrollView>(null);
 
-  // Check online status from user profile
+  // Reset wish state when going offline
   useEffect(() => {
-    if (user) {
-      setIsOnline(user.partner_status === 'available');
+    if (!isOnline) {
+      // If offline and in incoming state, reset to waiting
+      if (wishState === 'incoming') {
+        setWishState('waiting');
+        pulseAnim.setValue(1);
+        ringAnim.setValue(0);
+      }
+      // Note: If already negotiating or beyond, keep the state (active wish in progress)
     }
-  }, [user]);
+  }, [isOnline]);
 
-  // Simulate incoming wish after 3 seconds (for demo) - only when online
+  // Simulate incoming wish after 3 seconds - ONLY when online AND waiting
   useEffect(() => {
     if (wishState === 'waiting' && isOnline) {
       const timer = setTimeout(() => {
-        setWishState('incoming');
-        startIncomingAnimation();
+        if (isOnline) { // Double check still online
+          setWishState('incoming');
+          startIncomingAnimation();
+        }
       }, 3000);
       return () => clearTimeout(timer);
     }
@@ -144,13 +129,9 @@ export default function WishesScreen() {
   const startIncomingAnimation = () => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.1, duration: 500, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1.05, duration: 500, useNativeDriver: true }),
         Animated.timing(pulseAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
       ])
-    ).start();
-    
-    Animated.loop(
-      Animated.timing(ringAnim, { toValue: 1, duration: 1500, useNativeDriver: true })
     ).start();
   };
 
@@ -160,7 +141,7 @@ export default function WishesScreen() {
 
   const confirmAccept = () => {
     setShowAcceptModal(false);
-    setWishState('connected');
+    setWishState('negotiating');
     pulseAnim.stopAnimation();
     ringAnim.stopAnimation();
   };
@@ -189,18 +170,56 @@ export default function WishesScreen() {
     }
   };
 
+  const handleProposeTerms = () => {
+    setActiveTab('terms');
+  };
+
+  const handleSendContract = () => {
+    if (!agreedPrice) {
+      return;
+    }
+    setShowContractModal(true);
+  };
+
+  const confirmContract = () => {
+    setShowContractModal(false);
+    setWishState('contract');
+  };
+
+  const handleStartWish = () => {
+    setWishState('in_progress');
+  };
+
+  const handleCompleteWish = () => {
+    setShowCompleteModal(true);
+  };
+
+  const confirmComplete = () => {
+    setShowCompleteModal(false);
+    setWishState('completed');
+  };
+
   const handleNavigate = () => {
     router.push({
       pathname: '/navigation',
       params: { 
         type: 'wish',
-        orderId: MOCK_ACTIVE_WISH.id,
-        title: MOCK_ACTIVE_WISH.title,
+        orderId: MOCK_INCOMING_WISH.id,
+        title: MOCK_INCOMING_WISH.title,
       }
     });
   };
 
-  // WAITING STATE - No active wish, waiting for incoming request
+  const handleBackToWaiting = () => {
+    setWishState('waiting');
+    setMessages(INITIAL_MESSAGES);
+    setAgreedPrice('');
+    setAgreedItems('');
+    setAgreedTime('');
+    setSpecialNotes('');
+  };
+
+  // WAITING STATE
   const renderWaitingState = () => (
     <View style={styles.waitingContainer}>
       <View style={styles.waitingContent}>
@@ -224,206 +243,139 @@ export default function WishesScreen() {
             <Text style={styles.waitingStatLabel}>= More Wishes</Text>
           </View>
         </View>
-        
-        <View style={styles.tipCard}>
-          <Ionicons name="bulb" size={20} color={COLORS.amber} />
-          <Text style={styles.tipText}>
-            Tip: Stay in high-demand areas like malls and markets to receive more wish requests!
-          </Text>
-        </View>
       </View>
     </View>
   );
 
-  // INCOMING STATE - New wish request received (direct ping)
+  // INCOMING STATE
   const renderIncomingState = () => (
-    <View style={{ flex: 1, backgroundColor: COLORS.background, padding: 20, justifyContent: 'center' }}>
-      <View style={{ backgroundColor: COLORS.cardBg, borderRadius: 24, borderWidth: 1, borderColor: COLORS.cardBorder }}>
+    <View style={styles.incomingContainer}>
+      <Animated.View style={[styles.incomingCard, { transform: [{ scale: pulseAnim }] }]}>
         <LinearGradient
           colors={[COLORS.primary, COLORS.magenta]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={{ paddingVertical: 14, alignItems: 'center', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+          style={styles.incomingHeader}
         >
-          <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFFFFF', letterSpacing: 1 }}>✨ NEW WISH REQUEST</Text>
+          <Text style={styles.incomingLabel}>✨ NEW WISH REQUEST</Text>
         </LinearGradient>
         
-        <View style={{ padding: 20 }}>
+        <View style={styles.incomingBody}>
           {/* Wisher Info */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, padding: 12, backgroundColor: COLORS.backgroundSecondary, borderRadius: 12 }}>
-            <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center' }}>
-              <Text style={{ fontSize: 20, fontWeight: '700', color: '#FFFFFF' }}>{MOCK_INCOMING_WISH.wisher.avatar}</Text>
+          <View style={styles.wisherInfoRow}>
+            <View style={styles.wisherAvatar}>
+              <Text style={styles.wisherAvatarText}>{MOCK_INCOMING_WISH.wisher.avatar}</Text>
             </View>
-            <View style={{ marginLeft: 12, flex: 1 }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.text }}>{MOCK_INCOMING_WISH.wisher.name}</Text>
-              <Text style={{ fontSize: 13, color: COLORS.amber, marginTop: 2 }}>⭐ {MOCK_INCOMING_WISH.wisher.rating} • {MOCK_INCOMING_WISH.wisher.totalWishes} wishes</Text>
+            <View style={styles.wisherDetails}>
+              <Text style={styles.wisherName}>{MOCK_INCOMING_WISH.wisher.name}</Text>
+              <Text style={styles.wisherRating}>⭐ {MOCK_INCOMING_WISH.wisher.rating} • {MOCK_INCOMING_WISH.wisher.totalWishes} wishes</Text>
             </View>
-            <View style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: COLORS.primary + '30', borderRadius: 12 }}>
-              <Text style={{ fontSize: 16 }}>{MOCK_INCOMING_WISH.emoji}</Text>
+            <View style={styles.categoryBadge}>
+              <Text style={styles.categoryEmoji}>{MOCK_INCOMING_WISH.emoji}</Text>
             </View>
           </View>
           
           {/* Wish Details */}
-          <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.text, marginBottom: 8 }}>{MOCK_INCOMING_WISH.title}</Text>
-          <Text style={{ fontSize: 14, color: COLORS.textSecondary, lineHeight: 20, marginBottom: 16 }}>{MOCK_INCOMING_WISH.description}</Text>
+          <Text style={styles.wishTitle}>{MOCK_INCOMING_WISH.title}</Text>
+          <Text style={styles.wishDescription}>{MOCK_INCOMING_WISH.description}</Text>
           
           {/* Stats Row */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: COLORS.backgroundSecondary, borderRadius: 12 }}>
-            <View style={{ alignItems: 'center' }}>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
               <Ionicons name="location" size={18} color={COLORS.cyan} />
-              <Text style={{ fontSize: 13, color: COLORS.textSecondary, marginTop: 4 }}>{MOCK_INCOMING_WISH.location.distance} km</Text>
+              <Text style={styles.statText}>{MOCK_INCOMING_WISH.location.distance} km</Text>
             </View>
-            <View style={{ alignItems: 'center' }}>
+            <View style={styles.statItem}>
               <Ionicons name="time" size={18} color={COLORS.amber} />
-              <Text style={{ fontSize: 13, color: COLORS.textSecondary, marginTop: 4 }}>{MOCK_INCOMING_WISH.estimatedTime}</Text>
+              <Text style={styles.statText}>{MOCK_INCOMING_WISH.estimatedTime}</Text>
             </View>
-            <View style={{ alignItems: 'center' }}>
+            <View style={styles.statItem}>
               <Ionicons name="flash" size={18} color={COLORS.magenta} />
-              <Text style={{ fontSize: 13, color: COLORS.textSecondary, marginTop: 4 }}>+{MOCK_INCOMING_WISH.xpReward} XP</Text>
+              <Text style={styles.statText}>+{MOCK_INCOMING_WISH.xpReward} XP</Text>
             </View>
           </View>
           
           {/* Budget Row */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: COLORS.green + '15', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, marginBottom: 20 }}>
-            <Text style={{ fontSize: 13, color: COLORS.textSecondary }}>Wisher's Budget</Text>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: COLORS.green }}>₹{MOCK_INCOMING_WISH.budget.min} - ₹{MOCK_INCOMING_WISH.budget.max}</Text>
+          <View style={styles.budgetRow}>
+            <Text style={styles.budgetLabel}>Wisher's Budget</Text>
+            <Text style={styles.budgetValue}>₹{MOCK_INCOMING_WISH.budget.min} - ₹{MOCK_INCOMING_WISH.budget.max}</Text>
           </View>
           
           {/* Action Buttons */}
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <TouchableOpacity 
-              style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 14, backgroundColor: COLORS.red + '15', gap: 8 }}
-              onPress={handleDeclineWish}
-            >
+          <View style={styles.actionRow}>
+            <TouchableOpacity style={styles.declineBtn} onPress={handleDeclineWish}>
               <Ionicons name="close" size={22} color={COLORS.red} />
-              <Text style={{ color: COLORS.red, fontSize: 16, fontWeight: '600' }}>Decline</Text>
+              <Text style={styles.declineBtnText}>Decline</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={{ flex: 1.5, borderRadius: 14, overflow: 'hidden' }} onPress={handleAcceptWish}>
+            <TouchableOpacity style={styles.acceptBtn} onPress={handleAcceptWish}>
               <LinearGradient
-                colors={[COLORS.green, '#16A34A']}
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, gap: 8 }}
+                colors={[COLORS.primary, COLORS.magenta]}
+                style={styles.acceptBtnGradient}
               >
-                <Ionicons name="checkmark" size={22} color="#FFFFFF" />
-                <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>Accept Wish</Text>
+                <Ionicons name="chatbubbles" size={20} color="#FFF" />
+                <Text style={styles.acceptBtnText}>Start Negotiation</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 
-  // CONNECTED STATE - Active connection with wisher
-  const renderConnectedState = () => (
+  // NEGOTIATING STATE - Chat & Terms Discussion
+  const renderNegotiatingState = () => (
     <View style={styles.connectedContainer}>
-      {/* Header with Wisher Info */}
-      <LinearGradient
-        colors={[COLORS.headerBg, COLORS.background]}
-        style={styles.connectedHeader}
-      >
-        <View style={styles.connectedHeaderTop}>
-          <View style={styles.connectedWisher}>
-            <View style={styles.connectedAvatar}>
-              <Text style={styles.connectedAvatarText}>{MOCK_ACTIVE_WISH.wisher.avatar}</Text>
-              <View style={styles.onlineDot} />
-            </View>
-            <View>
-              <Text style={styles.connectedName}>{MOCK_ACTIVE_WISH.wisher.name}</Text>
-              <Text style={styles.connectedStatus}>Connected {MOCK_ACTIVE_WISH.connectedAt}</Text>
-            </View>
+      {/* Header */}
+      <LinearGradient colors={[COLORS.headerBg, COLORS.background]} style={styles.connectedHeader}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => setShowDeclineModal(true)}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerTitle}>💬 Negotiating</Text>
+            <Text style={styles.headerSubtitle}>Discuss terms with {MOCK_INCOMING_WISH.wisher.name}</Text>
           </View>
-          <View style={styles.connectedActions}>
-            <TouchableOpacity style={styles.actionIconBtn}>
-              <Ionicons name="call" size={20} color={COLORS.green} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.callBtn}>
+            <Ionicons name="call" size={20} color={COLORS.green} />
+          </TouchableOpacity>
         </View>
         
-        {/* Wish Summary */}
-        <View style={styles.wishSummary}>
-          <Text style={styles.wishSummaryEmoji}>{MOCK_ACTIVE_WISH.emoji}</Text>
-          <View style={styles.wishSummaryInfo}>
-            <Text style={styles.wishSummaryTitle}>{MOCK_ACTIVE_WISH.title}</Text>
-            <View style={styles.wishSummaryMeta}>
-              <Text style={styles.wishSummaryEarnings}>₹{MOCK_ACTIVE_WISH.earnings}</Text>
-              <Text style={styles.wishSummaryXP}>+{MOCK_ACTIVE_WISH.xpReward} XP</Text>
-            </View>
+        {/* Status Bar */}
+        <View style={styles.statusBar}>
+          <View style={[styles.statusStep, styles.statusStepActive]}>
+            <Text style={styles.statusStepText}>1. Negotiate</Text>
+          </View>
+          <View style={styles.statusLine} />
+          <View style={styles.statusStep}>
+            <Text style={styles.statusStepTextInactive}>2. Contract</Text>
+          </View>
+          <View style={styles.statusLine} />
+          <View style={styles.statusStep}>
+            <Text style={styles.statusStepTextInactive}>3. Fulfill</Text>
           </View>
         </View>
         
         {/* Tab Switcher */}
         <View style={styles.tabSwitcher}>
           <TouchableOpacity 
-            style={[styles.tab, activeTab === 'details' && styles.tabActive]}
-            onPress={() => setActiveTab('details')}
-          >
-            <Ionicons name="list" size={18} color={activeTab === 'details' ? COLORS.primary : COLORS.textMuted} />
-            <Text style={[styles.tabText, activeTab === 'details' && styles.tabTextActive]}>Details</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
             style={[styles.tab, activeTab === 'chat' && styles.tabActive]}
             onPress={() => setActiveTab('chat')}
           >
-            <Ionicons name="chatbubbles" size={18} color={activeTab === 'chat' ? COLORS.primary : COLORS.textMuted} />
+            <Ionicons name="chatbubbles" size={18} color={activeTab === 'chat' ? COLORS.cyan : COLORS.textMuted} />
             <Text style={[styles.tabText, activeTab === 'chat' && styles.tabTextActive]}>Chat</Text>
-            <View style={styles.chatBadge}>
-              <Text style={styles.chatBadgeText}>2</Text>
-            </View>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tab, activeTab === 'terms' && styles.tabActive]}
+            onPress={() => setActiveTab('terms')}
+          >
+            <Ionicons name="document-text" size={18} color={activeTab === 'terms' ? COLORS.cyan : COLORS.textMuted} />
+            <Text style={[styles.tabText, activeTab === 'terms' && styles.tabTextActive]}>Propose Terms</Text>
           </TouchableOpacity>
         </View>
       </LinearGradient>
       
-      {activeTab === 'details' ? (
-        <ScrollView style={styles.detailsContainer} showsVerticalScrollIndicator={false}>
-          {/* Items Checklist */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📋 Items to Get</Text>
-            {MOCK_ACTIVE_WISH.items.map((item, index) => (
-              <TouchableOpacity key={index} style={styles.itemRow}>
-                <View style={[styles.checkbox, item.status === 'done' && styles.checkboxDone]}>
-                  {item.status === 'done' && <Ionicons name="checkmark" size={14} color="#FFF" />}
-                </View>
-                <Text style={[styles.itemText, item.status === 'done' && styles.itemTextDone]}>
-                  {item.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          
-          {/* Locations */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📍 Locations</Text>
-            <View style={styles.locationCard}>
-              <View style={styles.locationRow}>
-                <View style={[styles.locationDot, { backgroundColor: COLORS.cyan }]} />
-                <View style={styles.locationInfo}>
-                  <Text style={styles.locationLabel}>Pickup</Text>
-                  <Text style={styles.locationAddress}>{MOCK_ACTIVE_WISH.location.pickup}</Text>
-                </View>
-              </View>
-              <View style={styles.locationLine} />
-              <View style={styles.locationRow}>
-                <View style={[styles.locationDot, { backgroundColor: COLORS.green }]} />
-                <View style={styles.locationInfo}>
-                  <Text style={styles.locationLabel}>Drop-off</Text>
-                  <Text style={styles.locationAddress}>{MOCK_ACTIVE_WISH.location.dropoff}</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-          
-          {/* Special Instructions */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📝 Instructions</Text>
-            <View style={styles.instructionsCard}>
-              <Text style={styles.instructionsText}>{MOCK_ACTIVE_WISH.description}</Text>
-            </View>
-          </View>
-          
-          <View style={{ height: 120 }} />
-        </ScrollView>
-      ) : (
+      {activeTab === 'chat' ? (
         <KeyboardAvoidingView 
           style={styles.chatContainer}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -433,15 +385,11 @@ export default function WishesScreen() {
             ref={scrollViewRef}
             style={styles.messagesContainer}
             showsVerticalScrollIndicator={false}
-            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
           >
             {messages.map((msg) => (
               <View 
                 key={msg.id} 
-                style={[
-                  styles.messageBubble,
-                  msg.sender === 'genie' ? styles.messageSent : styles.messageReceived
-                ]}
+                style={[styles.messageBubble, msg.sender === 'genie' ? styles.messageSent : styles.messageReceived]}
               >
                 <Text style={styles.messageText}>{msg.text}</Text>
                 <Text style={styles.messageTime}>{msg.time}</Text>
@@ -460,54 +408,328 @@ export default function WishesScreen() {
               multiline
             />
             <TouchableOpacity style={styles.sendBtn} onPress={sendMessage}>
-              <LinearGradient
-                colors={[COLORS.primary, COLORS.magenta]}
-                style={styles.sendBtnGradient}
+              <Ionicons name="send" size={18} color={COLORS.cyan} />
+            </TouchableOpacity>
+          </View>
+          
+          <TouchableOpacity style={styles.proposeTermsBtn} onPress={handleProposeTerms}>
+            <LinearGradient colors={[COLORS.green, COLORS.cyan]} style={styles.proposeTermsBtnGradient}>
+              <Ionicons name="document-text" size={18} color="#FFF" />
+              <Text style={styles.proposeTermsBtnText}>Ready? Propose Terms</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      ) : (
+        <ScrollView style={styles.termsContainer} showsVerticalScrollIndicator={false}>
+          <View style={styles.termsCard}>
+            <Text style={styles.termsTitle}>📝 Contract Terms</Text>
+            <Text style={styles.termsSubtitle}>Fill in the agreed details to create a contract</Text>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Agreed Price (₹) *</Text>
+              <TextInput
+                style={styles.termsInput}
+                placeholder="e.g., 350"
+                placeholderTextColor={COLORS.textMuted}
+                value={agreedPrice}
+                onChangeText={setAgreedPrice}
+                keyboardType="numeric"
+              />
+            </View>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Items/Tasks</Text>
+              <TextInput
+                style={[styles.termsInput, styles.termsInputMulti]}
+                placeholder="List items or tasks agreed upon..."
+                placeholderTextColor={COLORS.textMuted}
+                value={agreedItems}
+                onChangeText={setAgreedItems}
+                multiline
+                numberOfLines={3}
+              />
+            </View>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Estimated Completion Time</Text>
+              <TextInput
+                style={styles.termsInput}
+                placeholder="e.g., 1 hour"
+                placeholderTextColor={COLORS.textMuted}
+                value={agreedTime}
+                onChangeText={setAgreedTime}
+              />
+            </View>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Special Notes</Text>
+              <TextInput
+                style={[styles.termsInput, styles.termsInputMulti]}
+                placeholder="Any special instructions or conditions..."
+                placeholderTextColor={COLORS.textMuted}
+                value={specialNotes}
+                onChangeText={setSpecialNotes}
+                multiline
+                numberOfLines={2}
+              />
+            </View>
+            
+            <TouchableOpacity 
+              style={[styles.sendContractBtn, !agreedPrice && styles.sendContractBtnDisabled]}
+              onPress={handleSendContract}
+              disabled={!agreedPrice}
+            >
+              <LinearGradient 
+                colors={agreedPrice ? [COLORS.primary, COLORS.magenta] : [COLORS.textMuted, COLORS.textMuted]} 
+                style={styles.sendContractBtnGradient}
               >
-                <Ionicons name="send" size={18} color="#FFF" />
+                <Ionicons name="paper-plane" size={18} color="#FFF" />
+                <Text style={styles.sendContractBtnText}>Send Contract to Wisher</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
+        </ScrollView>
       )}
+    </View>
+  );
+
+  // CONTRACT STATE - Waiting for wisher approval
+  const renderContractState = () => (
+    <View style={styles.connectedContainer}>
+      <LinearGradient colors={[COLORS.headerBg, COLORS.background]} style={styles.connectedHeader}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => setWishState('negotiating')}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerTitle}>📄 Contract Sent</Text>
+            <Text style={styles.headerSubtitle}>Waiting for {MOCK_INCOMING_WISH.wisher.name}'s approval</Text>
+          </View>
+        </View>
+        
+        {/* Status Bar */}
+        <View style={styles.statusBar}>
+          <View style={[styles.statusStep, styles.statusStepDone]}>
+            <Ionicons name="checkmark" size={14} color={COLORS.green} />
+          </View>
+          <View style={[styles.statusLine, styles.statusLineDone]} />
+          <View style={[styles.statusStep, styles.statusStepActive]}>
+            <Text style={styles.statusStepText}>2. Contract</Text>
+          </View>
+          <View style={styles.statusLine} />
+          <View style={styles.statusStep}>
+            <Text style={styles.statusStepTextInactive}>3. Fulfill</Text>
+          </View>
+        </View>
+      </LinearGradient>
       
-      {/* Bottom Action */}
-      <View style={styles.bottomAction}>
-        <TouchableOpacity style={styles.navigateBtn} onPress={handleNavigate}>
-          <LinearGradient
-            colors={[COLORS.cyan, COLORS.blue]}
-            style={styles.navigateBtnGradient}
-          >
+      <ScrollView style={styles.contractReviewContainer}>
+        <View style={styles.contractCard}>
+          <View style={styles.contractHeader}>
+            <Text style={styles.contractEmoji}>📋</Text>
+            <Text style={styles.contractTitle}>Contract Summary</Text>
+          </View>
+          
+          <View style={styles.contractRow}>
+            <Text style={styles.contractLabel}>Wisher</Text>
+            <Text style={styles.contractValue}>{MOCK_INCOMING_WISH.wisher.name}</Text>
+          </View>
+          
+          <View style={styles.contractRow}>
+            <Text style={styles.contractLabel}>Wish</Text>
+            <Text style={styles.contractValue}>{MOCK_INCOMING_WISH.title}</Text>
+          </View>
+          
+          <View style={styles.contractRow}>
+            <Text style={styles.contractLabel}>Agreed Price</Text>
+            <Text style={[styles.contractValue, styles.contractPrice]}>₹{agreedPrice}</Text>
+          </View>
+          
+          {agreedItems ? (
+            <View style={styles.contractRow}>
+              <Text style={styles.contractLabel}>Items/Tasks</Text>
+              <Text style={styles.contractValue}>{agreedItems}</Text>
+            </View>
+          ) : null}
+          
+          {agreedTime ? (
+            <View style={styles.contractRow}>
+              <Text style={styles.contractLabel}>Est. Time</Text>
+              <Text style={styles.contractValue}>{agreedTime}</Text>
+            </View>
+          ) : null}
+          
+          {specialNotes ? (
+            <View style={styles.contractRow}>
+              <Text style={styles.contractLabel}>Notes</Text>
+              <Text style={styles.contractValue}>{specialNotes}</Text>
+            </View>
+          ) : null}
+          
+          <View style={styles.contractStatus}>
+            <View style={styles.statusIndicator}>
+              <View style={styles.statusPulse} />
+              <Text style={styles.statusText}>Waiting for approval...</Text>
+            </View>
+          </View>
+        </View>
+        
+        {/* Simulate wisher approval (for demo) */}
+        <TouchableOpacity style={styles.simulateBtn} onPress={handleStartWish}>
+          <Text style={styles.simulateBtnText}>🎭 Simulate: Wisher Approved</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
+  );
+
+  // IN_PROGRESS STATE - Actively fulfilling the wish
+  const renderInProgressState = () => (
+    <View style={styles.connectedContainer}>
+      <LinearGradient colors={[COLORS.headerBg, COLORS.background]} style={styles.connectedHeader}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          </TouchableOpacity>
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerTitle}>🚀 In Progress</Text>
+            <Text style={styles.headerSubtitle}>Fulfilling {MOCK_INCOMING_WISH.wisher.name}'s wish</Text>
+          </View>
+          <TouchableOpacity style={styles.callBtn}>
+            <Ionicons name="call" size={20} color={COLORS.green} />
+          </TouchableOpacity>
+        </View>
+        
+        {/* Status Bar */}
+        <View style={styles.statusBar}>
+          <View style={[styles.statusStep, styles.statusStepDone]}>
+            <Ionicons name="checkmark" size={14} color={COLORS.green} />
+          </View>
+          <View style={[styles.statusLine, styles.statusLineDone]} />
+          <View style={[styles.statusStep, styles.statusStepDone]}>
+            <Ionicons name="checkmark" size={14} color={COLORS.green} />
+          </View>
+          <View style={[styles.statusLine, styles.statusLineDone]} />
+          <View style={[styles.statusStep, styles.statusStepActive]}>
+            <Text style={styles.statusStepText}>3. Fulfill</Text>
+          </View>
+        </View>
+      </LinearGradient>
+      
+      <ScrollView style={styles.inProgressContainer}>
+        {/* Wish Card */}
+        <View style={styles.activeWishCard}>
+          <View style={styles.activeWishHeader}>
+            <Text style={styles.activeWishEmoji}>{MOCK_INCOMING_WISH.emoji}</Text>
+            <View style={styles.activeWishInfo}>
+              <Text style={styles.activeWishTitle}>{MOCK_INCOMING_WISH.title}</Text>
+              <Text style={styles.activeWishPrice}>₹{agreedPrice} • +{MOCK_INCOMING_WISH.xpReward} XP</Text>
+            </View>
+          </View>
+        </View>
+        
+        {/* Locations */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>📍 Locations</Text>
+          <View style={styles.locationCard}>
+            <View style={styles.locationRow}>
+              <View style={[styles.locationDot, { backgroundColor: COLORS.cyan }]} />
+              <View style={styles.locationInfo}>
+                <Text style={styles.locationLabel}>Pickup</Text>
+                <Text style={styles.locationAddress}>{MOCK_INCOMING_WISH.location.pickup}</Text>
+              </View>
+            </View>
+            <View style={styles.locationLine} />
+            <View style={styles.locationRow}>
+              <View style={[styles.locationDot, { backgroundColor: COLORS.green }]} />
+              <View style={styles.locationInfo}>
+                <Text style={styles.locationLabel}>Drop-off</Text>
+                <Text style={styles.locationAddress}>{MOCK_INCOMING_WISH.location.dropoff}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+        
+        {/* Contract Summary */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>📋 Contract Details</Text>
+          <View style={styles.contractSummaryCard}>
+            {agreedItems ? <Text style={styles.contractSummaryText}>• {agreedItems}</Text> : null}
+            {agreedTime ? <Text style={styles.contractSummaryText}>• Time: {agreedTime}</Text> : null}
+            {specialNotes ? <Text style={styles.contractSummaryText}>• Notes: {specialNotes}</Text> : null}
+          </View>
+        </View>
+        
+        <View style={{ height: 150 }} />
+      </ScrollView>
+      
+      {/* Bottom Actions */}
+      <View style={styles.bottomActions}>
+        <TouchableOpacity style={styles.navBtn} onPress={handleNavigate}>
+          <LinearGradient colors={[COLORS.cyan, COLORS.blue]} style={styles.navBtnGradient}>
             <Ionicons name="navigate" size={20} color="#FFF" />
-            <Text style={styles.navigateBtnText}>Navigate to Pickup</Text>
+            <Text style={styles.navBtnText}>Navigate</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.completeBtn} onPress={handleCompleteWish}>
+          <LinearGradient colors={[COLORS.green, '#16A34A']} style={styles.completeBtnGradient}>
+            <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+            <Text style={styles.completeBtnText}>Complete Wish</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
     </View>
   );
 
-  // OFFLINE STATE - Genie is offline
+  // COMPLETED STATE
+  const renderCompletedState = () => (
+    <View style={styles.completedContainer}>
+      <View style={styles.completedContent}>
+        <View style={styles.completedIconContainer}>
+          <LinearGradient colors={[COLORS.green + '30', COLORS.cyan + '20']} style={styles.completedIconGradient}>
+            <Text style={styles.completedEmoji}>🎉</Text>
+          </LinearGradient>
+        </View>
+        <Text style={styles.completedTitle}>Wish Granted!</Text>
+        <Text style={styles.completedSubtitle}>
+          You've successfully fulfilled {MOCK_INCOMING_WISH.wisher.name}'s wish
+        </Text>
+        
+        <View style={styles.rewardCard}>
+          <View style={styles.rewardRow}>
+            <Text style={styles.rewardLabel}>Earned</Text>
+            <Text style={styles.rewardValue}>₹{agreedPrice || '350'}</Text>
+          </View>
+          <View style={styles.rewardDivider} />
+          <View style={styles.rewardRow}>
+            <Text style={styles.rewardLabel}>XP Gained</Text>
+            <Text style={styles.rewardXP}>+{MOCK_INCOMING_WISH.xpReward} XP</Text>
+          </View>
+        </View>
+        
+        <TouchableOpacity style={styles.newWishBtn} onPress={handleBackToWaiting}>
+          <LinearGradient colors={[COLORS.primary, COLORS.magenta]} style={styles.newWishBtnGradient}>
+            <Ionicons name="sparkles" size={20} color="#FFF" />
+            <Text style={styles.newWishBtnText}>Find More Wishes</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  // OFFLINE STATE
   const renderOfflineState = () => (
     <View style={styles.offlineContainer}>
-      <LinearGradient
-        colors={[COLORS.cardBg, COLORS.backgroundSecondary]}
-        style={styles.offlineGradient}
-      >
+      <LinearGradient colors={[COLORS.cardBg, COLORS.backgroundSecondary]} style={styles.offlineGradient}>
         <View style={styles.offlineIconContainer}>
           <Ionicons name="moon" size={64} color={COLORS.textMuted} />
         </View>
         <Text style={styles.offlineTitle}>You're Offline</Text>
         <Text style={styles.offlineSubtitle}>
-          Go online from the Home screen to start receiving wish requests from nearby wishers
+          Go online from the Home screen to start receiving wish requests
         </Text>
-        <TouchableOpacity 
-          style={styles.goOnlineButton}
-          onPress={() => router.push('/(main)/home')}
-        >
-          <LinearGradient
-            colors={[COLORS.primary, COLORS.magenta]}
-            style={styles.goOnlineGradient}
-          >
+        <TouchableOpacity style={styles.goOnlineButton} onPress={() => router.push('/(main)/home')}>
+          <LinearGradient colors={[COLORS.primary, COLORS.magenta]} style={styles.goOnlineGradient}>
             <Ionicons name="power" size={18} color="#FFF" />
             <Text style={styles.goOnlineText}>Go to Home</Text>
           </LinearGradient>
@@ -516,52 +738,101 @@ export default function WishesScreen() {
     </View>
   );
 
+  // Determine what to render based on state
+  const renderContent = () => {
+    // If offline and no active wish (waiting or incoming), show offline
+    if (!isOnline && (wishState === 'waiting' || wishState === 'incoming')) {
+      return renderOfflineState();
+    }
+    
+    switch (wishState) {
+      case 'waiting':
+        return renderWaitingState();
+      case 'incoming':
+        return renderIncomingState();
+      case 'negotiating':
+        return renderNegotiatingState();
+      case 'contract':
+        return renderContractState();
+      case 'in_progress':
+        return renderInProgressState();
+      case 'completed':
+        return renderCompletedState();
+      default:
+        return renderWaitingState();
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Main Header */}
-      {(wishState === 'waiting' || !isOnline) && (
-        <LinearGradient
-          colors={[COLORS.headerBg, COLORS.background]}
-          style={styles.header}
-        >
+      {/* Header for waiting/offline states */}
+      {(wishState === 'waiting' || wishState === 'incoming' || !isOnline) && wishState !== 'negotiating' && wishState !== 'contract' && wishState !== 'in_progress' && wishState !== 'completed' && (
+        <LinearGradient colors={[COLORS.headerBg, COLORS.background]} style={styles.header}>
+          <TouchableOpacity style={styles.headerBackBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          </TouchableOpacity>
           <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>✨ Wishes</Text>
-            <Text style={styles.headerSubtitle}>
+            <Text style={styles.mainHeaderTitle}>✨ Wishes</Text>
+            <Text style={styles.mainHeaderSubtitle}>
               {isOnline ? 'Grant wishes, earn magic!' : 'You are currently offline'}
             </Text>
           </View>
         </LinearGradient>
       )}
       
-      {/* Render based on state - Show offline if not online */}
-      {!isOnline && renderOfflineState()}
-      {isOnline && wishState === 'waiting' && renderWaitingState()}
-      {isOnline && wishState === 'incoming' && renderIncomingState()}
-      {isOnline && (wishState === 'connected' || wishState === 'in_progress') && renderConnectedState()}
+      {renderContent()}
       
-      {/* Game Modals */}
+      {/* Modals */}
       <GameModal
         visible={showAcceptModal}
         type="confirm"
-        title="Accept This Wish?"
-        message={`You'll be connected with ${MOCK_INCOMING_WISH.wisher.name}. You can chat and coordinate the wish details.`}
-        emoji="🤝"
-        primaryButtonText="Yes, Connect!"
+        title="Start Negotiation?"
+        message={`You'll be connected with ${MOCK_INCOMING_WISH.wisher.name} to discuss terms and pricing before committing.`}
+        emoji="💬"
+        primaryButtonText="Yes, Let's Talk!"
         secondaryButtonText="Go Back"
         onPrimaryPress={confirmAccept}
         onSecondaryPress={() => setShowAcceptModal(false)}
+        onClose={() => setShowAcceptModal(false)}
       />
       
       <GameModal
         visible={showDeclineModal}
         type="warning"
-        title="Decline Wish?"
-        message="The wish will be offered to another Genie. Your response rate may be affected."
-        emoji="😔"
+        title="Decline This Wish?"
+        message="You'll be returned to the waiting queue for new wishes."
+        emoji="🤔"
         primaryButtonText="Yes, Decline"
-        secondaryButtonText="Keep It"
+        secondaryButtonText="Keep Negotiating"
         onPrimaryPress={confirmDecline}
         onSecondaryPress={() => setShowDeclineModal(false)}
+        onClose={() => setShowDeclineModal(false)}
+      />
+      
+      <GameModal
+        visible={showContractModal}
+        type="confirm"
+        title="Send Contract?"
+        message={`This will send a contract to ${MOCK_INCOMING_WISH.wisher.name} for ₹${agreedPrice}. They'll need to approve before you start.`}
+        emoji="📄"
+        primaryButtonText="Send Contract"
+        secondaryButtonText="Edit Terms"
+        onPrimaryPress={confirmContract}
+        onSecondaryPress={() => setShowContractModal(false)}
+        onClose={() => setShowContractModal(false)}
+      />
+      
+      <GameModal
+        visible={showCompleteModal}
+        type="success"
+        title="Complete This Wish?"
+        message="Make sure you've delivered everything as agreed in the contract."
+        emoji="✅"
+        primaryButtonText="Yes, Complete!"
+        secondaryButtonText="Not Yet"
+        onPrimaryPress={confirmComplete}
+        onSecondaryPress={() => setShowCompleteModal(false)}
+        onClose={() => setShowCompleteModal(false)}
       />
     </SafeAreaView>
   );
@@ -573,21 +844,32 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 12,
   },
-  headerContent: {
+  headerBackBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.cardBg,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+  headerContent: {
+    flex: 1,
+  },
+  mainHeaderTitle: {
+    fontSize: 24,
+    fontWeight: '700',
     color: COLORS.text,
   },
-  headerSubtitle: {
+  mainHeaderSubtitle: {
     fontSize: 14,
     color: COLORS.textSecondary,
-    marginTop: 4,
+    marginTop: 2,
   },
   
   // Waiting State
@@ -595,7 +877,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
   },
   waitingContent: {
     alignItems: 'center',
@@ -611,11 +893,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   waitingEmoji: {
-    fontSize: 56,
+    fontSize: 50,
   },
   waitingTitle: {
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: '700',
     color: COLORS.text,
     marginBottom: 8,
   },
@@ -627,74 +909,48 @@ const styles = StyleSheet.create({
   },
   waitingStats: {
     marginTop: 32,
+    alignItems: 'center',
   },
   waitingStat: {
     alignItems: 'center',
+    gap: 6,
   },
   waitingStatValue: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: COLORS.text,
-    marginTop: 8,
   },
   waitingStatLabel: {
     fontSize: 13,
     color: COLORS.textSecondary,
   },
-  tipCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.amber + '15',
-    borderRadius: 14,
-    padding: 16,
-    marginTop: 32,
-    gap: 12,
-  },
-  tipText: {
-    flex: 1,
-    fontSize: 13,
-    color: COLORS.amber,
-    lineHeight: 20,
-  },
   
   // Incoming State
-  incomingWrapper: {
+  incomingContainer: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  incomingScrollContainer: {
-    flex: 1,
-  },
-  incomingContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     padding: 20,
+    justifyContent: 'center',
   },
   incomingCard: {
-    width: SCREEN_WIDTH - 40,
     backgroundColor: COLORS.cardBg,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: COLORS.cardBorder,
-    minHeight: 400,
+    overflow: 'hidden',
   },
   incomingHeader: {
     paddingVertical: 14,
     alignItems: 'center',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    overflow: 'hidden',
   },
   incomingLabel: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#FFF',
+    color: '#FFFFFF',
     letterSpacing: 1,
   },
   incomingBody: {
     padding: 20,
-    backgroundColor: COLORS.cardBg,
   },
   wisherInfoRow: {
     flexDirection: 'row',
@@ -703,16 +959,6 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: COLORS.backgroundSecondary,
     borderRadius: 12,
-  },
-  wisherTextContainer: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  wisherInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    backgroundColor: 'rgba(255,0,0,0.1)',
   },
   wisherAvatar: {
     width: 50,
@@ -725,74 +971,59 @@ const styles = StyleSheet.create({
   wisherAvatarText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFF',
+    color: '#FFFFFF',
   },
   wisherDetails: {
-    flex: 1,
     marginLeft: 12,
+    flex: 1,
   },
   wisherName: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: COLORS.text,
   },
   wisherRating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-    gap: 4,
-  },
-  wisherRatingText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#FFD700',
-  },
-  wisherWishes: {
-    fontSize: 13,
-    color: COLORS.textMuted,
+    color: COLORS.amber,
+    marginTop: 2,
   },
   categoryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.backgroundSecondary,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    backgroundColor: COLORS.primary + '30',
     borderRadius: 12,
-    gap: 6,
   },
   categoryEmoji: {
-    fontSize: 16,
-  },
-  categoryText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
+    fontSize: 20,
   },
   wishTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: COLORS.text,
     marginBottom: 8,
   },
   wishDescription: {
     fontSize: 14,
-    color: '#E0E0E0',
+    color: COLORS.textSecondary,
     lineHeight: 20,
     marginBottom: 16,
   },
-  incomingMeta: {
+  statsRow: {
     flexDirection: 'row',
-    gap: 16,
+    justifyContent: 'space-between',
     marginBottom: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: 12,
   },
-  metaItem: {
-    flexDirection: 'row',
+  statItem: {
     alignItems: 'center',
-    gap: 6,
   },
-  metaText: {
+  statText: {
     fontSize: 13,
     color: COLORS.textSecondary,
+    marginTop: 4,
   },
   budgetRow: {
     flexDirection: 'row',
@@ -804,19 +1035,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 20,
   },
-  quickStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: 12,
-  },
-  statText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
   budgetLabel: {
     fontSize: 13,
     color: COLORS.textSecondary,
@@ -826,7 +1044,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: COLORS.green,
   },
-  incomingActions: {
+  actionRow: {
     flexDirection: 'row',
     gap: 12,
   },
@@ -841,9 +1059,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   declineBtnText: {
+    color: COLORS.red,
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.red,
   },
   acceptBtn: {
     flex: 1.5,
@@ -858,130 +1076,117 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   acceptBtnText: {
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
-    color: '#FFF',
+    fontWeight: '600',
   },
   
-  // Connected State
+  // Connected/Negotiating State
   connectedContainer: {
     flex: 1,
   },
   connectedHeader: {
-    paddingTop: 10,
+    paddingTop: 8,
     paddingBottom: 0,
   },
-  connectedHeaderTop: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 12,
   },
-  connectedWisher: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  connectedAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.primary,
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.cardBg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
-  connectedAvatarText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFF',
+  headerInfo: {
+    flex: 1,
   },
-  onlineDot: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: COLORS.green,
-    borderWidth: 2,
-    borderColor: COLORS.headerBg,
-  },
-  connectedName: {
-    fontSize: 18,
+  headerTitle: {
+    fontSize: 20,
     fontWeight: '700',
     color: COLORS.text,
   },
-  connectedStatus: {
-    fontSize: 12,
-    color: COLORS.green,
-    marginTop: 2,
+  headerSubtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
   },
-  connectedActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  actionIconBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  callBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: COLORS.green + '20',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  wishSummary: {
+  statusBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginHorizontal: 20,
-    padding: 14,
-    borderRadius: 14,
-    marginBottom: 16,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 8,
   },
-  wishSummaryEmoji: {
-    fontSize: 32,
-    marginRight: 12,
+  statusStep: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: COLORS.cardBg,
   },
-  wishSummaryInfo: {
-    flex: 1,
+  statusStepActive: {
+    backgroundColor: COLORS.primary + '30',
   },
-  wishSummaryTitle: {
-    fontSize: 15,
+  statusStepDone: {
+    backgroundColor: COLORS.green + '20',
+    width: 28,
+    height: 28,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusStepText: {
+    fontSize: 12,
     fontWeight: '600',
-    color: COLORS.text,
+    color: COLORS.primary,
   },
-  wishSummaryMeta: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 4,
-  },
-  wishSummaryEarnings: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.green,
-  },
-  wishSummaryXP: {
-    fontSize: 14,
+  statusStepTextInactive: {
+    fontSize: 12,
     fontWeight: '600',
-    color: COLORS.magenta,
+    color: COLORS.textMuted,
+  },
+  statusLine: {
+    width: 20,
+    height: 2,
+    backgroundColor: COLORS.cardBorder,
+  },
+  statusLineDone: {
+    backgroundColor: COLORS.green,
   },
   tabSwitcher: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 12,
+    marginHorizontal: 16,
+    marginTop: 8,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 12,
+    padding: 4,
   },
   tab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    gap: 8,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    paddingVertical: 10,
+    gap: 6,
+    borderRadius: 8,
   },
   tabActive: {
-    borderBottomColor: COLORS.primary,
+    backgroundColor: COLORS.backgroundSecondary,
   },
   tabText: {
     fontSize: 14,
@@ -989,137 +1194,32 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
   },
   tabTextActive: {
-    color: COLORS.primary,
-  },
-  chatBadge: {
-    backgroundColor: COLORS.red,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  chatBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FFF',
+    color: COLORS.cyan,
   },
   
-  // Details Tab
-  detailsContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 12,
-  },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.cardBg,
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 8,
-    gap: 12,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: COLORS.cardBorder,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxDone: {
-    backgroundColor: COLORS.green,
-    borderColor: COLORS.green,
-  },
-  itemText: {
-    flex: 1,
-    fontSize: 14,
-    color: COLORS.text,
-  },
-  itemTextDone: {
-    textDecorationLine: 'line-through',
-    color: COLORS.textMuted,
-  },
-  locationCard: {
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 14,
-    padding: 16,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  locationDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  locationInfo: {
-    flex: 1,
-  },
-  locationLabel: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-  },
-  locationAddress: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginTop: 2,
-  },
-  locationLine: {
-    width: 2,
-    height: 24,
-    backgroundColor: COLORS.cardBorder,
-    marginLeft: 5,
-    marginVertical: 4,
-  },
-  instructionsCard: {
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 14,
-    padding: 16,
-  },
-  instructionsText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
-  },
-  
-  // Chat Tab
+  // Chat
   chatContainer: {
     flex: 1,
   },
   messagesContainer: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 16,
+    padding: 16,
   },
   messageBubble: {
     maxWidth: '80%',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 18,
+    padding: 12,
+    borderRadius: 16,
     marginBottom: 8,
-  },
-  messageReceived: {
-    alignSelf: 'flex-start',
-    backgroundColor: COLORS.cardBg,
-    borderBottomLeftRadius: 4,
   },
   messageSent: {
     alignSelf: 'flex-end',
     backgroundColor: COLORS.primary,
     borderBottomRightRadius: 4,
+  },
+  messageReceived: {
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.cardBg,
+    borderBottomLeftRadius: 4,
   },
   messageText: {
     fontSize: 15,
@@ -1127,20 +1227,18 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   messageTime: {
-    fontSize: 10,
-    color: COLORS.textMuted,
+    fontSize: 11,
+    color: COLORS.textSecondary,
     marginTop: 4,
     alignSelf: 'flex-end',
   },
   chatInputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: COLORS.backgroundSecondary,
+    padding: 12,
+    gap: 8,
     borderTopWidth: 1,
     borderTopColor: COLORS.cardBorder,
-    gap: 10,
   },
   chatInput: {
     flex: 1,
@@ -1153,41 +1251,438 @@ const styles = StyleSheet.create({
     maxHeight: 100,
   },
   sendBtn: {
-    borderRadius: 22,
-    overflow: 'hidden',
-  },
-  sendBtnGradient: {
     width: 44,
     height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.cardBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
-  // Bottom Action
-  bottomAction: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 20,
-    backgroundColor: COLORS.background,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.cardBorder,
-  },
-  navigateBtn: {
+  proposeTermsBtn: {
+    margin: 16,
     borderRadius: 14,
     overflow: 'hidden',
   },
-  navigateBtnGradient: {
+  proposeTermsBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 8,
+  },
+  proposeTermsBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  
+  // Terms
+  termsContainer: {
+    flex: 1,
+    padding: 16,
+  },
+  termsCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    padding: 20,
+  },
+  termsTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  termsSubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginBottom: 20,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+  },
+  termsInput: {
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: COLORS.text,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  termsInputMulti: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  sendContractBtn: {
+    marginTop: 8,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  sendContractBtnDisabled: {
+    opacity: 0.5,
+  },
+  sendContractBtnGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
+    gap: 8,
+  },
+  sendContractBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  
+  // Contract Review
+  contractReviewContainer: {
+    flex: 1,
+    padding: 16,
+  },
+  contractCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    padding: 20,
+  },
+  contractHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
     gap: 10,
   },
-  navigateBtnText: {
+  contractEmoji: {
+    fontSize: 28,
+  },
+  contractTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  contractRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.cardBorder,
+  },
+  contractLabel: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  contractValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    flex: 1,
+    textAlign: 'right',
+  },
+  contractPrice: {
+    color: COLORS.green,
+    fontSize: 18,
+  },
+  contractStatus: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  statusIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusPulse: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.amber,
+  },
+  statusText: {
+    fontSize: 14,
+    color: COLORS.amber,
+    fontWeight: '500',
+  },
+  simulateBtn: {
+    marginTop: 20,
+    padding: 16,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    borderStyle: 'dashed',
+  },
+  simulateBtnText: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+  },
+  
+  // In Progress
+  inProgressContainer: {
+    flex: 1,
+    padding: 16,
+  },
+  activeWishCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  activeWishHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  activeWishEmoji: {
+    fontSize: 36,
+  },
+  activeWishInfo: {
+    flex: 1,
+  },
+  activeWishTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  activeWishPrice: {
+    fontSize: 14,
+    color: COLORS.green,
+    marginTop: 4,
+  },
+  section: {
+    marginBottom: 16,
+  },
+  sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  locationCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 12,
+    padding: 16,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  locationDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  locationInfo: {
+    flex: 1,
+  },
+  locationLabel: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginBottom: 2,
+  },
+  locationAddress: {
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: '500',
+  },
+  locationLine: {
+    width: 2,
+    height: 20,
+    backgroundColor: COLORS.cardBorder,
+    marginLeft: 5,
+    marginVertical: 4,
+  },
+  contractSummaryCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 12,
+    padding: 16,
+  },
+  contractSummaryText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+  },
+  bottomActions: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    padding: 16,
+    gap: 12,
+    backgroundColor: COLORS.background,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.cardBorder,
+  },
+  navBtn: {
+    flex: 1,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  navBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 8,
+  },
+  navBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  completeBtn: {
+    flex: 1.5,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  completeBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 8,
+  },
+  completeBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  
+  // Completed
+  completedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  completedContent: {
+    alignItems: 'center',
+  },
+  completedIconContainer: {
+    marginBottom: 24,
+  },
+  completedIconGradient: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  completedEmoji: {
+    fontSize: 50,
+  },
+  completedTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  completedSubtitle: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  rewardCard: {
+    width: '100%',
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+  },
+  rewardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  rewardLabel: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  rewardValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: COLORS.green,
+  },
+  rewardXP: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.amber,
+  },
+  rewardDivider: {
+    height: 1,
+    backgroundColor: COLORS.cardBorder,
+    marginVertical: 16,
+  },
+  newWishBtn: {
+    width: '100%',
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  newWishBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 8,
+  },
+  newWishBtnText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  
+  // Offline
+  offlineContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  offlineGradient: {
+    width: '100%',
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+  },
+  offlineIconContainer: {
+    marginBottom: 20,
+  },
+  offlineTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  offlineSubtitle: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  goOnlineButton: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  goOnlineGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    gap: 8,
+  },
+  goOnlineText: {
+    fontSize: 16,
+    fontWeight: '600',
     color: '#FFF',
   },
 });
