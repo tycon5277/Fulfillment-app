@@ -223,7 +223,7 @@ export default function MainLayout() {
               <Ionicons name={focused ? "location" : "location-outline"} size={24} color={color} />
             </View>
           ),
-          href: isSkilledGenie ? '/(main)/nearby-wishes' : null,
+          href: (user && isSkilledGenie) ? '/(main)/nearby-wishes' : null,
         }}
       />
 
