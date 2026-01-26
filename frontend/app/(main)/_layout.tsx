@@ -368,6 +368,14 @@ export default function MainLayout() {
           href: null,
         }}
       />
+
+      {/* Hidden screens for wish detail (accessed via push navigation) */}
+      <Tabs.Screen
+        name="wish-detail"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
