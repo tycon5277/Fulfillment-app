@@ -163,7 +163,7 @@ backend:
     status_history:
         - working: true
           agent: "testing"
-          comment: "✅ All API endpoints are properly structured with /api prefix. Backend is accessible at https://magic-genie.preview.emergentagent.com/api and all routes are working correctly."
+          comment: "✅ All API endpoints are properly structured with /api prefix. Backend is accessible at https://mobile-genie-app.preview.emergentagent.com/api and all routes are working correctly."
 
 frontend:
   - task: "Login Screen Display"
