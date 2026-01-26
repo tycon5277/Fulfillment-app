@@ -177,6 +177,9 @@ export default function ProfileScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>👤 Profile</Text>
           <TouchableOpacity style={styles.settingsBtn}>
             <Ionicons name="settings-outline" size={24} color={COLORS.text} />
