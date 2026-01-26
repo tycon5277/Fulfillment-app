@@ -44,6 +44,20 @@ const getCartoTileUrl = (lat: number, lon: number, zoom: number = 15) => {
 export default function HomeScreen() {
   const router = useRouter();
   const { user, setUser, isOnline: storeIsOnline, setIsOnline: setStoreIsOnline, activeWork } = useAuthStore();
+  
+  // Redirect Skilled Genie to their own dashboard
+  const isSkilledGenie = user?.partner_type === 'agent' && user?.agent_type === 'skilled';
+  useEffect(() => {
+    if (isSkilledGenie) {
+      router.replace('/(main)/skilled-home');
+    }
+  }, [isSkilledGenie]);
+  
+  // If skilled genie, don't render the mobile genie UI
+  if (isSkilledGenie) {
+    return null;
+  }
+  
   const [isOnline, setIsOnline] = useState(storeIsOnline);
   const [stats, setStats] = useState<PartnerStats | null>(null);
   const [refreshing, setRefreshing] = useState(false);
