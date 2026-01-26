@@ -305,7 +305,10 @@ export default function DeliveriesScreen() {
         style={styles.header}
       >
         <View style={styles.headerTop}>
-          <View>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#FFF" />
+          </TouchableOpacity>
+          <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>🚀 Active Deliveries</Text>
             <Text style={styles.headerSubtitle}>Track your ongoing tasks</Text>
           </View>
