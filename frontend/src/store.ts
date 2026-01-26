@@ -57,27 +57,39 @@ export interface PartnerStats {
   status: string;
 }
 
+interface ActiveWork {
+  type: 'order' | 'wish';
+  id: string;
+  title: string;
+  status: string;
+}
+
 interface AuthState {
   user: User | null;
   sessionToken: string | null;
   isLoading: boolean;
   stats: PartnerStats | null;
   isOnline: boolean;
+  activeWork: ActiveWork[];
   
   setUser: (user: User | null) => void;
   setSessionToken: (token: string | null) => void;
   setIsLoading: (loading: boolean) => void;
   setStats: (stats: PartnerStats | null) => void;
   setIsOnline: (online: boolean) => void;
+  setActiveWork: (work: ActiveWork[]) => void;
+  addActiveWork: (work: ActiveWork) => void;
+  removeActiveWork: (id: string) => void;
   logout: () => void;
   loadStoredAuth: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   sessionToken: null,
   isLoading: true,
   stats: null,
+  activeWork: [],
   isOnline: false,
   
   setUser: (user) => set({ user }),
