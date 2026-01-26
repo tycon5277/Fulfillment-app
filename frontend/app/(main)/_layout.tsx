@@ -128,7 +128,7 @@ export default function MainLayout() {
   };
 
   const colors = getThemeColors();
-  const tabBarHeight = 65 + insets.bottom;
+  const tabBarHeight = isSkilledGenie ? 56 + insets.bottom : 65 + insets.bottom;
 
   return (
     <Tabs
@@ -139,22 +139,29 @@ export default function MainLayout() {
           borderTopWidth: 1,
           borderTopColor: colors.border,
           height: tabBarHeight,
-          paddingBottom: insets.bottom + 8,
-          paddingTop: 10,
-          ...(isAgent && {
+          paddingBottom: insets.bottom + (isSkilledGenie ? 4 : 8),
+          paddingTop: isSkilledGenie ? 8 : 10,
+          ...(isMobileGenie && {
             shadowColor: THEME.primary,
             shadowOffset: { width: 0, height: -4 },
             shadowOpacity: 0.1,
             shadowRadius: 12,
             elevation: 10,
           }),
+          ...(isSkilledGenie && {
+            shadowColor: '#64748B',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 4,
+            elevation: 2,
+          }),
         },
         tabBarActiveTintColor: colors.active,
         tabBarInactiveTintColor: colors.inactive,
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: isSkilledGenie ? 10 : 11,
           fontWeight: '600',
-          marginTop: 4,
+          marginTop: isSkilledGenie ? 2 : 4,
         },
         tabBarIconStyle: {
           marginBottom: -2,
