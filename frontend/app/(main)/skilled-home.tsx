@@ -9,141 +9,104 @@ import {
   Dimensions,
   RefreshControl,
   Switch,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../src/store';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Professional Light Theme Colors for Skilled Genie
+// Professional Light Theme Colors
 const COLORS = {
   background: '#F8FAFC',
   backgroundSecondary: '#FFFFFF',
   cardBg: '#FFFFFF',
   cardBorder: '#E2E8F0',
-  primary: '#2563EB',        // Professional Blue
+  primary: '#2563EB',
   primaryLight: '#3B82F6',
   primaryDark: '#1D4ED8',
-  secondary: '#0EA5E9',      // Cyan accent
-  success: '#10B981',        // Green
-  warning: '#F59E0B',        // Amber
-  error: '#EF4444',          // Red
+  secondary: '#0EA5E9',
+  success: '#10B981',
+  warning: '#F59E0B',
+  error: '#EF4444',
   purple: '#7C3AED',
-  text: '#0F172A',           // Dark text
+  text: '#0F172A',
   textSecondary: '#475569',
   textMuted: '#94A3B8',
   border: '#E2E8F0',
-  shadowColor: '#64748B',
 };
 
-// Skill mapping for display
-const SKILL_INFO: { [key: string]: { name: string; emoji: string; color: string } } = {
-  deep_cleaning: { name: 'Deep Cleaning', emoji: '🧹', color: '#F59E0B' },
-  plumbing: { name: 'Plumbing', emoji: '🚰', color: '#3B82F6' },
-  electrical: { name: 'Electrical', emoji: '⚡', color: '#3B82F6' },
-  ac_repair: { name: 'AC Repair', emoji: '❄️', color: '#06B6D4' },
-  car_wash: { name: 'Car Wash', emoji: '🚿', color: '#EF4444' },
-  computer_repair: { name: 'Computer Repair', emoji: '🖥️', color: '#06B6D4' },
-  phone_repair: { name: 'Phone Repair', emoji: '📱', color: '#06B6D4' },
-  yoga: { name: 'Yoga', emoji: '🧘', color: '#EC4899' },
-  massage: { name: 'Massage', emoji: '💆', color: '#EC4899' },
-  photography: { name: 'Photography', emoji: '📸', color: '#8B5CF6' },
-  cooking: { name: 'Home Cook', emoji: '👨‍🍳', color: '#EF4444' },
-  tutoring: { name: 'Tutoring', emoji: '📚', color: '#8B5CF6' },
-  pet_grooming: { name: 'Pet Grooming', emoji: '🛁', color: '#F97316' },
-  gardening: { name: 'Gardening', emoji: '🌱', color: '#22C55E' },
-  personal_driver: { name: 'Personal Driver', emoji: '🚗', color: '#6366F1' },
-  wedding_photography: { name: 'Wedding Photo', emoji: '📸', color: '#EC4899' },
-  drone_photography: { name: 'Drone Photo', emoji: '🚁', color: '#06B6D4' },
-};
-
-// Mock data
+// Mock stats
 const MOCK_STATS = {
   todayEarnings: 2400,
   weekEarnings: 12800,
-  monthEarnings: 48500,
   completedJobs: 8,
   pendingJobs: 3,
   rating: 4.9,
   totalReviews: 156,
-  responseRate: 95,
-  level: 12,
-  xp: 2680,
-  xpToNext: 3000,
-  rank: 'Expert Professional',
-  streakDays: 7,
+  todayAppointments: 3,
+  upcomingAppointments: 5,
 };
 
-const MOCK_NEW_REQUESTS = [
+// Mock today's appointments
+const MOCK_TODAY_APPOINTMENTS = [
   {
-    id: 'r1',
-    service: 'AC Repair',
-    skillId: 'ac_repair',
-    customer: 'Rahul Sharma',
-    customerRating: 4.8,
-    description: 'AC not cooling properly, making weird noise. Need urgent help!',
-    budget: '₹800 - ₹1,200',
-    location: 'Sector 21, Gurgaon',
-    distance: '2.5 km',
-    urgent: true,
-    postedTime: '2 min ago',
-    estimatedDuration: '2-3 hours',
-  },
-  {
-    id: 'r2',
+    id: 'a1',
     service: 'Deep Cleaning',
-    skillId: 'deep_cleaning',
     customer: 'Priya Patel',
-    customerRating: 4.9,
-    description: '3BHK apartment full deep cleaning needed before festival',
-    budget: '₹2,500 - ₹3,500',
-    location: 'DLF Phase 3',
-    distance: '4.2 km',
-    urgent: false,
-    postedTime: '15 min ago',
-    estimatedDuration: '4-5 hours',
+    time: '10:00 AM',
+    duration: '3 hours',
+    location: 'DLF Phase 3, Sector 24',
+    status: 'completed',
+    earnings: 2500,
   },
   {
-    id: 'r3',
-    service: 'Plumbing',
-    skillId: 'plumbing',
-    customer: 'Amit Kumar',
-    customerRating: 4.7,
-    description: 'Bathroom tap leaking, need replacement',
-    budget: '₹400 - ₹600',
-    location: 'Cyber City',
-    distance: '3.8 km',
-    urgent: false,
-    postedTime: '25 min ago',
-    estimatedDuration: '1-2 hours',
+    id: 'a2',
+    service: 'Kitchen Cleaning',
+    customer: 'Rahul Sharma',
+    time: '2:00 PM',
+    duration: '2 hours',
+    location: 'Sector 21, Gurgaon',
+    status: 'in_progress',
+    earnings: 1200,
+  },
+  {
+    id: 'a3',
+    service: 'Sofa Cleaning',
+    customer: 'Neha Gupta',
+    time: '5:30 PM',
+    duration: '1.5 hours',
+    location: 'Golf Course Road',
+    status: 'upcoming',
+    earnings: 800,
   },
 ];
 
-const MOCK_UPCOMING_JOBS = [
+// Mock nearby wishes (filtered by skills)
+const MOCK_NEARBY_WISHES = [
   {
-    id: 'j1',
-    service: 'Electrical Work',
-    skillId: 'electrical',
-    customer: 'Neha Gupta',
-    location: 'Sector 14',
-    time: 'Today, 2:00 PM',
-    duration: '2 hours',
-    earnings: 1200,
-    status: 'confirmed',
+    id: 'w1',
+    service: 'Bathroom Deep Clean',
+    category: 'cleaning',
+    customer: 'Amit Kumar',
+    customerRating: 4.8,
+    distance: '1.2 km',
+    budget: '₹800 - ₹1,000',
+    urgent: true,
+    postedTime: '5 min ago',
   },
   {
-    id: 'j2',
-    service: 'Computer Repair',
-    skillId: 'computer_repair',
-    customer: 'Vikram Singh',
-    location: 'Golf Course Road',
-    time: 'Today, 5:30 PM',
-    duration: '1.5 hours',
-    earnings: 800,
-    status: 'confirmed',
+    id: 'w2',
+    service: 'Full House Cleaning',
+    category: 'cleaning',
+    customer: 'Sunita Verma',
+    customerRating: 4.9,
+    distance: '2.8 km',
+    budget: '₹2,500 - ₹3,500',
+    urgent: false,
+    postedTime: '15 min ago',
   },
 ];
 
@@ -151,18 +114,8 @@ export default function SkilledHomeScreen() {
   const router = useRouter();
   const { user, isOnline, setIsOnline } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
-  const [showAllRequests, setShowAllRequests] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'schedule' | 'wishes'>('overview');
   
-  const statusAnim = useRef(new Animated.Value(isOnline ? 1 : 0)).current;
-
-  useEffect(() => {
-    Animated.timing(statusAnim, {
-      toValue: isOnline ? 1 : 0,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  }, [isOnline]);
-
   const onRefresh = () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1500);
@@ -172,9 +125,212 @@ export default function SkilledHomeScreen() {
     setIsOnline(!isOnline);
   };
 
-  const getSkillInfo = (skillId: string) => {
-    return SKILL_INFO[skillId] || { name: skillId, emoji: '🔧', color: COLORS.primary };
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return { bg: COLORS.success + '15', text: COLORS.success, label: '✓ Done' };
+      case 'in_progress':
+        return { bg: COLORS.warning + '15', text: COLORS.warning, label: '● Live' };
+      case 'upcoming':
+        return { bg: COLORS.primary + '15', text: COLORS.primary, label: '◷ Next' };
+      default:
+        return { bg: COLORS.textMuted + '15', text: COLORS.textMuted, label: status };
+    }
   };
+
+  const renderOverviewTab = () => (
+    <>
+      {/* Stats Grid */}
+      <View style={styles.statsGrid}>
+        <View style={[styles.statCard, styles.statCardPrimary]}>
+          <Text style={styles.statIcon}>💰</Text>
+          <Text style={styles.statValueWhite}>₹{MOCK_STATS.todayEarnings.toLocaleString()}</Text>
+          <Text style={styles.statLabelWhite}>Today</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statIcon}>📅</Text>
+          <Text style={styles.statValue}>{MOCK_STATS.todayAppointments}</Text>
+          <Text style={styles.statLabel}>Appointments</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statIcon}>⭐</Text>
+          <Text style={styles.statValue}>{MOCK_STATS.rating}</Text>
+          <Text style={styles.statLabel}>Rating</Text>
+        </View>
+      </View>
+
+      {/* Quick Stats */}
+      <View style={styles.quickStatsBar}>
+        <View style={styles.quickStatItem}>
+          <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+          <Text style={styles.quickStatValue}>{MOCK_STATS.completedJobs}</Text>
+          <Text style={styles.quickStatLabel}>Done</Text>
+        </View>
+        <View style={styles.quickStatDivider} />
+        <View style={styles.quickStatItem}>
+          <Ionicons name="time" size={18} color={COLORS.warning} />
+          <Text style={styles.quickStatValue}>{MOCK_STATS.pendingJobs}</Text>
+          <Text style={styles.quickStatLabel}>Pending</Text>
+        </View>
+        <View style={styles.quickStatDivider} />
+        <View style={styles.quickStatItem}>
+          <Ionicons name="trending-up" size={18} color={COLORS.primary} />
+          <Text style={styles.quickStatValue}>₹{(MOCK_STATS.weekEarnings/1000).toFixed(1)}K</Text>
+          <Text style={styles.quickStatLabel}>This Week</Text>
+        </View>
+      </View>
+
+      {/* Today's Schedule */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="calendar" size={20} color={COLORS.primary} />
+            <Text style={styles.sectionTitle}>Today's Schedule</Text>
+          </View>
+          <TouchableOpacity onPress={() => router.push('/(main)/appointments')}>
+            <Text style={styles.seeAllText}>View All</Text>
+          </TouchableOpacity>
+        </View>
+
+        {MOCK_TODAY_APPOINTMENTS.map((apt) => {
+          const statusStyle = getStatusStyle(apt.status);
+          return (
+            <TouchableOpacity 
+              key={apt.id} 
+              style={styles.appointmentCard}
+              onPress={() => router.push(`/(main)/appointment-detail?id=${apt.id}`)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.aptTimeCol}>
+                <Text style={styles.aptTime}>{apt.time}</Text>
+                <Text style={styles.aptDuration}>{apt.duration}</Text>
+              </View>
+              <View style={styles.aptDivider} />
+              <View style={styles.aptContent}>
+                <View style={styles.aptTopRow}>
+                  <Text style={styles.aptService}>{apt.service}</Text>
+                  <View style={[styles.aptStatusBadge, { backgroundColor: statusStyle.bg }]}>
+                    <Text style={[styles.aptStatusText, { color: statusStyle.text }]}>{statusStyle.label}</Text>
+                  </View>
+                </View>
+                <Text style={styles.aptCustomer}>{apt.customer}</Text>
+                <View style={styles.aptLocationRow}>
+                  <Ionicons name="location-outline" size={12} color={COLORS.textMuted} />
+                  <Text style={styles.aptLocation} numberOfLines={1}>{apt.location}</Text>
+                </View>
+              </View>
+              <View style={styles.aptEarnings}>
+                <Text style={styles.aptEarningsText}>₹{apt.earnings}</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Nearby Wishes Preview */}
+      {isOnline && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="location" size={20} color={COLORS.secondary} />
+              <Text style={styles.sectionTitle}>Nearby Wishes</Text>
+              <View style={styles.wishCountBadge}>
+                <Text style={styles.wishCountText}>{MOCK_NEARBY_WISHES.length}</Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={() => router.push('/(main)/nearby-wishes')}>
+              <Text style={styles.seeAllText}>View Map</Text>
+            </TouchableOpacity>
+          </View>
+
+          {MOCK_NEARBY_WISHES.slice(0, 2).map((wish) => (
+            <TouchableOpacity 
+              key={wish.id} 
+              style={styles.wishCard}
+              onPress={() => router.push(`/(main)/wish-detail?id=${wish.id}`)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.wishContent}>
+                <View style={styles.wishTopRow}>
+                  <Text style={styles.wishService}>{wish.service}</Text>
+                  {wish.urgent && (
+                    <View style={styles.urgentBadge}>
+                      <Ionicons name="flash" size={10} color="#FFF" />
+                      <Text style={styles.urgentText}>Urgent</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.wishCustomer}>{wish.customer} • ⭐ {wish.customerRating}</Text>
+                <View style={styles.wishMeta}>
+                  <View style={styles.wishMetaItem}>
+                    <Ionicons name="navigate-outline" size={12} color={COLORS.primary} />
+                    <Text style={styles.wishMetaText}>{wish.distance}</Text>
+                  </View>
+                  <View style={styles.wishMetaItem}>
+                    <Ionicons name="time-outline" size={12} color={COLORS.textMuted} />
+                    <Text style={styles.wishMetaText}>{wish.postedTime}</Text>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.wishRight}>
+                <Text style={styles.wishBudget}>{wish.budget}</Text>
+                <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {/* Offline Message */}
+      {!isOnline && (
+        <View style={styles.offlineCard}>
+          <Ionicons name="wifi-outline" size={40} color={COLORS.textMuted} />
+          <Text style={styles.offlineTitle}>You're Offline</Text>
+          <Text style={styles.offlineText}>Go online to see new wishes from customers in your area.</Text>
+          <TouchableOpacity style={styles.goOnlineBtn} onPress={toggleAvailability}>
+            <Text style={styles.goOnlineBtnText}>Go Online</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Quick Actions */}
+      <View style={styles.quickActions}>
+        <Text style={styles.quickActionsTitle}>Quick Actions</Text>
+        <View style={styles.quickActionsGrid}>
+          <TouchableOpacity 
+            style={styles.quickActionBtn}
+            onPress={() => router.push('/(main)/appointments')}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: COLORS.primary + '15' }]}>
+              <Ionicons name="calendar-outline" size={22} color={COLORS.primary} />
+            </View>
+            <Text style={styles.quickActionText}>Schedule</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.quickActionBtn}
+            onPress={() => router.push('/(main)/skilled-chats')}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: COLORS.secondary + '15' }]}>
+              <Ionicons name="chatbubbles-outline" size={22} color={COLORS.secondary} />
+            </View>
+            <Text style={styles.quickActionText}>Chats</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickActionBtn}>
+            <View style={[styles.quickActionIcon, { backgroundColor: COLORS.success + '15' }]}>
+              <Ionicons name="wallet-outline" size={22} color={COLORS.success} />
+            </View>
+            <Text style={styles.quickActionText}>Earnings</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickActionBtn}>
+            <View style={[styles.quickActionIcon, { backgroundColor: COLORS.warning + '15' }]}>
+              <Ionicons name="star-outline" size={22} color={COLORS.warning} />
+            </View>
+            <Text style={styles.quickActionText}>Reviews</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </>
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -183,19 +339,38 @@ export default function SkilledHomeScreen() {
         <View style={styles.headerLeft}>
           <Text style={styles.greeting}>Welcome back,</Text>
           <Text style={styles.userName}>{user?.name || 'Professional'}</Text>
-          <View style={styles.rankBadge}>
-            <Ionicons name="shield-checkmark" size={12} color={COLORS.primary} />
-            <Text style={styles.rankText}>{MOCK_STATS.rank}</Text>
-          </View>
         </View>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.notificationBtn}>
-            <Ionicons name="notifications-outline" size={24} color={COLORS.text} />
+          <TouchableOpacity 
+            style={styles.notificationBtn}
+            onPress={() => router.push('/(main)/skilled-chats')}
+          >
+            <Ionicons name="chatbubble-outline" size={22} color={COLORS.text} />
             <View style={styles.notificationBadge}>
               <Text style={styles.notificationCount}>3</Text>
             </View>
           </TouchableOpacity>
         </View>
+      </View>
+
+      {/* Online Status */}
+      <View style={styles.statusCard}>
+        <View style={styles.statusLeft}>
+          <View style={[styles.statusDot, { backgroundColor: isOnline ? COLORS.success : COLORS.textMuted }]} />
+          <View>
+            <Text style={styles.statusTitle}>{isOnline ? 'Available' : 'Offline'}</Text>
+            <Text style={styles.statusSubtitle}>
+              {isOnline ? 'Accepting new wishes' : 'Not visible to customers'}
+            </Text>
+          </View>
+        </View>
+        <Switch
+          value={isOnline}
+          onValueChange={toggleAvailability}
+          trackColor={{ false: '#E2E8F0', true: COLORS.success + '40' }}
+          thumbColor={isOnline ? COLORS.success : '#F1F5F9'}
+          ios_backgroundColor="#E2E8F0"
+        />
       </View>
 
       <ScrollView 
@@ -205,248 +380,7 @@ export default function SkilledHomeScreen() {
         }
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Online Status Card */}
-        <View style={styles.statusCard}>
-          <View style={styles.statusLeft}>
-            <View style={[styles.statusDot, { backgroundColor: isOnline ? COLORS.success : COLORS.textMuted }]} />
-            <View>
-              <Text style={styles.statusTitle}>
-                {isOnline ? 'You\'re Available' : 'You\'re Offline'}
-              </Text>
-              <Text style={styles.statusSubtitle}>
-                {isOnline ? 'Accepting service requests' : 'Not accepting requests'}
-              </Text>
-            </View>
-          </View>
-          <Switch
-            value={isOnline}
-            onValueChange={toggleAvailability}
-            trackColor={{ false: '#E2E8F0', true: COLORS.success + '40' }}
-            thumbColor={isOnline ? COLORS.success : '#F1F5F9'}
-            ios_backgroundColor="#E2E8F0"
-          />
-        </View>
-
-        {/* Stats Cards */}
-        <View style={styles.statsRow}>
-          <View style={[styles.statCard, styles.statCardPrimary]}>
-            <Text style={styles.statIcon}>💰</Text>
-            <Text style={styles.statValue}>₹{MOCK_STATS.todayEarnings.toLocaleString()}</Text>
-            <Text style={styles.statLabel}>Today's Earnings</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statIcon}>✅</Text>
-            <Text style={[styles.statValue, { color: COLORS.text }]}>{MOCK_STATS.completedJobs}</Text>
-            <Text style={styles.statLabel}>Jobs Done</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statIcon}>⭐</Text>
-            <Text style={[styles.statValue, { color: COLORS.text }]}>{MOCK_STATS.rating}</Text>
-            <Text style={styles.statLabel}>Rating</Text>
-          </View>
-        </View>
-
-        {/* Quick Stats Banner */}
-        <View style={styles.quickStatsBanner}>
-          <View style={styles.quickStatItem}>
-            <Ionicons name="calendar-outline" size={18} color={COLORS.primary} />
-            <Text style={styles.quickStatValue}>{MOCK_STATS.pendingJobs}</Text>
-            <Text style={styles.quickStatLabel}>Pending</Text>
-          </View>
-          <View style={styles.quickStatDivider} />
-          <View style={styles.quickStatItem}>
-            <Ionicons name="trending-up-outline" size={18} color={COLORS.success} />
-            <Text style={styles.quickStatValue}>₹{(MOCK_STATS.weekEarnings / 1000).toFixed(1)}K</Text>
-            <Text style={styles.quickStatLabel}>This Week</Text>
-          </View>
-          <View style={styles.quickStatDivider} />
-          <View style={styles.quickStatItem}>
-            <Ionicons name="chatbubbles-outline" size={18} color={COLORS.warning} />
-            <Text style={styles.quickStatValue}>{MOCK_STATS.totalReviews}</Text>
-            <Text style={styles.quickStatLabel}>Reviews</Text>
-          </View>
-        </View>
-
-        {/* New Requests Section */}
-        {isOnline && MOCK_NEW_REQUESTS.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleRow}>
-                <Ionicons name="flash" size={20} color={COLORS.warning} />
-                <Text style={styles.sectionTitle}>New Requests</Text>
-                <View style={styles.requestCountBadge}>
-                  <Text style={styles.requestCountText}>{MOCK_NEW_REQUESTS.length}</Text>
-                </View>
-              </View>
-              <TouchableOpacity>
-                <Text style={styles.seeAllText}>See All</Text>
-              </TouchableOpacity>
-            </View>
-
-            {MOCK_NEW_REQUESTS.slice(0, showAllRequests ? undefined : 2).map((request) => {
-              const skillInfo = getSkillInfo(request.skillId);
-              return (
-                <TouchableOpacity 
-                  key={request.id} 
-                  style={styles.requestCard}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.requestTop}>
-                    <View style={[styles.requestIconBg, { backgroundColor: skillInfo.color + '15' }]}>
-                      <Text style={styles.requestEmoji}>{skillInfo.emoji}</Text>
-                    </View>
-                    <View style={styles.requestInfo}>
-                      <View style={styles.requestTitleRow}>
-                        <Text style={styles.requestService}>{request.service}</Text>
-                        {request.urgent && (
-                          <View style={styles.urgentBadge}>
-                            <Text style={styles.urgentText}>URGENT</Text>
-                          </View>
-                        )}
-                      </View>
-                      <Text style={styles.requestCustomer}>{request.customer}</Text>
-                      <View style={styles.requestMeta}>
-                        <Ionicons name="location-outline" size={12} color={COLORS.textMuted} />
-                        <Text style={styles.requestMetaText}>{request.distance}</Text>
-                        <Text style={styles.requestMetaDot}>•</Text>
-                        <Ionicons name="time-outline" size={12} color={COLORS.textMuted} />
-                        <Text style={styles.requestMetaText}>{request.postedTime}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.requestRight}>
-                      <Text style={styles.requestBudget}>{request.budget}</Text>
-                    </View>
-                  </View>
-                  
-                  <Text style={styles.requestDescription} numberOfLines={2}>
-                    {request.description}
-                  </Text>
-
-                  <View style={styles.requestActions}>
-                    <TouchableOpacity style={styles.declineBtn}>
-                      <Text style={styles.declineBtnText}>Decline</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.acceptBtn}>
-                      <Text style={styles.acceptBtnText}>Accept Request</Text>
-                      <Ionicons name="arrow-forward" size={16} color="#FFF" />
-                    </TouchableOpacity>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-
-            {MOCK_NEW_REQUESTS.length > 2 && (
-              <TouchableOpacity 
-                style={styles.showMoreBtn}
-                onPress={() => setShowAllRequests(!showAllRequests)}
-              >
-                <Text style={styles.showMoreText}>
-                  {showAllRequests ? 'Show Less' : `View ${MOCK_NEW_REQUESTS.length - 2} More Requests`}
-                </Text>
-                <Ionicons 
-                  name={showAllRequests ? "chevron-up" : "chevron-down"} 
-                  size={16} 
-                  color={COLORS.primary} 
-                />
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-
-        {/* Offline State */}
-        {!isOnline && (
-          <View style={styles.offlineCard}>
-            <Ionicons name="pause-circle-outline" size={48} color={COLORS.textMuted} />
-            <Text style={styles.offlineTitle}>You're Currently Offline</Text>
-            <Text style={styles.offlineText}>
-              Turn on availability to start receiving service requests from customers.
-            </Text>
-            <TouchableOpacity style={styles.goOnlineBtn} onPress={toggleAvailability}>
-              <Text style={styles.goOnlineBtnText}>Go Online</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Upcoming Jobs */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <Ionicons name="calendar" size={20} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>Upcoming Jobs</Text>
-            </View>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>View All</Text>
-            </TouchableOpacity>
-          </View>
-
-          {MOCK_UPCOMING_JOBS.map((job) => {
-            const skillInfo = getSkillInfo(job.skillId);
-            return (
-              <TouchableOpacity 
-                key={job.id} 
-                style={styles.jobCard}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.jobIconBg, { backgroundColor: skillInfo.color + '15' }]}>
-                  <Text style={styles.jobEmoji}>{skillInfo.emoji}</Text>
-                </View>
-                <View style={styles.jobInfo}>
-                  <Text style={styles.jobService}>{job.service}</Text>
-                  <Text style={styles.jobCustomer}>{job.customer}</Text>
-                  <View style={styles.jobMeta}>
-                    <Ionicons name="time-outline" size={12} color={COLORS.primary} />
-                    <Text style={styles.jobTime}>{job.time}</Text>
-                  </View>
-                </View>
-                <View style={styles.jobRight}>
-                  <Text style={styles.jobEarnings}>₹{job.earnings}</Text>
-                  <View style={styles.confirmedBadge}>
-                    <Text style={styles.confirmedText}>Confirmed</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-
-          {MOCK_UPCOMING_JOBS.length === 0 && (
-            <View style={styles.emptyJobs}>
-              <Ionicons name="calendar-outline" size={40} color={COLORS.textMuted} />
-              <Text style={styles.emptyText}>No upcoming jobs</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.quickActions}>
-          <Text style={styles.quickActionsTitle}>Quick Actions</Text>
-          <View style={styles.quickActionsGrid}>
-            <TouchableOpacity style={styles.quickActionBtn}>
-              <View style={[styles.quickActionIcon, { backgroundColor: COLORS.primary + '15' }]}>
-                <Ionicons name="calendar-outline" size={22} color={COLORS.primary} />
-              </View>
-              <Text style={styles.quickActionText}>Schedule</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickActionBtn}>
-              <View style={[styles.quickActionIcon, { backgroundColor: COLORS.success + '15' }]}>
-                <Ionicons name="wallet-outline" size={22} color={COLORS.success} />
-              </View>
-              <Text style={styles.quickActionText}>Earnings</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickActionBtn}>
-              <View style={[styles.quickActionIcon, { backgroundColor: COLORS.warning + '15' }]}>
-                <Ionicons name="star-outline" size={22} color={COLORS.warning} />
-              </View>
-              <Text style={styles.quickActionText}>Reviews</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickActionBtn}>
-              <View style={[styles.quickActionIcon, { backgroundColor: COLORS.purple + '15' }]}>
-                <Ionicons name="settings-outline" size={22} color={COLORS.purple} />
-              </View>
-              <Text style={styles.quickActionText}>Settings</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
+        {renderOverviewTab()}
         <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
@@ -461,40 +395,27 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 12,
     backgroundColor: COLORS.backgroundSecondary,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   headerLeft: {},
-  headerRight: {},
+  headerRight: {
+    flexDirection: 'row',
+    gap: 12,
+  },
   greeting: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.textSecondary,
   },
   userName: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: COLORS.text,
     marginTop: 2,
-  },
-  rankBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-    backgroundColor: COLORS.primary + '10',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-    gap: 4,
-  },
-  rankText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.primary,
   },
   notificationBtn: {
     width: 44,
@@ -508,8 +429,8 @@ const styles = StyleSheet.create({
   },
   notificationBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 6,
+    right: 6,
     width: 16,
     height: 16,
     borderRadius: 8,
@@ -522,25 +443,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFF',
   },
-  scrollContent: {
-    paddingTop: 16,
-  },
   statusCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: 20,
-    marginBottom: 16,
-    padding: 16,
+    marginTop: 16,
+    padding: 14,
     backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
-    shadowColor: COLORS.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
   },
   statusLeft: {
     flexDirection: 'row',
@@ -548,49 +461,52 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   statusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   statusTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: COLORS.text,
   },
   statusSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.textSecondary,
-    marginTop: 2,
+    marginTop: 1,
   },
-  statsRow: {
+  scrollContent: {
+    paddingTop: 16,
+  },
+  statsGrid: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    gap: 12,
-    marginBottom: 16,
+    gap: 10,
+    marginBottom: 12,
   },
   statCard: {
     flex: 1,
-    padding: 16,
+    padding: 14,
     backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
+    borderRadius: 14,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
-    shadowColor: COLORS.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
   },
   statCardPrimary: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
   },
   statIcon: {
-    fontSize: 24,
-    marginBottom: 8,
+    fontSize: 22,
+    marginBottom: 6,
   },
   statValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+  statValueWhite: {
     fontSize: 20,
     fontWeight: '800',
     color: '#FFF',
@@ -598,15 +514,20 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 11,
     color: COLORS.textSecondary,
-    marginTop: 4,
+    marginTop: 2,
   },
-  quickStatsBanner: {
+  statLabelWhite: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
+  },
+  quickStatsBar: {
     flexDirection: 'row',
     marginHorizontal: 20,
     marginBottom: 20,
-    padding: 16,
+    padding: 14,
     backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -620,18 +541,18 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   quickStatValue: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: COLORS.text,
-    marginTop: 6,
+    marginTop: 4,
   },
   quickStatLabel: {
     fontSize: 11,
     color: COLORS.textMuted,
-    marginTop: 2,
+    marginTop: 1,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -646,18 +567,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: COLORS.text,
   },
-  requestCountBadge: {
-    backgroundColor: COLORS.error,
+  wishCountBadge: {
+    backgroundColor: COLORS.secondary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
   },
-  requestCountText: {
-    fontSize: 12,
+  wishCountText: {
+    fontSize: 11,
     fontWeight: '700',
     color: '#FFF',
   },
@@ -666,177 +587,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.primary,
   },
-  requestCard: {
-    marginHorizontal: 20,
-    marginBottom: 12,
-    padding: 16,
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    shadowColor: COLORS.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  requestTop: {
+  appointmentCard: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  requestIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  requestEmoji: {
-    fontSize: 24,
-  },
-  requestInfo: {
-    flex: 1,
-  },
-  requestTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  requestService: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  urgentBadge: {
-    backgroundColor: COLORS.error,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  urgentText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  requestCustomer: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  requestMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-    gap: 4,
-  },
-  requestMetaText: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-  },
-  requestMetaDot: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    marginHorizontal: 4,
-  },
-  requestRight: {
-    alignItems: 'flex-end',
-  },
-  requestBudget: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.success,
-  },
-  requestDescription: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  requestActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  declineBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-  },
-  declineBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  acceptBtn: {
-    flex: 2,
-    flexDirection: 'row',
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  acceptBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFF',
-  },
-  showMoreBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    marginHorizontal: 20,
-    gap: 6,
-  },
-  showMoreText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  offlineCard: {
-    marginHorizontal: 20,
-    marginBottom: 24,
-    padding: 32,
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  offlineTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  offlineText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-  goOnlineBtn: {
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    backgroundColor: COLORS.success,
-  },
-  goOnlineBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  jobCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginHorizontal: 20,
     marginBottom: 10,
     padding: 14,
@@ -845,92 +597,192 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  jobIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: 'center',
+  aptTimeCol: {
+    width: 60,
     alignItems: 'center',
-    marginRight: 12,
+    justifyContent: 'center',
   },
-  jobEmoji: {
-    fontSize: 20,
+  aptTime: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.text,
   },
-  jobInfo: {
+  aptDuration: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
+  aptDivider: {
+    width: 1,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 12,
+  },
+  aptContent: {
     flex: 1,
   },
-  jobService: {
+  aptTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  aptService: {
     fontSize: 15,
     fontWeight: '600',
     color: COLORS.text,
   },
-  jobCustomer: {
+  aptStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  aptStatusText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  aptCustomer: {
     fontSize: 13,
     color: COLORS.textSecondary,
-    marginTop: 2,
+    marginBottom: 4,
   },
-  jobMeta: {
+  aptLocationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
     gap: 4,
   },
-  jobTime: {
+  aptLocation: {
     fontSize: 12,
-    color: COLORS.primary,
-    fontWeight: '500',
+    color: COLORS.textMuted,
+    flex: 1,
   },
-  jobRight: {
-    alignItems: 'flex-end',
+  aptEarnings: {
+    justifyContent: 'center',
+    paddingLeft: 12,
   },
-  jobEarnings: {
+  aptEarningsText: {
     fontSize: 16,
     fontWeight: '700',
     color: COLORS.success,
   },
-  confirmedBadge: {
-    backgroundColor: COLORS.success + '15',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    marginTop: 4,
-  },
-  confirmedText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.success,
-  },
-  emptyJobs: {
-    alignItems: 'center',
-    padding: 32,
+  wishCard: {
+    flexDirection: 'row',
     marginHorizontal: 20,
+    marginBottom: 10,
+    padding: 14,
     backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  emptyText: {
-    fontSize: 14,
+  wishContent: {
+    flex: 1,
+  },
+  wishTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  wishService: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  urgentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.error,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    gap: 3,
+  },
+  urgentText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  wishCustomer: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginBottom: 6,
+  },
+  wishMeta: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  wishMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  wishMetaText: {
+    fontSize: 12,
     color: COLORS.textMuted,
+  },
+  wishRight: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    paddingLeft: 12,
+  },
+  wishBudget: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.success,
+    marginBottom: 4,
+  },
+  offlineCard: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 28,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  offlineTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.text,
     marginTop: 12,
+  },
+  offlineText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 20,
+  },
+  goOnlineBtn: {
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 10,
+    backgroundColor: COLORS.success,
+  },
+  goOnlineBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFF',
   },
   quickActions: {
     paddingHorizontal: 20,
   },
   quickActionsTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: 12,
   },
   quickActionsGrid: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   quickActionBtn: {
     flex: 1,
     alignItems: 'center',
-    padding: 16,
+    padding: 14,
     backgroundColor: COLORS.cardBg,
     borderRadius: 14,
     borderWidth: 1,
@@ -945,7 +797,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   quickActionText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: COLORS.text,
   },
