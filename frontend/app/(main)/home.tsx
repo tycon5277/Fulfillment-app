@@ -223,7 +223,9 @@ export default function HomeScreen() {
     const newStatus = isOnline ? 'offline' : 'available';
     try {
       await api.updatePartnerStatus(newStatus);
-      setIsOnline(!isOnline);
+      const newOnlineState = !isOnline;
+      setIsOnline(newOnlineState);
+      setStoreIsOnline(newOnlineState); // Update Zustand store
       await fetchStats();
     } catch (error) {
       console.error('Error updating status:', error);
