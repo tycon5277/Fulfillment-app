@@ -21,6 +21,7 @@ import * as Location from 'expo-location';
 import { useAuthStore, PartnerStats } from '../../src/store';
 import * as api from '../../src/api';
 import THEME from '../../src/theme';
+import GameModal from '../../src/components/GameModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
