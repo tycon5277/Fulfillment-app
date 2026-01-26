@@ -100,7 +100,17 @@ export default function MainLayout() {
 
   // Get role-specific colors
   const getThemeColors = () => {
-    if (isAgent) {
+    if (isSkilledGenie) {
+      // Light professional theme for Skilled Genie
+      return {
+        background: '#FFFFFF',
+        border: '#E2E8F0',
+        active: '#2563EB',  // Professional Blue
+        inactive: '#94A3B8',
+      };
+    }
+    if (isMobileGenie) {
+      // Dark gamified theme for Carpet Genie
       return {
         background: THEME.backgroundSecondary,
         border: THEME.cardBorder,
@@ -108,7 +118,7 @@ export default function MainLayout() {
         inactive: THEME.textMuted,
       };
     }
-    // Default light theme for other types
+    // Default light theme for vendors/promoters
     return {
       background: '#FFFFFF',
       border: '#E5E7EB',
