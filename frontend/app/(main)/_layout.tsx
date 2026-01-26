@@ -181,7 +181,7 @@ export default function MainLayout() {
               <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
             </View>
           ),
-          href: isSkilledGenie ? null : '/(main)/home',
+          href: (user && !isSkilledGenie) ? '/(main)/home' : (!user ? '/(main)/home' : null),
         }}
       />
 
@@ -195,7 +195,7 @@ export default function MainLayout() {
               <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
             </View>
           ),
-          href: isSkilledGenie ? '/(main)/skilled-home' : null,
+          href: (user && isSkilledGenie) ? '/(main)/skilled-home' : null,
         }}
       />
 
