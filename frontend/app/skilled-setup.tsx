@@ -97,12 +97,126 @@ const SKILL_CATEGORIES = [
     ],
   },
 
+  // 🧑‍✈️ DRIVER ON DEMAND - VERY IMPORTANT CATEGORY
+  {
+    id: 'driver_services',
+    title: 'Driver on Demand',
+    subtitle: 'Professional driving services',
+    emoji: '🧑‍✈️',
+    color: '#6366F1',
+    gradient: ['#6366F1', '#4F46E5'],
+    skills: [
+      { id: 'personal_driver', name: 'Personal Driver', emoji: '👨‍✈️', description: 'Daily commute & errands' },
+      { id: 'outstation_driver', name: 'Outstation Driver', emoji: '🛣️', description: 'Long distance travel' },
+      { id: 'corporate_driver', name: 'Corporate Chauffeur', emoji: '💼', description: 'Executive transport' },
+      { id: 'airport_transfer', name: 'Airport Transfers', emoji: '✈️', description: 'Airport pickup & drop' },
+      { id: 'night_driver', name: 'Night Driver', emoji: '🌙', description: 'Late night driving' },
+      { id: 'wedding_driver', name: 'Wedding Chauffeur', emoji: '💒', description: 'Wedding ceremonies' },
+      { id: 'vip_driver', name: 'VIP Driver', emoji: '⭐', description: 'Premium escort service' },
+      { id: 'female_driver', name: 'Female Driver', emoji: '👩‍✈️', description: 'Women safety driving' },
+      { id: 'elderly_driver', name: 'Elderly Assistance', emoji: '👴', description: 'Senior citizen transport' },
+      { id: 'medical_transport', name: 'Medical Transport', emoji: '🏥', description: 'Hospital visits' },
+    ],
+  },
+
+  // 🚗 LUXURY CAR & VEHICLE HIRE
+  {
+    id: 'luxury_hire',
+    title: 'Luxury Car & Vehicle Hire',
+    subtitle: 'Premium rides for special occasions',
+    emoji: '🚗',
+    color: '#FBBF24',
+    gradient: ['#FBBF24', '#F59E0B'],
+    skills: [
+      { id: 'wedding_car', name: 'Wedding Car Hire', emoji: '💒', description: 'Decorated marriage cars' },
+      { id: 'luxury_sedan', name: 'Luxury Sedan', emoji: '🚘', description: 'Mercedes, BMW, Audi' },
+      { id: 'vintage_car', name: 'Vintage Cars', emoji: '🚙', description: 'Classic & vintage vehicles' },
+      { id: 'limousine', name: 'Limousine', emoji: '🎩', description: 'Stretch limo service' },
+      { id: 'sports_car', name: 'Sports Car Hire', emoji: '🏎️', description: 'Ferrari, Lamborghini' },
+      { id: 'suv_hire', name: 'Premium SUV', emoji: '🚙', description: 'Fortuner, Endeavour, Range Rover' },
+      { id: 'party_bus', name: 'Party Bus', emoji: '🎉', description: 'Party & celebrations' },
+      { id: 'convertible', name: 'Convertible', emoji: '🌞', description: 'Open-top cars' },
+      { id: 'rolls_royce', name: 'Rolls Royce', emoji: '👑', description: 'Ultimate luxury' },
+      { id: 'photoshoot_car', name: 'Photoshoot Cars', emoji: '📸', description: 'For photography sessions' },
+    ],
+  },
+
+  // 🚛 COMMERCIAL VEHICLES
+  {
+    id: 'commercial_vehicles',
+    title: 'Commercial Vehicles',
+    subtitle: 'Heavy duty transport solutions',
+    emoji: '🚛',
+    color: '#EF4444',
+    gradient: ['#EF4444', '#DC2626'],
+    skills: [
+      { id: 'truck_driver', name: 'Truck Driver', emoji: '🚚', description: 'Heavy goods transport' },
+      { id: 'tempo_driver', name: 'Tempo/Mini Truck', emoji: '🛻', description: 'Small goods transport' },
+      { id: 'container_driver', name: 'Container Driver', emoji: '📦', description: 'Container transport' },
+      { id: 'tanker_driver', name: 'Tanker Driver', emoji: '⛽', description: 'Liquid transport' },
+      { id: 'bus_driver', name: 'Bus Driver', emoji: '🚌', description: 'Passenger bus service' },
+      { id: 'school_bus', name: 'School Bus Driver', emoji: '🚸', description: 'School transport' },
+      { id: 'tractor_driver', name: 'Tractor Driver', emoji: '🚜', description: 'Agricultural transport' },
+      { id: 'crane_operator', name: 'Crane Operator', emoji: '🏗️', description: 'Heavy machinery' },
+      { id: 'forklift', name: 'Forklift Operator', emoji: '📋', description: 'Warehouse operations' },
+      { id: 'jcb_operator', name: 'JCB Operator', emoji: '🏗️', description: 'Construction machinery' },
+    ],
+  },
+
+  // 📸 PHOTOGRAPHY & VIDEOGRAPHY
+  {
+    id: 'photography_video',
+    title: 'Photography & Videography',
+    subtitle: 'Capture memories beautifully',
+    emoji: '📸',
+    color: '#EC4899',
+    gradient: ['#EC4899', '#DB2777'],
+    skills: [
+      { id: 'wedding_photography', name: 'Wedding Photography', emoji: '💒', description: 'Marriage ceremonies' },
+      { id: 'portrait_photo', name: 'Portrait Photography', emoji: '🖼️', description: 'Professional portraits' },
+      { id: 'event_photography', name: 'Event Photography', emoji: '🎉', description: 'Parties & events' },
+      { id: 'product_photography', name: 'Product Photography', emoji: '📦', description: 'E-commerce photos' },
+      { id: 'fashion_photography', name: 'Fashion Photography', emoji: '👗', description: 'Fashion shoots' },
+      { id: 'food_photography', name: 'Food Photography', emoji: '🍔', description: 'Restaurant & food' },
+      { id: 'real_estate_photo', name: 'Real Estate Photos', emoji: '🏠', description: 'Property photography' },
+      { id: 'wedding_video', name: 'Wedding Videography', emoji: '🎬', description: 'Marriage videos' },
+      { id: 'corporate_video', name: 'Corporate Videos', emoji: '💼', description: 'Business videos' },
+      { id: 'music_video', name: 'Music Videos', emoji: '🎵', description: 'Music production' },
+      { id: 'documentary', name: 'Documentary', emoji: '🎥', description: 'Documentary filming' },
+      { id: 'live_streaming', name: 'Live Streaming', emoji: '📺', description: 'Live event streaming' },
+      { id: 'video_editing', name: 'Video Editing', emoji: '✂️', description: 'Post-production editing' },
+      { id: 'photo_editing', name: 'Photo Editing', emoji: '🖌️', description: 'Photo retouching' },
+    ],
+  },
+
+  // 🚁 DRONE SERVICES
+  {
+    id: 'drone_services',
+    title: 'Drone Services',
+    subtitle: 'Aerial photography & more',
+    emoji: '🚁',
+    color: '#06B6D4',
+    gradient: ['#06B6D4', '#0891B2'],
+    skills: [
+      { id: 'drone_photography', name: 'Aerial Photography', emoji: '📸', description: 'Drone photos from above' },
+      { id: 'drone_videography', name: 'Aerial Videography', emoji: '🎬', description: 'Cinematic drone videos' },
+      { id: 'drone_wedding', name: 'Wedding Drone', emoji: '💒', description: 'Wedding aerial shots' },
+      { id: 'drone_survey', name: 'Land Survey', emoji: '🗺️', description: 'Property mapping' },
+      { id: 'drone_inspection', name: 'Building Inspection', emoji: '🏗️', description: 'Structure inspection' },
+      { id: 'drone_events', name: 'Event Coverage', emoji: '🎉', description: 'Event aerial coverage' },
+      { id: 'drone_real_estate', name: 'Real Estate Drone', emoji: '🏠', description: 'Property showcase' },
+      { id: 'fpv_drone', name: 'FPV Racing Drone', emoji: '🏎️', description: 'Action sports coverage' },
+      { id: 'drone_agriculture', name: 'Agricultural Drone', emoji: '🌾', description: 'Crop monitoring' },
+      { id: 'drone_delivery', name: 'Drone Delivery', emoji: '📦', description: 'Small item delivery' },
+    ],
+  },
+
   // 🚗 VEHICLE SERVICES
   {
     id: 'vehicle_services',
     title: 'Vehicle Services',
     subtitle: 'Keep vehicles running smooth',
-    emoji: '🚗',
+    emoji: '🛠️',
     color: '#EF4444',
     gradient: ['#EF4444', '#DC2626'],
     skills: [
@@ -116,7 +230,6 @@ const SKILL_CATEGORIES = [
       { id: 'denting_painting', name: 'Denting & Painting', emoji: '🎨', description: 'Body work & painting' },
       { id: 'car_polish', name: 'Car Polishing', emoji: '💎', description: 'Paint protection & polish' },
       { id: 'ac_service_car', name: 'Car AC Service', emoji: '❄️', description: 'Vehicle AC repair' },
-      { id: 'driver', name: 'Driver on Demand', emoji: '🧑‍✈️', description: 'Personal driver service' },
     ],
   },
 
@@ -249,14 +362,13 @@ const SKILL_CATEGORIES = [
       { id: 'balloon_decor', name: 'Balloon Decoration', emoji: '🎈', description: 'Balloon arrangements' },
       { id: 'flower_decor', name: 'Flower Decoration', emoji: '💐', description: 'Floral arrangements' },
       { id: 'catering', name: 'Catering', emoji: '🍽️', description: 'Food & beverage service' },
-      { id: 'photography', name: 'Photography', emoji: '📸', description: 'Event photography' },
-      { id: 'videography', name: 'Videography', emoji: '🎬', description: 'Video production' },
       { id: 'anchor', name: 'Event Anchor', emoji: '🎤', description: 'MC & hosting' },
       { id: 'magic_show', name: 'Magician', emoji: '🪄', description: 'Magic performances' },
       { id: 'clown', name: 'Clown & Entertainer', emoji: '🤡', description: 'Kids entertainment' },
       { id: 'live_music', name: 'Live Music', emoji: '🎸', description: 'Live band & singers' },
       { id: 'standup', name: 'Stand-up Comedy', emoji: '😂', description: 'Comedy performances' },
       { id: 'game_host', name: 'Game Host', emoji: '🎲', description: 'Party games & activities' },
+      { id: 'puppet_show', name: 'Puppet Show', emoji: '🎭', description: 'Kids puppet shows' },
     ],
   },
 
@@ -369,6 +481,7 @@ export default function SkilledSetupScreen() {
   const [bio, setBio] = useState('');
   const [portfolio, setPortfolio] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -416,8 +529,10 @@ export default function SkilledSetupScreen() {
 
   const handleComplete = async () => {
     setIsSubmitting(true);
+    setError(null);
     try {
-      await api.registerAgent({
+      // Use the correct API function name
+      await api.registerAsAgent({
         phone: user?.phone || '',
         agent_type: 'skilled',
         skills: selectedSkills,
@@ -426,8 +541,9 @@ export default function SkilledSetupScreen() {
       });
       
       router.replace('/(main)/skilled-home');
-    } catch (error) {
-      console.error('Error updating profile:', error);
+    } catch (err: any) {
+      console.error('Error updating profile:', err);
+      setError(err?.message || 'Failed to complete setup. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -637,7 +753,7 @@ export default function SkilledSetupScreen() {
               style={styles.rateInput}
               value={hourlyRate}
               onChangeText={setHourlyRate}
-              placeholder="500"
+              placeholder="80"
               placeholderTextColor={COLORS.textMuted}
               keyboardType="numeric"
             />
@@ -645,7 +761,7 @@ export default function SkilledSetupScreen() {
           </View>
 
           <View style={styles.ratePresets}>
-            {['300', '500', '800', '1000', '1500', '2000'].map((rate) => (
+            {['80', '150', '200', '300', '500', '800'].map((rate) => (
               <TouchableOpacity
                 key={rate}
                 style={[styles.presetButton, hourlyRate === rate && styles.presetButtonActive]}
@@ -743,6 +859,17 @@ export default function SkilledSetupScreen() {
             />
           </View>
         </View>
+
+        {/* Error Message */}
+        {error && (
+          <View style={styles.errorCard}>
+            <Ionicons name="alert-circle" size={20} color={COLORS.red} />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity onPress={() => setError(null)}>
+              <Ionicons name="close" size={20} color={COLORS.textMuted} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Summary Card */}
         <View style={styles.summaryCard}>
@@ -1343,6 +1470,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.text,
     paddingVertical: 16,
+  },
+  errorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.red + '15',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: COLORS.red + '30',
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 13,
+    color: COLORS.red,
   },
   summaryCard: {
     borderRadius: 16,
