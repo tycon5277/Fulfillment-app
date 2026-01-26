@@ -149,7 +149,7 @@ const MOCK_UPCOMING_JOBS = [
 
 export default function SkilledHomeScreen() {
   const router = useRouter();
-  const { user, isOnline, setOnline } = useAuthStore();
+  const { user, isOnline, setIsOnline } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
   const [showAllRequests, setShowAllRequests] = useState(false);
   
@@ -169,7 +169,7 @@ export default function SkilledHomeScreen() {
   };
 
   const toggleAvailability = () => {
-    setOnline(!isOnline);
+    setIsOnline(!isOnline);
   };
 
   const getSkillInfo = (skillId: string) => {
