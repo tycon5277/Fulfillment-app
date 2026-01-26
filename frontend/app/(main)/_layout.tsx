@@ -219,14 +219,14 @@ export default function MainLayout() {
         }}
       />
 
-      {/* Deliveries - Mobile Genie only */}
+      {/* My Quests - Mobile Genie only */}
       <Tabs.Screen
         name="deliveries"
         options={{
-          title: 'Deliveries',
+          title: 'My Quests',
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && isAgent && styles.iconContainerActive]}>
-              <Ionicons name={focused ? "rocket" : "rocket-outline"} size={24} color={color} />
+              <Ionicons name={focused ? "trophy" : "trophy-outline"} size={24} color={color} />
             </View>
           ),
           href: isMobileGenie ? '/(main)/deliveries' : null,
