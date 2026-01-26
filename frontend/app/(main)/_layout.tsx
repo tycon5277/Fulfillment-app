@@ -199,7 +199,7 @@ export default function MainLayout() {
         }}
       />
 
-      {/* Orders - Mobile Genie & Vendor */}
+      {/* Orders - Mobile Genie & Vendor (hidden if user not loaded or is skilled genie) */}
       <Tabs.Screen
         name="orders"
         options={{
@@ -209,7 +209,7 @@ export default function MainLayout() {
               <Ionicons name={focused ? "storefront" : "storefront-outline"} size={24} color={color} />
             </View>
           ),
-          href: (partnerType === 'promoter' || isSkilledGenie) ? null : '/(main)/orders',
+          href: hideOrdersTab ? null : '/(main)/orders',
         }}
       />
 
