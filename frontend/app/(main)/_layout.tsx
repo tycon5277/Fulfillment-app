@@ -391,6 +391,10 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.primary + '20',
     borderRadius: 14,
   },
+  iconContainerSkilledActive: {
+    backgroundColor: '#2563EB' + '20', // Professional Blue for Skilled Genie
+    borderRadius: 14,
+  },
   // Magical Floating Wishes Button - Violet Theme
   wishesContainer: {
     alignItems: 'center',
