@@ -278,7 +278,7 @@ export default function MainLayout() {
               <Ionicons name={focused ? "calendar" : "calendar-outline"} size={24} color={color} />
             </View>
           ),
-          href: isSkilledGenie ? '/(main)/appointments' : null,
+          href: (user && isSkilledGenie) ? '/(main)/appointments' : null,
         }}
       />
 
@@ -292,7 +292,7 @@ export default function MainLayout() {
               <Ionicons name={focused ? "chatbubbles" : "chatbubbles-outline"} size={24} color={color} />
             </View>
           ),
-          href: isSkilledGenie ? '/(main)/skilled-chats' : null,
+          href: (user && isSkilledGenie) ? '/(main)/skilled-chats' : null,
         }}
       />
 
