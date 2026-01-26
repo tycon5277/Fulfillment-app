@@ -1338,6 +1338,29 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginBottom: 20,
   },
+  priceInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.backgroundSecondary,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: COLORS.green + '50',
+    marginBottom: 20,
+    paddingHorizontal: 16,
+  },
+  currencySymbol: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: COLORS.green,
+  },
+  priceInput: {
+    flex: 1,
+    fontSize: 32,
+    fontWeight: '700',
+    color: COLORS.text,
+    paddingVertical: 16,
+    paddingLeft: 8,
+  },
   inputGroup: {
     marginBottom: 16,
   },
@@ -1358,7 +1381,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.cardBorder,
   },
   termsInputMulti: {
-    minHeight: 80,
+    minHeight: 70,
     textAlignVertical: 'top',
   },
   sendContractBtn: {
