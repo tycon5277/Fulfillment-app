@@ -1282,6 +1282,88 @@ async def get_earnings_history(limit: int = 50, current_user: User = Depends(req
 
 # ===================== SEED DATA FOR TESTING =====================
 
+@api_router.post("/seed/skilled-genie")
+async def seed_skilled_genie_user(response: Response):
+    """Create a test Skilled Genie user with active session for testing"""
+    user_id = f"user_skilled_test"
+    session_token = f"session_skilled_{uuid.uuid4().hex[:16]}"
+    
+    # Create or update the skilled genie user
+    skilled_user = {
+        "user_id": user_id,
+        "phone": "9999000111",
+        "name": "Ramesh Kumar",
+        "email": "ramesh@test.com",
+        "picture": None,
+        "date_of_birth": "1990-05-15",
+        "address": "Sector 21, Gurgaon",
+        "addresses": [],
+        "partner_type": "agent",
+        "partner_status": "available",
+        "partner_rating": 4.8,
+        "partner_total_tasks": 45,
+        "partner_total_earnings": 32500.0,
+        "agent_type": "skilled",  # SKILLED GENIE
+        "agent_vehicle": None,
+        "agent_vehicle_registration": None,
+        "agent_vehicle_make": None,
+        "agent_vehicle_model": None,
+        "agent_vehicle_color": None,
+        "agent_is_electric": False,
+        "agent_services": [],
+        "agent_skills": ["cleaning", "deep_cleaning", "kitchen_cleaning", "bathroom_cleaning"],
+        "agent_has_vehicle": True,
+        "agent_rating": 4.9,
+        "agent_total_deliveries": 0,
+        "vendor_shop_name": None,
+        "vendor_shop_type": None,
+        "vendor_shop_address": None,
+        "vendor_shop_location": None,
+        "vendor_can_deliver": False,
+        "vendor_categories": [],
+        "vendor_is_verified": False,
+        "promoter_business_name": None,
+        "promoter_type": None,
+        "promoter_description": None,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.users.update_one(
+        {"user_id": user_id},
+        {"$set": skilled_user},
+        upsert=True
+    )
+    
+    # Create session
+    session = {
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": datetime.now(timezone.utc) + timedelta(days=30),
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.user_sessions.update_one(
+        {"user_id": user_id},
+        {"$set": session},
+        upsert=True
+    )
+    
+    # Set session cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=False,  # Set to True in production
+        samesite="lax",
+        max_age=30 * 24 * 60 * 60
+    )
+    
+    return {
+        "message": "Skilled Genie test user created",
+        "session_token": session_token,
+        "user": skilled_user
+    }
+
 @api_router.post("/seed/orders")
 async def seed_sample_orders():
     """Seed sample orders for testing"""
