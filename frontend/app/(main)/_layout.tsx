@@ -254,7 +254,7 @@ export default function MainLayout() {
         }}
       />
 
-      {/* My Quests - Mobile Genie only */}
+      {/* My Quests - Mobile Genie only (hidden if user not loaded) */}
       <Tabs.Screen
         name="my-quests"
         options={{
@@ -264,7 +264,7 @@ export default function MainLayout() {
               <Ionicons name={focused ? "trophy" : "trophy-outline"} size={24} color={color} />
             </View>
           ),
-          href: isMobileGenie ? '/(main)/my-quests' : null,
+          href: (user && isMobileGenie) ? '/(main)/my-quests' : null,
         }}
       />
 
