@@ -10,50 +10,84 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../src/store';
 import * as api from '../src/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Premium Dark Theme
+// 🎨 CLAYMORPHISM CREAM/WARM THEME - Friendly & Professional
 const COLORS = {
-  background: '#08080C',
-  backgroundSecondary: '#0F0F14',
-  cardBg: '#16161E',
-  cardBorder: '#252530',
-  primary: '#8B5CF6',
-  primaryLight: '#A78BFA',
-  cyan: '#06B6D4',
-  green: '#34D399',
+  // Base colors
+  background: '#FDF8F3',         // Warm cream background
+  backgroundSecondary: '#F5EDE4', // Slightly darker cream
+  cardBg: '#FFFFFF',             // Pure white cards
+  cardBorder: '#E8DFD5',         // Soft warm border
+  
+  // Primary accent colors
+  primary: '#D97706',            // Warm amber/orange
+  primaryLight: '#F59E0B',       // Lighter amber
+  secondary: '#92400E',          // Deep warm brown
+  
+  // State colors
+  success: '#059669',            // Emerald green
+  error: '#DC2626',              // Red
+  warning: '#D97706',            // Amber
+  
+  // Text colors
+  text: '#44403C',               // Warm dark gray
+  textSecondary: '#78716C',      // Medium warm gray
+  textMuted: '#A8A29E',          // Light warm gray
+  textLight: '#D6D3D1',          // Very light gray
+  
+  // Accent colors for categories
   amber: '#F59E0B',
-  magenta: '#D946EF',
-  pink: '#EC4899',
   blue: '#3B82F6',
-  red: '#EF4444',
-  orange: '#F97316',
-  teal: '#14B8A6',
   indigo: '#6366F1',
-  text: '#F8FAFC',
-  textSecondary: '#94A3B8',
-  textMuted: '#64748B',
   gold: '#FBBF24',
+  red: '#EF4444',
+  pink: '#EC4899',
+  cyan: '#06B6D4',
+  green: '#22C55E',
+  orange: '#F97316',
+  purple: '#8B5CF6',
+  teal: '#14B8A6',
+  magenta: '#D946EF',
+  
+  // Claymorphism shadow colors
+  shadowLight: 'rgba(255, 255, 255, 0.8)',
+  shadowDark: 'rgba(0, 0, 0, 0.08)',
 };
 
-// ✨ COMPREHENSIVE SKILL CATEGORIES - The Magic Powers! ✨
+// Claymorphism shadow style helper
+const clayShadow = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.08,
+  shadowRadius: 12,
+  elevation: 4,
+};
+
+const clayInnerShadow = {
+  shadowColor: '#FFF',
+  shadowOffset: { width: -2, height: -2 },
+  shadowOpacity: 0.5,
+  shadowRadius: 4,
+};
+
+// ✨ COMPREHENSIVE SKILL CATEGORIES
 const SKILL_CATEGORIES = [
-  // 🏠 HOME SERVICES - Everything to make homes shine
+  // 🏠 HOME SERVICES
   {
     id: 'home_services',
     title: 'Home Services',
-    subtitle: 'Make homes sparkle & shine',
+    subtitle: 'Cleaning & maintenance',
     emoji: '🏠',
     color: '#F59E0B',
-    gradient: ['#F59E0B', '#D97706'],
     skills: [
       { id: 'deep_cleaning', name: 'Deep Cleaning', emoji: '🧹', description: 'Professional home deep clean' },
       { id: 'regular_cleaning', name: 'Regular Cleaning', emoji: '✨', description: 'Daily/weekly home cleaning' },
@@ -77,7 +111,6 @@ const SKILL_CATEGORIES = [
     subtitle: 'Fix anything, anywhere',
     emoji: '🔧',
     color: '#3B82F6',
-    gradient: ['#3B82F6', '#2563EB'],
     skills: [
       { id: 'plumbing', name: 'Plumbing', emoji: '🚰', description: 'Pipes, taps & water systems' },
       { id: 'electrical', name: 'Electrical Work', emoji: '⚡', description: 'Wiring, switches & fixtures' },
@@ -97,14 +130,13 @@ const SKILL_CATEGORIES = [
     ],
   },
 
-  // 🧑‍✈️ DRIVER ON DEMAND - VERY IMPORTANT CATEGORY
+  // 🧑‍✈️ DRIVER ON DEMAND
   {
     id: 'driver_services',
     title: 'Driver on Demand',
     subtitle: 'Professional driving services',
     emoji: '🧑‍✈️',
     color: '#6366F1',
-    gradient: ['#6366F1', '#4F46E5'],
     skills: [
       { id: 'personal_driver', name: 'Personal Driver', emoji: '👨‍✈️', description: 'Daily commute & errands' },
       { id: 'outstation_driver', name: 'Outstation Driver', emoji: '🛣️', description: 'Long distance travel' },
@@ -126,7 +158,6 @@ const SKILL_CATEGORIES = [
     subtitle: 'Premium rides for special occasions',
     emoji: '🚗',
     color: '#FBBF24',
-    gradient: ['#FBBF24', '#F59E0B'],
     skills: [
       { id: 'wedding_car', name: 'Wedding Car Hire', emoji: '💒', description: 'Decorated marriage cars' },
       { id: 'luxury_sedan', name: 'Luxury Sedan', emoji: '🚘', description: 'Mercedes, BMW, Audi' },
@@ -148,7 +179,6 @@ const SKILL_CATEGORIES = [
     subtitle: 'Heavy duty transport solutions',
     emoji: '🚛',
     color: '#EF4444',
-    gradient: ['#EF4444', '#DC2626'],
     skills: [
       { id: 'truck_driver', name: 'Truck Driver', emoji: '🚚', description: 'Heavy goods transport' },
       { id: 'tempo_driver', name: 'Tempo/Mini Truck', emoji: '🛻', description: 'Small goods transport' },
@@ -170,7 +200,6 @@ const SKILL_CATEGORIES = [
     subtitle: 'Capture memories beautifully',
     emoji: '📸',
     color: '#EC4899',
-    gradient: ['#EC4899', '#DB2777'],
     skills: [
       { id: 'wedding_photography', name: 'Wedding Photography', emoji: '💒', description: 'Marriage ceremonies' },
       { id: 'portrait_photo', name: 'Portrait Photography', emoji: '🖼️', description: 'Professional portraits' },
@@ -196,7 +225,6 @@ const SKILL_CATEGORIES = [
     subtitle: 'Aerial photography & more',
     emoji: '🚁',
     color: '#06B6D4',
-    gradient: ['#06B6D4', '#0891B2'],
     skills: [
       { id: 'drone_photography', name: 'Aerial Photography', emoji: '📸', description: 'Drone photos from above' },
       { id: 'drone_videography', name: 'Aerial Videography', emoji: '🎬', description: 'Cinematic drone videos' },
@@ -211,14 +239,13 @@ const SKILL_CATEGORIES = [
     ],
   },
 
-  // 🚗 VEHICLE SERVICES
+  // 🛠️ VEHICLE SERVICES
   {
     id: 'vehicle_services',
     title: 'Vehicle Services',
     subtitle: 'Keep vehicles running smooth',
     emoji: '🛠️',
     color: '#EF4444',
-    gradient: ['#EF4444', '#DC2626'],
     skills: [
       { id: 'car_wash', name: 'Car Washing', emoji: '🚿', description: 'Interior & exterior car wash' },
       { id: 'car_detailing', name: 'Car Detailing', emoji: '✨', description: 'Premium car detailing' },
@@ -237,10 +264,9 @@ const SKILL_CATEGORIES = [
   {
     id: 'tech_services',
     title: 'Tech Services',
-    subtitle: 'Digital wizardry at your service',
+    subtitle: 'Digital solutions',
     emoji: '💻',
     color: '#06B6D4',
-    gradient: ['#06B6D4', '#0891B2'],
     skills: [
       { id: 'computer_repair', name: 'Computer Repair', emoji: '🖥️', description: 'PC & laptop repair' },
       { id: 'phone_repair', name: 'Phone Repair', emoji: '📱', description: 'Mobile device repair' },
@@ -261,10 +287,9 @@ const SKILL_CATEGORIES = [
   {
     id: 'garden_outdoor',
     title: 'Garden & Outdoor',
-    subtitle: 'Green thumbs unite',
+    subtitle: 'Green spaces & pest control',
     emoji: '🌿',
     color: '#22C55E',
-    gradient: ['#22C55E', '#16A34A'],
     skills: [
       { id: 'gardening', name: 'Gardening', emoji: '🌱', description: 'Plant care & garden maintenance' },
       { id: 'lawn_mowing', name: 'Lawn Mowing', emoji: '🌾', description: 'Grass cutting & lawn care' },
@@ -286,7 +311,6 @@ const SKILL_CATEGORIES = [
     subtitle: 'Pamper & rejuvenate',
     emoji: '💆',
     color: '#EC4899',
-    gradient: ['#EC4899', '#DB2777'],
     skills: [
       { id: 'massage', name: 'Massage Therapy', emoji: '💆', description: 'Relaxation & therapeutic' },
       { id: 'spa_home', name: 'Home Spa', emoji: '🧖', description: 'Spa treatments at home' },
@@ -311,7 +335,6 @@ const SKILL_CATEGORIES = [
     subtitle: 'For your furry friends',
     emoji: '🐾',
     color: '#F97316',
-    gradient: ['#F97316', '#EA580C'],
     skills: [
       { id: 'pet_grooming', name: 'Pet Grooming', emoji: '🛁', description: 'Bath & grooming' },
       { id: 'dog_walking', name: 'Dog Walking', emoji: '🐕', description: 'Daily walks & exercise' },
@@ -328,10 +351,9 @@ const SKILL_CATEGORIES = [
   {
     id: 'education',
     title: 'Education & Tutoring',
-    subtitle: 'Share knowledge, inspire minds',
+    subtitle: 'Share knowledge',
     emoji: '📚',
     color: '#8B5CF6',
-    gradient: ['#8B5CF6', '#7C3AED'],
     skills: [
       { id: 'math_tutor', name: 'Mathematics', emoji: '🔢', description: 'Math tutoring all levels' },
       { id: 'science_tutor', name: 'Science', emoji: '🔬', description: 'Physics, Chemistry, Biology' },
@@ -355,7 +377,6 @@ const SKILL_CATEGORIES = [
     subtitle: 'Make celebrations magical',
     emoji: '🎉',
     color: '#D946EF',
-    gradient: ['#D946EF', '#C026D3'],
     skills: [
       { id: 'dj', name: 'DJ Services', emoji: '🎧', description: 'Music & entertainment' },
       { id: 'event_decor', name: 'Event Decoration', emoji: '🎈', description: 'Party & event decor' },
@@ -376,10 +397,9 @@ const SKILL_CATEGORIES = [
   {
     id: 'culinary',
     title: 'Culinary Services',
-    subtitle: 'Kitchen wizards at work',
+    subtitle: 'Kitchen experts',
     emoji: '🍳',
     color: '#EF4444',
-    gradient: ['#F87171', '#EF4444'],
     skills: [
       { id: 'home_cook', name: 'Home Cook', emoji: '👨‍🍳', description: 'Daily meals preparation' },
       { id: 'party_cook', name: 'Party Cooking', emoji: '🎉', description: 'Cooking for events' },
@@ -399,7 +419,6 @@ const SKILL_CATEGORIES = [
     subtitle: 'Move with ease',
     emoji: '🚚',
     color: '#6366F1',
-    gradient: ['#6366F1', '#4F46E5'],
     skills: [
       { id: 'packers_movers', name: 'Packers & Movers', emoji: '📦', description: 'Full home shifting' },
       { id: 'furniture_moving', name: 'Furniture Moving', emoji: '🛋️', description: 'Heavy item moving' },
@@ -415,10 +434,9 @@ const SKILL_CATEGORIES = [
   {
     id: 'special_services',
     title: 'Special & Unique',
-    subtitle: 'Rare talents & mystical arts',
+    subtitle: 'Rare talents & arts',
     emoji: '✨',
     color: '#FBBF24',
-    gradient: ['#FBBF24', '#F59E0B'],
     skills: [
       { id: 'astrology', name: 'Astrology', emoji: '🔮', description: 'Horoscope & predictions' },
       { id: 'vastu', name: 'Vastu Consultant', emoji: '🏛️', description: 'Vastu shastra advice' },
@@ -439,10 +457,9 @@ const SKILL_CATEGORIES = [
   {
     id: 'care_services',
     title: 'Care Services',
-    subtitle: 'Caring hands for loved ones',
+    subtitle: 'Caring for loved ones',
     emoji: '👶',
     color: '#14B8A6',
-    gradient: ['#14B8A6', '#0D9488'],
     skills: [
       { id: 'babysitting', name: 'Babysitting', emoji: '👶', description: 'Child care service' },
       { id: 'nanny', name: 'Nanny', emoji: '👩‍👧', description: 'Full-time child care' },
@@ -456,10 +473,10 @@ const SKILL_CATEGORIES = [
 ];
 
 const EXPERIENCE_LEVELS = [
-  { id: 'beginner', label: 'Beginner', years: '0-1 years', emoji: '🌱', color: '#34D399', xpBonus: '1x' },
-  { id: 'intermediate', label: 'Intermediate', years: '1-3 years', emoji: '🌿', color: '#3B82F6', xpBonus: '1.5x' },
-  { id: 'expert', label: 'Expert', years: '3-5 years', emoji: '🌳', color: '#8B5CF6', xpBonus: '2x' },
-  { id: 'master', label: 'Master Genie', years: '5+ years', emoji: '👑', color: '#F59E0B', xpBonus: '3x' },
+  { id: 'beginner', label: 'Beginner', years: '0-1 years', emoji: '🌱', color: '#22C55E' },
+  { id: 'intermediate', label: 'Intermediate', years: '1-3 years', emoji: '🌿', color: '#3B82F6' },
+  { id: 'expert', label: 'Expert', years: '3-5 years', emoji: '🌳', color: '#8B5CF6' },
+  { id: 'master', label: 'Master', years: '5+ years', emoji: '👑', color: '#F59E0B' },
 ];
 
 const SERVICE_AREAS = [
@@ -469,19 +486,31 @@ const SERVICE_AREAS = [
   { id: 'city', label: 'Entire City', description: 'City-wide', emoji: '🗺️' },
 ];
 
+// Social platforms for linking
+const SOCIAL_PLATFORMS = [
+  { id: 'instagram', name: 'Instagram', icon: 'logo-instagram', color: '#E4405F', placeholder: '@username or profile URL' },
+  { id: 'youtube', name: 'YouTube', icon: 'logo-youtube', color: '#FF0000', placeholder: 'Channel URL' },
+  { id: 'facebook', name: 'Facebook', icon: 'logo-facebook', color: '#1877F2', placeholder: 'Profile or Page URL' },
+  { id: 'twitter', name: 'Twitter/X', icon: 'logo-twitter', color: '#000000', placeholder: '@username or profile URL' },
+  { id: 'website', name: 'Website', icon: 'globe-outline', color: '#6366F1', placeholder: 'https://your-website.com' },
+];
+
 export default function SkilledSetupScreen() {
   const router = useRouter();
   const { user, setUser } = useAuthStore();
   const [step, setStep] = useState(1);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null); // Track which category is selected
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [experienceLevel, setExperienceLevel] = useState<string>('');
   const [hourlyRate, setHourlyRate] = useState('');
   const [serviceArea, setServiceArea] = useState<string>('10km');
   const [bio, setBio] = useState('');
-  const [portfolio, setPortfolio] = useState('');
+  const [socialLinks, setSocialLinks] = useState<{[key: string]: string}>({});
+  const [certifications, setCertifications] = useState<string[]>(['']);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeStoryTab, setActiveStoryTab] = useState<'bio' | 'social' | 'certifications'>('bio');
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -501,12 +530,44 @@ export default function SkilledSetupScreen() {
     });
   };
 
-  const toggleSkill = (skillId: string) => {
-    setSelectedSkills(prev =>
-      prev.includes(skillId)
-        ? prev.filter(id => id !== skillId)
-        : [...prev, skillId]
-    );
+  // Get the category ID for a skill
+  const getCategoryForSkill = (skillId: string): string | null => {
+    for (const category of SKILL_CATEGORIES) {
+      if (category.skills.some(s => s.id === skillId)) {
+        return category.id;
+      }
+    }
+    return null;
+  };
+
+  // Toggle skill with category restriction
+  const toggleSkill = (skillId: string, categoryId: string) => {
+    // If no category is selected yet, or this skill is from the selected category
+    if (!selectedCategoryId || selectedCategoryId === categoryId) {
+      if (selectedSkills.includes(skillId)) {
+        // Removing a skill
+        const newSkills = selectedSkills.filter(id => id !== skillId);
+        setSelectedSkills(newSkills);
+        // If no skills left, reset the selected category
+        if (newSkills.length === 0) {
+          setSelectedCategoryId(null);
+        }
+      } else {
+        // Adding a skill
+        setSelectedSkills([...selectedSkills, skillId]);
+        setSelectedCategoryId(categoryId);
+      }
+    } else {
+      // User trying to select from a different category - show alert
+      const currentCategoryName = SKILL_CATEGORIES.find(c => c.id === selectedCategoryId)?.title || 'current category';
+      const newCategoryName = SKILL_CATEGORIES.find(c => c.id === categoryId)?.title || 'this category';
+      
+      Alert.alert(
+        '🚫 Cannot Mix Categories',
+        `You've already selected skills from "${currentCategoryName}". You cannot select skills from "${newCategoryName}" at the same time.\n\nTo change categories, first deselect all skills from the current category.`,
+        [{ text: 'Got it', style: 'default' }]
+      );
+    }
   };
 
   const toggleCategory = (categoryId: string) => {
@@ -531,7 +592,6 @@ export default function SkilledSetupScreen() {
     setIsSubmitting(true);
     setError(null);
     try {
-      // Use the correct API function name
       await api.registerAsAgent({
         phone: user?.phone || '',
         agent_type: 'skilled',
@@ -567,19 +627,44 @@ export default function SkilledSetupScreen() {
     return category.skills.filter(s => selectedSkills.includes(s.id)).length;
   };
 
+  const addCertification = () => {
+    setCertifications([...certifications, '']);
+  };
+
+  const updateCertification = (index: number, value: string) => {
+    const updated = [...certifications];
+    updated[index] = value;
+    setCertifications(updated);
+  };
+
+  const removeCertification = (index: number) => {
+    if (certifications.length > 1) {
+      setCertifications(certifications.filter((_, i) => i !== index));
+    }
+  };
+
   // Step 1: Skills Selection with Categories
   const renderSkillsStep = () => (
     <View style={styles.stepContent}>
       <View style={styles.stepHeader}>
-        <Text style={styles.stepEmoji}>🔮</Text>
-        <Text style={styles.stepTitle}>Choose Your Magic Powers</Text>
-        <Text style={styles.stepSubtitle}>Select all skills you can offer as a Skilled Genie</Text>
+        <Text style={styles.stepEmoji}>✨</Text>
+        <Text style={styles.stepTitle}>Choose Your Expertise</Text>
+        <Text style={styles.stepSubtitle}>Select skills from ONE category that you specialize in</Text>
+        {selectedCategoryId && (
+          <View style={styles.categoryLockedBadge}>
+            <Ionicons name="lock-closed" size={14} color={COLORS.primary} />
+            <Text style={styles.categoryLockedText}>
+              Locked to: {SKILL_CATEGORIES.find(c => c.id === selectedCategoryId)?.title}
+            </Text>
+          </View>
+        )}
       </View>
 
       <ScrollView style={styles.categoriesScroll} showsVerticalScrollIndicator={false}>
         {SKILL_CATEGORIES.map((category) => {
           const isExpanded = expandedCategory === category.id;
           const selectedCount = getSelectedSkillsCount(category.id);
+          const isLocked = selectedCategoryId && selectedCategoryId !== category.id;
           
           return (
             <View key={category.id} style={styles.categorySection}>
@@ -587,25 +672,31 @@ export default function SkilledSetupScreen() {
                 style={[
                   styles.categoryHeader,
                   isExpanded && styles.categoryHeaderExpanded,
-                  selectedCount > 0 && { borderColor: category.color }
+                  selectedCount > 0 && { borderColor: category.color },
+                  isLocked && styles.categoryHeaderLocked,
                 ]}
                 onPress={() => toggleCategory(category.id)}
                 activeOpacity={0.8}
               >
-                <LinearGradient
-                  colors={isExpanded ? category.gradient : ['transparent', 'transparent']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.categoryGradient}
-                >
+                <View style={[
+                  styles.categoryGradient,
+                  isExpanded && { backgroundColor: category.color + '15' }
+                ]}>
                   <View style={styles.categoryLeft}>
-                    <Text style={styles.categoryEmoji}>{category.emoji}</Text>
+                    <View style={[styles.categoryEmojiContainer, { backgroundColor: category.color + '20' }]}>
+                      <Text style={styles.categoryEmoji}>{category.emoji}</Text>
+                    </View>
                     <View>
-                      <Text style={styles.categoryTitle}>{category.title}</Text>
+                      <Text style={[styles.categoryTitle, isLocked && styles.categoryTitleLocked]}>
+                        {category.title}
+                      </Text>
                       <Text style={styles.categorySubtitle}>{category.subtitle}</Text>
                     </View>
                   </View>
                   <View style={styles.categoryRight}>
+                    {isLocked && (
+                      <Ionicons name="lock-closed" size={16} color={COLORS.textMuted} />
+                    )}
                     {selectedCount > 0 && (
                       <View style={[styles.selectedBadge, { backgroundColor: category.color }]}>
                         <Text style={styles.selectedBadgeText}>{selectedCount}</Text>
@@ -614,10 +705,10 @@ export default function SkilledSetupScreen() {
                     <Ionicons 
                       name={isExpanded ? "chevron-up" : "chevron-down"} 
                       size={20} 
-                      color={COLORS.textSecondary} 
+                      color={isLocked ? COLORS.textMuted : COLORS.textSecondary} 
                     />
                   </View>
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
 
               {isExpanded && (
@@ -631,9 +722,10 @@ export default function SkilledSetupScreen() {
                           styles.skillCard,
                           isSelected && styles.skillCardSelected,
                           isSelected && { borderColor: category.color },
+                          isLocked && styles.skillCardLocked,
                         ]}
-                        onPress={() => toggleSkill(skill.id)}
-                        activeOpacity={0.8}
+                        onPress={() => toggleSkill(skill.id, category.id)}
+                        activeOpacity={isLocked ? 1 : 0.8}
                       >
                         {isSelected && (
                           <View style={[styles.skillCheck, { backgroundColor: category.color }]}>
@@ -641,7 +733,11 @@ export default function SkilledSetupScreen() {
                           </View>
                         )}
                         <Text style={styles.skillEmoji}>{skill.emoji}</Text>
-                        <Text style={[styles.skillName, isSelected && { color: category.color }]}>
+                        <Text style={[
+                          styles.skillName, 
+                          isSelected && { color: category.color },
+                          isLocked && styles.skillNameLocked
+                        ]}>
                           {skill.name}
                         </Text>
                         <Text style={styles.skillDescription} numberOfLines={2}>{skill.description}</Text>
@@ -658,15 +754,10 @@ export default function SkilledSetupScreen() {
 
       {selectedSkills.length > 0 && (
         <View style={styles.selectionBadge}>
-          <LinearGradient
-            colors={[COLORS.primary, COLORS.magenta]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.selectionGradient}
-          >
-            <Ionicons name="sparkles" size={16} color="#FFF" />
-            <Text style={styles.selectionText}>{selectedSkills.length} power{selectedSkills.length > 1 ? 's' : ''} selected</Text>
-          </LinearGradient>
+          <View style={styles.selectionGradient}>
+            <Ionicons name="sparkles" size={16} color={COLORS.primary} />
+            <Text style={styles.selectionText}>{selectedSkills.length} skill{selectedSkills.length > 1 ? 's' : ''} selected</Text>
+          </View>
         </View>
       )}
     </View>
@@ -695,12 +786,14 @@ export default function SkilledSetupScreen() {
               onPress={() => setExperienceLevel(level.id)}
               activeOpacity={0.8}
             >
-              <LinearGradient
-                colors={isSelected ? [level.color + '30', level.color + '10'] : ['transparent', 'transparent']}
-                style={styles.experienceGradient}
-              >
+              <View style={[
+                styles.experienceGradient,
+                isSelected && { backgroundColor: level.color + '10' }
+              ]}>
                 <View style={styles.experienceLeft}>
-                  <Text style={styles.experienceEmoji}>{level.emoji}</Text>
+                  <View style={[styles.experienceEmojiContainer, { backgroundColor: level.color + '20' }]}>
+                    <Text style={styles.experienceEmoji}>{level.emoji}</Text>
+                  </View>
                   <View>
                     <Text style={[styles.experienceLabel, isSelected && { color: level.color }]}>
                       {level.label}
@@ -709,25 +802,22 @@ export default function SkilledSetupScreen() {
                   </View>
                 </View>
                 <View style={styles.experienceRightSection}>
-                  <View style={[styles.xpBadge, { backgroundColor: level.color + '30' }]}>
-                    <Text style={[styles.xpBadgeText, { color: level.color }]}>{level.xpBonus} XP</Text>
-                  </View>
                   {isSelected && (
                     <View style={[styles.experienceCheck, { backgroundColor: level.color }]}>
                       <Ionicons name="checkmark" size={16} color="#FFF" />
                     </View>
                   )}
                 </View>
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           );
         })}
       </View>
 
       <View style={styles.tipCard}>
-        <Ionicons name="bulb" size={20} color={COLORS.amber} />
+        <Ionicons name="bulb" size={20} color={COLORS.primary} />
         <Text style={styles.tipText}>
-          Higher experience levels unlock premium requests & earn more XP per job!
+          Your experience level helps customers find the right professional for their needs!
         </Text>
       </View>
     </View>
@@ -775,19 +865,14 @@ export default function SkilledSetupScreen() {
           </View>
 
           <View style={styles.earningsPreview}>
-            <LinearGradient
-              colors={[COLORS.green + '20', COLORS.green + '05']}
-              style={styles.earningsGradient}
-            >
-              <Ionicons name="trending-up" size={24} color={COLORS.green} />
-              <View style={styles.earningsInfo}>
-                <Text style={styles.earningsTitle}>Potential Daily Earnings</Text>
-                <Text style={styles.earningsValue}>
-                  ₹{hourlyRate ? parseInt(hourlyRate) * 4 : 0} - ₹{hourlyRate ? parseInt(hourlyRate) * 8 : 0}
-                </Text>
-                <Text style={styles.earningsNote}>Based on 4-8 hours of work</Text>
-              </View>
-            </LinearGradient>
+            <Ionicons name="trending-up" size={24} color={COLORS.success} />
+            <View style={styles.earningsInfo}>
+              <Text style={styles.earningsTitle}>Potential Daily Earnings</Text>
+              <Text style={styles.earningsValue}>
+                ₹{hourlyRate ? parseInt(hourlyRate) * 4 : 0} - ₹{hourlyRate ? parseInt(hourlyRate) * 8 : 0}
+              </Text>
+              <Text style={styles.earningsNote}>Based on 4-8 hours of work</Text>
+            </View>
           </View>
         </View>
 
@@ -817,7 +902,7 @@ export default function SkilledSetupScreen() {
     </KeyboardAvoidingView>
   );
 
-  // Step 4: Bio & Summary
+  // Step 4: Bio, Social & Certifications with Tabs
   const renderBioStep = () => (
     <KeyboardAvoidingView 
       style={styles.stepContent}
@@ -825,45 +910,149 @@ export default function SkilledSetupScreen() {
     >
       <ScrollView style={styles.bioContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.stepHeader}>
-          <Text style={styles.stepEmoji}>✨</Text>
+          <Text style={styles.stepEmoji}>📝</Text>
           <Text style={styles.stepTitle}>Tell Your Story</Text>
-          <Text style={styles.stepSubtitle}>Help customers know you better</Text>
+          <Text style={styles.stepSubtitle}>Build trust and attract more customers</Text>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>About You (Optional)</Text>
-          <TextInput
-            style={styles.bioInput}
-            value={bio}
-            onChangeText={setBio}
-            placeholder="Tell customers about your experience, specialties, and what makes you unique..."
-            placeholderTextColor={COLORS.textMuted}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-          />
+        {/* Tab Navigation */}
+        <View style={styles.storyTabContainer}>
+          <TouchableOpacity 
+            style={[styles.storyTab, activeStoryTab === 'bio' && styles.storyTabActive]}
+            onPress={() => setActiveStoryTab('bio')}
+          >
+            <Ionicons name="person-outline" size={18} color={activeStoryTab === 'bio' ? COLORS.primary : COLORS.textMuted} />
+            <Text style={[styles.storyTabText, activeStoryTab === 'bio' && styles.storyTabTextActive]}>Bio</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.storyTab, activeStoryTab === 'social' && styles.storyTabActive]}
+            onPress={() => setActiveStoryTab('social')}
+          >
+            <Ionicons name="share-social-outline" size={18} color={activeStoryTab === 'social' ? COLORS.primary : COLORS.textMuted} />
+            <Text style={[styles.storyTabText, activeStoryTab === 'social' && styles.storyTabTextActive]}>Social</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.storyTab, activeStoryTab === 'certifications' && styles.storyTabActive]}
+            onPress={() => setActiveStoryTab('certifications')}
+          >
+            <Ionicons name="ribbon-outline" size={18} color={activeStoryTab === 'certifications' ? COLORS.primary : COLORS.textMuted} />
+            <Text style={[styles.storyTabText, activeStoryTab === 'certifications' && styles.storyTabTextActive]}>Certs</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Portfolio Link (Optional)</Text>
-          <View style={styles.portfolioInputContainer}>
-            <Ionicons name="link" size={20} color={COLORS.textMuted} />
-            <TextInput
-              style={styles.portfolioInput}
-              value={portfolio}
-              onChangeText={setPortfolio}
-              placeholder="https://your-portfolio.com"
-              placeholderTextColor={COLORS.textMuted}
-              keyboardType="url"
-              autoCapitalize="none"
-            />
+        {/* Bio Tab */}
+        {activeStoryTab === 'bio' && (
+          <View style={styles.tabContent}>
+            <View style={styles.bioTipCard}>
+              <View style={styles.bioTipHeader}>
+                <Ionicons name="bulb" size={20} color={COLORS.primary} />
+                <Text style={styles.bioTipTitle}>Why a good bio matters</Text>
+              </View>
+              <Text style={styles.bioTipText}>
+                • Customers are 3x more likely to book professionals with detailed bios{'\n'}
+                • Share your unique skills, experience, and what you're passionate about{'\n'}
+                • Mention specific services you excel at and any special techniques you use{'\n'}
+                • A friendly, professional tone builds instant trust
+              </Text>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>About You</Text>
+              <TextInput
+                style={styles.bioInput}
+                value={bio}
+                onChangeText={setBio}
+                placeholder="Hi! I'm a professional with 5+ years of experience. I specialize in deep cleaning and use eco-friendly products. I'm known for my attention to detail and punctuality. I love transforming spaces and leaving customers happy!"
+                placeholderTextColor={COLORS.textMuted}
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+              />
+              <Text style={styles.charCount}>{bio.length}/500</Text>
+            </View>
           </View>
-        </View>
+        )}
+
+        {/* Social Links Tab */}
+        {activeStoryTab === 'social' && (
+          <View style={styles.tabContent}>
+            <View style={styles.bioTipCard}>
+              <View style={styles.bioTipHeader}>
+                <Ionicons name="share-social" size={20} color={COLORS.primary} />
+                <Text style={styles.bioTipTitle}>Showcase your work</Text>
+              </View>
+              <Text style={styles.bioTipText}>
+                Link your social profiles to show customers your portfolio, reviews, and previous work. This builds credibility and helps you stand out!
+              </Text>
+            </View>
+
+            {SOCIAL_PLATFORMS.map((platform) => (
+              <View key={platform.id} style={styles.socialInputGroup}>
+                <View style={styles.socialLabelRow}>
+                  <Ionicons name={platform.icon as any} size={20} color={platform.color} />
+                  <Text style={styles.socialLabel}>{platform.name}</Text>
+                </View>
+                <TextInput
+                  style={styles.socialInput}
+                  value={socialLinks[platform.id] || ''}
+                  onChangeText={(text) => setSocialLinks({...socialLinks, [platform.id]: text})}
+                  placeholder={platform.placeholder}
+                  placeholderTextColor={COLORS.textMuted}
+                  autoCapitalize="none"
+                  keyboardType={platform.id === 'website' ? 'url' : 'default'}
+                />
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Certifications Tab */}
+        {activeStoryTab === 'certifications' && (
+          <View style={styles.tabContent}>
+            <View style={styles.bioTipCard}>
+              <View style={styles.bioTipHeader}>
+                <Ionicons name="ribbon" size={20} color={COLORS.primary} />
+                <Text style={styles.bioTipTitle}>Add your credentials</Text>
+              </View>
+              <Text style={styles.bioTipText}>
+                List any certifications, awards, or achievements that showcase your expertise. Examples:{'\n'}
+                • "Certified Electrician - ITI Diploma 2020"{'\n'}
+                • "Google Digital Marketing Certificate"{'\n'}
+                • "5 Star Rating on Urban Company - 200+ jobs"
+              </Text>
+            </View>
+
+            {certifications.map((cert, index) => (
+              <View key={index} style={styles.certInputGroup}>
+                <View style={styles.certInputRow}>
+                  <Ionicons name="medal-outline" size={20} color={COLORS.primary} />
+                  <TextInput
+                    style={styles.certInput}
+                    value={cert}
+                    onChangeText={(text) => updateCertification(index, text)}
+                    placeholder="Enter certification or achievement"
+                    placeholderTextColor={COLORS.textMuted}
+                  />
+                  {certifications.length > 1 && (
+                    <TouchableOpacity onPress={() => removeCertification(index)} style={styles.removeCertBtn}>
+                      <Ionicons name="close-circle" size={22} color={COLORS.error} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            ))}
+
+            <TouchableOpacity style={styles.addCertButton} onPress={addCertification}>
+              <Ionicons name="add-circle-outline" size={20} color={COLORS.primary} />
+              <Text style={styles.addCertText}>Add Another Certification</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Error Message */}
         {error && (
           <View style={styles.errorCard}>
-            <Ionicons name="alert-circle" size={20} color={COLORS.red} />
+            <Ionicons name="alert-circle" size={20} color={COLORS.error} />
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity onPress={() => setError(null)}>
               <Ionicons name="close" size={20} color={COLORS.textMuted} />
@@ -873,37 +1062,32 @@ export default function SkilledSetupScreen() {
 
         {/* Summary Card */}
         <View style={styles.summaryCard}>
-          <LinearGradient
-            colors={[COLORS.primary + '20', COLORS.magenta + '10']}
-            style={styles.summaryGradient}
-          >
-            <Text style={styles.summaryTitle}>🎉 Your Genie Profile</Text>
-            
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Magic Powers:</Text>
-              <Text style={styles.summaryValue}>{selectedSkills.length} selected</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Experience:</Text>
-              <Text style={styles.summaryValue}>
-                {EXPERIENCE_LEVELS.find(l => l.id === experienceLevel)?.label || '-'}
-              </Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Hourly Rate:</Text>
-              <Text style={[styles.summaryValue, { color: COLORS.green }]}>₹{hourlyRate || '0'}/hr</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Service Area:</Text>
-              <Text style={styles.summaryValue}>
-                {SERVICE_AREAS.find(a => a.id === serviceArea)?.label || '-'}
-              </Text>
-            </View>
+          <Text style={styles.summaryTitle}>🎉 Your Profile Summary</Text>
+          
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Skills:</Text>
+            <Text style={styles.summaryValue}>{selectedSkills.length} selected</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Experience:</Text>
+            <Text style={styles.summaryValue}>
+              {EXPERIENCE_LEVELS.find(l => l.id === experienceLevel)?.label || '-'}
+            </Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Hourly Rate:</Text>
+            <Text style={[styles.summaryValue, { color: COLORS.success }]}>₹{hourlyRate || '0'}/hr</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Service Area:</Text>
+            <Text style={styles.summaryValue}>
+              {SERVICE_AREAS.find(a => a.id === serviceArea)?.label || '-'}
+            </Text>
+          </View>
 
-            <View style={styles.readyBanner}>
-              <Text style={styles.readyText}>🧞 Ready to grant wishes!</Text>
-            </View>
-          </LinearGradient>
+          <View style={styles.readyBanner}>
+            <Text style={styles.readyText}>✨ Ready to start serving customers!</Text>
+          </View>
         </View>
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -927,17 +1111,10 @@ export default function SkilledSetupScreen() {
       {/* Progress Bar */}
       <View style={styles.progressContainer}>
         <View style={styles.progressTrack}>
-          <Animated.View style={[styles.progressFill, { width: getProgressWidth() as any }]}>
-            <LinearGradient
-              colors={[COLORS.primary, COLORS.magenta]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.progressGradient}
-            />
-          </Animated.View>
+          <Animated.View style={[styles.progressFill, { width: getProgressWidth() as any }]} />
         </View>
         <View style={styles.progressSteps}>
-          {['🔮', '⭐', '💰', '✨'].map((emoji, index) => (
+          {['✨', '⭐', '💰', '📝'].map((emoji, index) => (
             <View 
               key={index} 
               style={[
@@ -975,17 +1152,10 @@ export default function SkilledSetupScreen() {
           disabled={!canProceed() || isSubmitting}
           activeOpacity={0.9}
         >
-          <LinearGradient
-            colors={canProceed() ? [COLORS.primary, COLORS.magenta] : [COLORS.cardBorder, COLORS.cardBorder]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.actionGradient}
-          >
-            <Text style={styles.actionText}>
-              {isSubmitting ? 'Setting up...' : step === 4 ? 'Start Granting Wishes ✨' : 'Continue'}
-            </Text>
-            {!isSubmitting && <Ionicons name="arrow-forward" size={20} color="#FFF" />}
-          </LinearGradient>
+          <Text style={styles.actionText}>
+            {isSubmitting ? 'Setting up...' : step === 4 ? 'Complete Setup ✨' : 'Continue'}
+          </Text>
+          {!isSubmitting && <Ionicons name="arrow-forward" size={20} color="#FFF" />}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -1002,6 +1172,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: COLORS.background,
   },
   backButton: {
     width: 44,
@@ -1010,8 +1181,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBg,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    ...clayShadow,
   },
   headerCenter: {
     flex: 1,
@@ -1032,17 +1202,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   progressTrack: {
-    height: 6,
+    height: 8,
     backgroundColor: COLORS.cardBorder,
-    borderRadius: 3,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 3,
-  },
-  progressGradient: {
-    flex: 1,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
   },
   progressSteps: {
     flexDirection: 'row',
@@ -1051,21 +1219,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   progressStep: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: COLORS.cardBg,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: COLORS.cardBorder,
+    ...clayShadow,
   },
   progressStepActive: {
     borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary + '20',
+    backgroundColor: COLORS.primary + '15',
   },
   progressStepEmoji: {
-    fontSize: 16,
+    fontSize: 18,
   },
   contentContainer: {
     flex: 1,
@@ -1094,6 +1263,21 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
   },
+  categoryLockedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary + '15',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 10,
+    gap: 6,
+  },
+  categoryLockedText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
   // Category Styles
   categoriesScroll: {
     flex: 1,
@@ -1102,14 +1286,18 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   categoryHeader: {
-    borderRadius: 14,
+    borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: COLORS.cardBorder,
     backgroundColor: COLORS.cardBg,
+    ...clayShadow,
   },
   categoryHeaderExpanded: {
     borderColor: COLORS.primary,
+  },
+  categoryHeaderLocked: {
+    opacity: 0.6,
   },
   categoryGradient: {
     flexDirection: 'row',
@@ -1122,13 +1310,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
+  categoryEmojiContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   categoryEmoji: {
-    fontSize: 28,
+    fontSize: 24,
   },
   categoryTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: COLORS.text,
+  },
+  categoryTitleLocked: {
+    color: COLORS.textMuted,
   },
   categorySubtitle: {
     fontSize: 12,
@@ -1156,22 +1354,26 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 12,
     backgroundColor: COLORS.backgroundSecondary,
-    borderBottomLeftRadius: 14,
-    borderBottomRightRadius: 14,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
     marginTop: -2,
   },
   skillCard: {
     width: (SCREEN_WIDTH - 72) / 3,
     backgroundColor: COLORS.cardBg,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 10,
     borderWidth: 2,
     borderColor: COLORS.cardBorder,
     position: 'relative',
     alignItems: 'center',
+    ...clayShadow,
   },
   skillCardSelected: {
     backgroundColor: COLORS.backgroundSecondary,
+  },
+  skillCardLocked: {
+    opacity: 0.5,
   },
   skillCheck: {
     position: 'absolute',
@@ -1194,6 +1396,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 2,
   },
+  skillNameLocked: {
+    color: COLORS.textMuted,
+  },
   skillDescription: {
     fontSize: 9,
     color: COLORS.textMuted,
@@ -1205,6 +1410,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     borderRadius: 20,
     overflow: 'hidden',
+    backgroundColor: COLORS.cardBg,
+    ...clayShadow,
   },
   selectionGradient: {
     flexDirection: 'row',
@@ -1212,11 +1419,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     gap: 8,
+    backgroundColor: COLORS.primary + '15',
   },
   selectionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFF',
+    color: COLORS.primary,
   },
   // Experience Step
   experienceContainer: {
@@ -1224,11 +1432,12 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   experienceCard: {
-    borderRadius: 14,
+    borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: COLORS.cardBorder,
     backgroundColor: COLORS.cardBg,
+    ...clayShadow,
   },
   experienceCardSelected: {
     borderWidth: 2,
@@ -1244,8 +1453,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
   },
+  experienceEmojiContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   experienceEmoji: {
-    fontSize: 32,
+    fontSize: 28,
   },
   experienceLabel: {
     fontSize: 18,
@@ -1262,15 +1478,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  xpBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  xpBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
   experienceCheck: {
     width: 28,
     height: 28,
@@ -1281,11 +1488,12 @@ const styles = StyleSheet.create({
   tipCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.amber + '15',
-    borderRadius: 12,
+    backgroundColor: COLORS.primary + '10',
+    borderRadius: 14,
     padding: 14,
     marginTop: 20,
     gap: 12,
+    ...clayShadow,
   },
   tipText: {
     flex: 1,
@@ -1302,16 +1510,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
     marginBottom: 16,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: COLORS.cardBorder,
+    ...clayShadow,
   },
   currencySymbol: {
     fontSize: 32,
     fontWeight: '700',
-    color: COLORS.green,
+    color: COLORS.success,
     marginRight: 8,
   },
   rateInput: {
@@ -1334,16 +1543,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   presetButton: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
     backgroundColor: COLORS.cardBg,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: COLORS.cardBorder,
+    ...clayShadow,
   },
   presetButtonActive: {
-    backgroundColor: COLORS.green + '20',
-    borderColor: COLORS.green,
+    backgroundColor: COLORS.success + '15',
+    borderColor: COLORS.success,
   },
   presetText: {
     fontSize: 14,
@@ -1351,18 +1561,17 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   presetTextActive: {
-    color: COLORS.green,
+    color: COLORS.success,
   },
   earningsPreview: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginBottom: 24,
-  },
-  earningsGradient: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: COLORS.success + '10',
+    borderRadius: 16,
     padding: 16,
+    marginBottom: 24,
     gap: 14,
+    ...clayShadow,
   },
   earningsInfo: {
     flex: 1,
@@ -1375,7 +1584,7 @@ const styles = StyleSheet.create({
   earningsValue: {
     fontSize: 22,
     fontWeight: '800',
-    color: COLORS.green,
+    color: COLORS.success,
   },
   earningsNote: {
     fontSize: 11,
@@ -1404,15 +1613,16 @@ const styles = StyleSheet.create({
   areaCard: {
     width: (SCREEN_WIDTH - 60) / 2,
     backgroundColor: COLORS.cardBg,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 14,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: COLORS.cardBorder,
+    ...clayShadow,
   },
   areaCardSelected: {
     borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary + '15',
+    backgroundColor: COLORS.primary + '10',
   },
   areaEmoji: {
     fontSize: 24,
@@ -1436,6 +1646,61 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 10,
   },
+  storyTabContainer: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 16,
+    ...clayShadow,
+  },
+  storyTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 6,
+  },
+  storyTabActive: {
+    backgroundColor: COLORS.primary + '15',
+  },
+  storyTabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textMuted,
+  },
+  storyTabTextActive: {
+    color: COLORS.primary,
+  },
+  tabContent: {
+    marginBottom: 16,
+  },
+  bioTipCard: {
+    backgroundColor: COLORS.primary + '08',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '20',
+  },
+  bioTipHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  bioTipTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  bioTipText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+  },
   inputGroup: {
     marginBottom: 20,
   },
@@ -1451,49 +1716,104 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 15,
     color: COLORS.text,
-    minHeight: 100,
-    borderWidth: 1,
+    minHeight: 120,
+    borderWidth: 2,
     borderColor: COLORS.cardBorder,
+    ...clayShadow,
   },
-  portfolioInputContainer: {
+  charCount: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    textAlign: 'right',
+    marginTop: 6,
+  },
+  socialInputGroup: {
+    marginBottom: 14,
+  },
+  socialLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  socialLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  socialInput: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 14,
+    color: COLORS.text,
+    borderWidth: 2,
+    borderColor: COLORS.cardBorder,
+    ...clayShadow,
+  },
+  certInputGroup: {
+    marginBottom: 12,
+  },
+  certInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.cardBg,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    borderWidth: 2,
     borderColor: COLORS.cardBorder,
-    gap: 12,
+    gap: 10,
+    ...clayShadow,
   },
-  portfolioInput: {
+  certInput: {
     flex: 1,
-    fontSize: 15,
+    paddingVertical: 14,
+    fontSize: 14,
     color: COLORS.text,
-    paddingVertical: 16,
+  },
+  removeCertBtn: {
+    padding: 4,
+  },
+  addCertButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary + '10',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 8,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '30',
+    borderStyle: 'dashed',
+  },
+  addCertText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
   errorCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.red + '15',
+    backgroundColor: COLORS.error + '10',
     borderRadius: 12,
     padding: 14,
     marginBottom: 16,
     gap: 10,
     borderWidth: 1,
-    borderColor: COLORS.red + '30',
+    borderColor: COLORS.error + '30',
   },
   errorText: {
     flex: 1,
     fontSize: 13,
-    color: COLORS.red,
+    color: COLORS.error,
   },
   summaryCard: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginTop: 10,
-  },
-  summaryGradient: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 18,
     padding: 20,
+    marginTop: 10,
+    ...clayShadow,
   },
   summaryTitle: {
     fontSize: 18,
@@ -1520,7 +1840,7 @@ const styles = StyleSheet.create({
   },
   readyBanner: {
     marginTop: 16,
-    backgroundColor: COLORS.green + '20',
+    backgroundColor: COLORS.success + '15',
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
@@ -1528,26 +1848,28 @@ const styles = StyleSheet.create({
   readyText: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.green,
+    color: COLORS.success,
   },
   // Bottom Action
   bottomAction: {
     padding: 20,
     paddingBottom: 28,
+    backgroundColor: COLORS.background,
   },
   actionButton: {
-    borderRadius: 14,
+    borderRadius: 16,
     overflow: 'hidden',
-  },
-  actionButtonDisabled: {
-    opacity: 0.6,
-  },
-  actionGradient: {
+    backgroundColor: COLORS.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 18,
     gap: 10,
+    ...clayShadow,
+  },
+  actionButtonDisabled: {
+    backgroundColor: COLORS.cardBorder,
+    opacity: 0.6,
   },
   actionText: {
     fontSize: 17,
