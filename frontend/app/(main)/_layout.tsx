@@ -133,8 +133,12 @@ export default function MainLayout() {
   // Hide Orders tab if user is not loaded yet (to prevent flash of wrong tabs)
   const hideOrdersTab = !user || partnerType === 'promoter' || isSkilledGenie;
 
+  // Set initial route based on user type
+  const initialRoute = isSkilledGenie ? 'skilled-home' : 'home';
+
   return (
     <Tabs
+      initialRouteName={initialRoute}
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
