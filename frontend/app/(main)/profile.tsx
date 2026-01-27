@@ -272,20 +272,20 @@ export default function ProfileScreen() {
 
         {/* Quick Stats */}
         <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statEmoji}>🚀</Text>
-            <Text style={styles.statValue}>{totalTasks}</Text>
-            <Text style={styles.statLabel}>Deliveries</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
+            <Text style={styles.statEmoji}>{isSkilledGenie ? '✨' : '🚀'}</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{isSkilledGenie ? (user?.partner_total_tasks || 45) : totalTasks}</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>{isSkilledGenie ? 'Jobs Done' : 'Deliveries'}</Text>
           </View>
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
             <Text style={styles.statEmoji}>🔥</Text>
-            <Text style={styles.statValue}>7</Text>
-            <Text style={styles.statLabel}>Day Streak</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>7</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Day Streak</Text>
           </View>
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
             <Text style={styles.statEmoji}>🏆</Text>
-            <Text style={styles.statValue}>4</Text>
-            <Text style={styles.statLabel}>Achievements</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>4</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Achievements</Text>
           </View>
         </View>
 
