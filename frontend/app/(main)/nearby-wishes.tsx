@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   Dimensions,
-  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -33,20 +32,25 @@ const COLORS = {
   border: '#E8DFD5',
 };
 
-// COMPREHENSIVE MOCK WISHES FOR ALL SKILL CATEGORIES
-// Each wish has a 'skillMatch' array that determines which genie skills can see this wish
+// =============================================================================
+// COMPREHENSIVE MOCK WISHES - ORGANIZED BY SKILL CATEGORY
+// Each wish has 'skillMatch' array that EXACTLY matches skill IDs from skilled-setup.tsx
+// =============================================================================
+
 const ALL_WISHES = [
-  // ==================== HOME SERVICES / CLEANING ====================
+  // ==================== HOME SERVICES (Cleaning) ====================
+  // Skills: deep_cleaning, regular_cleaning, kitchen_cleaning, bathroom_cleaning, 
+  //         carpet_cleaning, sofa_cleaning, laundry, dishwashing, window_cleaning,
+  //         organizing, mattress_cleaning, chimney_cleaning
   {
-    id: 'w1',
+    id: 'home1',
     service: 'Bathroom Deep Clean',
-    category: 'home_services',
-    skillMatch: ['deep_cleaning', 'regular_cleaning', 'bathroom_cleaning'],
+    category: 'Home Services',
+    skillMatch: ['deep_cleaning', 'bathroom_cleaning'],
     customer: 'Amit Kumar',
     customerRating: 4.8,
-    customerJobs: 12,
-    description: 'Need thorough cleaning of 2 bathrooms. Tiles, fixtures, and glass partitions need special attention.',
-    photos: ['photo1.jpg', 'photo2.jpg'],
+    description: 'Need thorough cleaning of 2 bathrooms. Tiles, fixtures, and glass.',
+    photos: 2,
     budget: '₹800 - ₹1,000',
     budgetMin: 800,
     budgetMax: 1000,
@@ -54,19 +58,17 @@ const ALL_WISHES = [
     distance: 1.2,
     urgent: true,
     postedTime: '5 min ago',
-    estimatedDuration: '2-3 hours',
     preferredDate: 'Today',
   },
   {
-    id: 'w2',
+    id: 'home2',
     service: 'Full House Cleaning',
-    category: 'home_services',
+    category: 'Home Services',
     skillMatch: ['deep_cleaning', 'regular_cleaning', 'kitchen_cleaning', 'bathroom_cleaning'],
     customer: 'Sunita Verma',
     customerRating: 4.9,
-    customerJobs: 24,
     description: '3BHK apartment needs deep cleaning before a family function.',
-    photos: [],
+    photos: 0,
     budget: '₹2,500 - ₹3,500',
     budgetMin: 2500,
     budgetMax: 3500,
@@ -74,19 +76,17 @@ const ALL_WISHES = [
     distance: 2.8,
     urgent: false,
     postedTime: '15 min ago',
-    estimatedDuration: '5-6 hours',
     preferredDate: 'Tomorrow',
   },
   {
-    id: 'w3',
+    id: 'home3',
     service: 'Kitchen Deep Clean',
-    category: 'home_services',
-    skillMatch: ['deep_cleaning', 'kitchen_cleaning', 'chimney_cleaning'],
+    category: 'Home Services',
+    skillMatch: ['kitchen_cleaning', 'chimney_cleaning', 'deep_cleaning'],
     customer: 'Priya Patel',
     customerRating: 4.7,
-    customerJobs: 8,
     description: 'Kitchen cleaning including chimney, cabinets, and appliances.',
-    photos: ['photo1.jpg'],
+    photos: 1,
     budget: '₹1,200 - ₹1,500',
     budgetMin: 1200,
     budgetMax: 1500,
@@ -94,19 +94,17 @@ const ALL_WISHES = [
     distance: 3.5,
     urgent: false,
     postedTime: '32 min ago',
-    estimatedDuration: '3-4 hours',
     preferredDate: 'This Week',
   },
   {
-    id: 'w4',
+    id: 'home4',
     service: 'Sofa & Carpet Cleaning',
-    category: 'home_services',
-    skillMatch: ['carpet_cleaning', 'sofa_cleaning', 'deep_cleaning'],
+    category: 'Home Services',
+    skillMatch: ['carpet_cleaning', 'sofa_cleaning'],
     customer: 'Rahul Sharma',
     customerRating: 4.6,
-    customerJobs: 5,
     description: 'Large L-shaped sofa and 2 carpets need professional cleaning.',
-    photos: ['photo1.jpg', 'photo2.jpg'],
+    photos: 2,
     budget: '₹1,800 - ₹2,200',
     budgetMin: 1800,
     budgetMax: 2200,
@@ -114,21 +112,76 @@ const ALL_WISHES = [
     distance: 4.2,
     urgent: true,
     postedTime: '45 min ago',
-    estimatedDuration: '2-3 hours',
     preferredDate: 'Today',
   },
-  
-  // ==================== REPAIR & MAINTENANCE ====================
   {
-    id: 'r1',
+    id: 'home5',
+    service: 'Window Cleaning - High Rise',
+    category: 'Home Services',
+    skillMatch: ['window_cleaning', 'deep_cleaning'],
+    customer: 'Neha Singh',
+    customerRating: 4.5,
+    description: '15th floor apartment, all windows need cleaning inside-out.',
+    photos: 0,
+    budget: '₹1,000 - ₹1,500',
+    budgetMin: 1000,
+    budgetMax: 1500,
+    location: 'Sector 54',
+    distance: 5.5,
+    urgent: false,
+    postedTime: '1 hr ago',
+    preferredDate: 'Weekend',
+  },
+  {
+    id: 'home6',
+    service: 'Mattress Deep Cleaning',
+    category: 'Home Services',
+    skillMatch: ['mattress_cleaning', 'deep_cleaning'],
+    customer: 'Vikram Joshi',
+    customerRating: 4.8,
+    description: '3 mattresses need sanitization and stain removal.',
+    photos: 1,
+    budget: '₹600 - ₹900',
+    budgetMin: 600,
+    budgetMax: 900,
+    location: 'Sector 44',
+    distance: 3.8,
+    urgent: false,
+    postedTime: '2 hrs ago',
+    preferredDate: 'Tomorrow',
+  },
+  {
+    id: 'home7',
+    service: 'Laundry & Ironing Service',
+    category: 'Home Services',
+    skillMatch: ['laundry'],
+    customer: 'Meera Kapoor',
+    customerRating: 4.7,
+    description: 'Weekly laundry service needed. 15-20 clothes per week.',
+    photos: 0,
+    budget: '₹400 - ₹600',
+    budgetMin: 400,
+    budgetMax: 600,
+    location: 'Sector 29',
+    distance: 2.2,
+    urgent: false,
+    postedTime: '3 hrs ago',
+    preferredDate: 'Ongoing',
+  },
+
+  // ==================== REPAIR & MAINTENANCE ====================
+  // Skills: plumbing, electrical, carpentry, painting, ac_repair, refrigerator,
+  //         washing_machine, tv_repair, microwave, geyser, fan_repair, inverter,
+  //         furniture_assembly, door_lock, waterproofing
+  {
+    id: 'repair1',
     service: 'Plumbing - Leak Repair',
-    category: 'repair_maintenance',
+    category: 'Repair & Maintenance',
     skillMatch: ['plumbing'],
     customer: 'Vikram Singh',
     customerRating: 4.5,
-    customerJobs: 6,
     description: 'Kitchen sink is leaking badly. Need urgent repair.',
-    photos: ['photo1.jpg'],
+    photos: 1,
     budget: '₹400 - ₹600',
     budgetMin: 400,
     budgetMax: 600,
@@ -136,19 +189,17 @@ const ALL_WISHES = [
     distance: 1.8,
     urgent: true,
     postedTime: '10 min ago',
-    estimatedDuration: '1-2 hours',
     preferredDate: 'Today',
   },
   {
-    id: 'r2',
+    id: 'repair2',
     service: 'AC Service & Gas Refill',
-    category: 'repair_maintenance',
+    category: 'Repair & Maintenance',
     skillMatch: ['ac_repair'],
     customer: 'Meera Reddy',
     customerRating: 4.7,
-    customerJobs: 15,
     description: 'Split AC not cooling properly. Might need gas refill.',
-    photos: [],
+    photos: 0,
     budget: '₹1,500 - ₹2,500',
     budgetMin: 1500,
     budgetMax: 2500,
@@ -156,19 +207,17 @@ const ALL_WISHES = [
     distance: 3.2,
     urgent: false,
     postedTime: '1 hr ago',
-    estimatedDuration: '2-3 hours',
     preferredDate: 'Tomorrow',
   },
   {
-    id: 'r3',
+    id: 'repair3',
     service: 'Electrical Wiring Repair',
-    category: 'repair_maintenance',
+    category: 'Repair & Maintenance',
     skillMatch: ['electrical'],
     customer: 'Anand Kapoor',
     customerRating: 4.8,
-    customerJobs: 20,
     description: 'Multiple switches not working in bedroom. Need rewiring.',
-    photos: ['photo1.jpg'],
+    photos: 1,
     budget: '₹800 - ₹1,200',
     budgetMin: 800,
     budgetMax: 1200,
@@ -176,19 +225,17 @@ const ALL_WISHES = [
     distance: 2.5,
     urgent: false,
     postedTime: '2 hrs ago',
-    estimatedDuration: '2-3 hours',
     preferredDate: 'This Week',
   },
   {
-    id: 'r4',
+    id: 'repair4',
     service: 'Refrigerator Repair',
-    category: 'repair_maintenance',
+    category: 'Repair & Maintenance',
     skillMatch: ['refrigerator'],
     customer: 'Sanjay Gupta',
     customerRating: 4.6,
-    customerJobs: 8,
     description: 'Samsung refrigerator not cooling. Compressor might be faulty.',
-    photos: [],
+    photos: 0,
     budget: '₹1,000 - ₹2,000',
     budgetMin: 1000,
     budgetMax: 2000,
@@ -196,19 +243,17 @@ const ALL_WISHES = [
     distance: 4.5,
     urgent: true,
     postedTime: '30 min ago',
-    estimatedDuration: '1-2 hours',
     preferredDate: 'Today',
   },
   {
-    id: 'r5',
-    service: 'Carpentry - Furniture Repair',
-    category: 'repair_maintenance',
+    id: 'repair5',
+    service: 'Carpentry - Wardrobe Repair',
+    category: 'Repair & Maintenance',
     skillMatch: ['carpentry', 'furniture_assembly'],
     customer: 'Neha Sharma',
     customerRating: 4.9,
-    customerJobs: 12,
     description: 'Wardrobe door hinges broken. Need to replace and fix alignment.',
-    photos: ['photo1.jpg', 'photo2.jpg'],
+    photos: 2,
     budget: '₹600 - ₹1,000',
     budgetMin: 600,
     budgetMax: 1000,
@@ -216,21 +261,75 @@ const ALL_WISHES = [
     distance: 3.8,
     urgent: false,
     postedTime: '3 hrs ago',
-    estimatedDuration: '1-2 hours',
     preferredDate: 'Tomorrow',
   },
-  
-  // ==================== DRIVER SERVICES ====================
   {
-    id: 'd1',
+    id: 'repair6',
+    service: 'Washing Machine Repair',
+    category: 'Repair & Maintenance',
+    skillMatch: ['washing_machine'],
+    customer: 'Priya Mehta',
+    customerRating: 4.7,
+    description: 'IFB washing machine not spinning. Water not draining.',
+    photos: 0,
+    budget: '₹800 - ₹1,500',
+    budgetMin: 800,
+    budgetMax: 1500,
+    location: 'Sector 43',
+    distance: 2.9,
+    urgent: true,
+    postedTime: '20 min ago',
+    preferredDate: 'Today',
+  },
+  {
+    id: 'repair7',
+    service: 'Geyser Installation',
+    category: 'Repair & Maintenance',
+    skillMatch: ['geyser', 'plumbing'],
+    customer: 'Rohit Verma',
+    customerRating: 4.6,
+    description: 'New geyser needs installation in bathroom.',
+    photos: 1,
+    budget: '₹500 - ₹800',
+    budgetMin: 500,
+    budgetMax: 800,
+    location: 'Sector 52',
+    distance: 4.0,
+    urgent: false,
+    postedTime: '4 hrs ago',
+    preferredDate: 'Tomorrow',
+  },
+  {
+    id: 'repair8',
+    service: 'Interior Painting - 2BHK',
+    category: 'Repair & Maintenance',
+    skillMatch: ['painting'],
+    customer: 'Anjali Choudhary',
+    customerRating: 4.8,
+    description: 'Complete interior painting of 2BHK apartment. Asian Paints preferred.',
+    photos: 0,
+    budget: '₹15,000 - ₹25,000',
+    budgetMin: 15000,
+    budgetMax: 25000,
+    location: 'Sector 62',
+    distance: 6.5,
+    urgent: false,
+    postedTime: '1 day ago',
+    preferredDate: 'Next Week',
+  },
+
+  // ==================== DRIVER ON DEMAND ====================
+  // Skills: personal_driver, outstation_driver, corporate_driver, airport_transfer,
+  //         night_driver, wedding_driver, vip_driver, female_driver, elderly_driver, medical_transport
+  {
+    id: 'driver1',
     service: 'Full Day Driver Needed',
-    category: 'driver_services',
+    category: 'Driver Services',
     skillMatch: ['personal_driver', 'corporate_driver', 'vip_driver'],
     customer: 'Rajesh Malhotra',
     customerRating: 4.9,
-    customerJobs: 35,
     description: 'Need a driver for full day. Multiple errands across Delhi NCR.',
-    photos: [],
+    photos: 0,
     budget: '₹1,500 - ₹2,000',
     budgetMin: 1500,
     budgetMax: 2000,
@@ -238,19 +337,17 @@ const ALL_WISHES = [
     distance: 8.5,
     urgent: false,
     postedTime: '1 hr ago',
-    estimatedDuration: '8-10 hours',
     preferredDate: 'Tomorrow',
   },
   {
-    id: 'd2',
+    id: 'driver2',
     service: 'Airport Drop - IGI T3',
-    category: 'driver_services',
+    category: 'Driver Services',
     skillMatch: ['personal_driver', 'airport_transfer', 'night_driver'],
     customer: 'Kavita Joshi',
     customerRating: 4.7,
-    customerJobs: 18,
     description: 'Early morning airport drop at 4 AM. Flight at 6:30 AM.',
-    photos: [],
+    photos: 0,
     budget: '₹800 - ₹1,200',
     budgetMin: 800,
     budgetMax: 1200,
@@ -258,19 +355,17 @@ const ALL_WISHES = [
     distance: 5.2,
     urgent: true,
     postedTime: '20 min ago',
-    estimatedDuration: '2-3 hours',
     preferredDate: 'Tomorrow',
   },
   {
-    id: 'd3',
+    id: 'driver3',
     service: 'Outstation Trip - Jaipur',
-    category: 'driver_services',
+    category: 'Driver Services',
     skillMatch: ['outstation_driver', 'personal_driver'],
     customer: 'Arun Mehta',
     customerRating: 4.8,
-    customerJobs: 25,
-    description: '2-day trip to Jaipur. Comfortable driving, experienced driver preferred.',
-    photos: [],
+    description: '2-day trip to Jaipur. Comfortable driving, experienced driver.',
+    photos: 0,
     budget: '₹4,000 - ₹5,000',
     budgetMin: 4000,
     budgetMax: 5000,
@@ -278,21 +373,58 @@ const ALL_WISHES = [
     distance: 12.5,
     urgent: false,
     postedTime: '5 hrs ago',
-    estimatedDuration: '2 days',
     preferredDate: 'Weekend',
   },
-  
-  // ==================== PHOTOGRAPHY & VIDEOGRAPHY ====================
   {
-    id: 'p1',
+    id: 'driver4',
+    service: 'Wedding Chauffeur Service',
+    category: 'Driver Services',
+    skillMatch: ['wedding_driver', 'vip_driver'],
+    customer: 'Kapoor Family',
+    customerRating: 4.9,
+    description: 'Need professional chauffeur for wedding day. Multiple trips.',
+    photos: 0,
+    budget: '₹3,000 - ₹4,000',
+    budgetMin: 3000,
+    budgetMax: 4000,
+    location: 'Chattarpur',
+    distance: 9.8,
+    urgent: false,
+    postedTime: '2 days ago',
+    preferredDate: 'Feb 20',
+  },
+  {
+    id: 'driver5',
+    service: 'Female Driver for Daily Commute',
+    category: 'Driver Services',
+    skillMatch: ['female_driver', 'personal_driver'],
+    customer: 'Sneha Malhotra',
+    customerRating: 4.6,
+    description: 'Need female driver for school pick-drop and office commute.',
+    photos: 0,
+    budget: '₹15,000 - ₹20,000',
+    budgetMin: 15000,
+    budgetMax: 20000,
+    location: 'Sector 48',
+    distance: 4.5,
+    urgent: false,
+    postedTime: '1 day ago',
+    preferredDate: 'Monthly',
+  },
+
+  // ==================== PHOTOGRAPHY & VIDEOGRAPHY ====================
+  // Skills: wedding_photography, portrait_photo, event_photography, product_photography,
+  //         fashion_photography, food_photography, real_estate_photo, wedding_video,
+  //         corporate_video, music_video, documentary, live_streaming, video_editing, photo_editing
+  {
+    id: 'photo1',
     service: 'Wedding Photography',
-    category: 'photography_video',
+    category: 'Photography',
     skillMatch: ['wedding_photography', 'portrait_photo', 'event_photography'],
     customer: 'Sharma Family',
     customerRating: 4.9,
-    customerJobs: 8,
     description: 'Full day wedding photography. Haldi, Mehendi and Reception.',
-    photos: ['photo1.jpg'],
+    photos: 1,
     budget: '₹25,000 - ₹35,000',
     budgetMin: 25000,
     budgetMax: 35000,
@@ -300,19 +432,17 @@ const ALL_WISHES = [
     distance: 15.0,
     urgent: false,
     postedTime: '2 days ago',
-    estimatedDuration: '10-12 hours',
     preferredDate: 'Feb 15',
   },
   {
-    id: 'p2',
+    id: 'photo2',
     service: 'Product Photography',
-    category: 'photography_video',
-    skillMatch: ['product_photography', 'food_photography'],
+    category: 'Photography',
+    skillMatch: ['product_photography', 'photo_editing'],
     customer: 'FashionBrand Inc',
     customerRating: 4.8,
-    customerJobs: 45,
     description: '50 product shots for e-commerce website. White background.',
-    photos: [],
+    photos: 0,
     budget: '₹8,000 - ₹12,000',
     budgetMin: 8000,
     budgetMax: 12000,
@@ -320,19 +450,17 @@ const ALL_WISHES = [
     distance: 10.2,
     urgent: false,
     postedTime: '1 day ago',
-    estimatedDuration: '4-5 hours',
     preferredDate: 'This Week',
   },
   {
-    id: 'p3',
+    id: 'photo3',
     service: 'Corporate Video Shoot',
-    category: 'photography_video',
-    skillMatch: ['corporate_video', 'wedding_video', 'video_editing'],
+    category: 'Videography',
+    skillMatch: ['corporate_video', 'video_editing'],
     customer: 'TechCorp Solutions',
     customerRating: 4.7,
-    customerJobs: 22,
     description: 'Company profile video. Interview style with B-roll footage.',
-    photos: [],
+    photos: 0,
     budget: '₹15,000 - ₹25,000',
     budgetMin: 15000,
     budgetMax: 25000,
@@ -340,21 +468,57 @@ const ALL_WISHES = [
     distance: 6.5,
     urgent: false,
     postedTime: '3 days ago',
-    estimatedDuration: '1 day',
     preferredDate: 'Next Week',
   },
-  
-  // ==================== DRONE SERVICES ====================
   {
-    id: 'dr1',
+    id: 'photo4',
+    service: 'Food Photography for Restaurant',
+    category: 'Photography',
+    skillMatch: ['food_photography', 'product_photography'],
+    customer: 'Taste of India Restaurant',
+    customerRating: 4.6,
+    description: 'Menu photoshoot. 30 dishes need professional photos.',
+    photos: 0,
+    budget: '₹6,000 - ₹10,000',
+    budgetMin: 6000,
+    budgetMax: 10000,
+    location: 'Sector 29 Market',
+    distance: 3.5,
+    urgent: false,
+    postedTime: '6 hrs ago',
+    preferredDate: 'This Week',
+  },
+  {
+    id: 'photo5',
+    service: 'Birthday Party Photography',
+    category: 'Photography',
+    skillMatch: ['event_photography', 'portrait_photo'],
+    customer: 'Rahul Birthday',
+    customerRating: 4.7,
+    description: '5th birthday party photography. 3 hours coverage.',
+    photos: 0,
+    budget: '₹5,000 - ₹8,000',
+    budgetMin: 5000,
+    budgetMax: 8000,
+    location: 'Sector 50',
+    distance: 4.8,
+    urgent: false,
+    postedTime: '1 day ago',
+    preferredDate: 'Saturday',
+  },
+
+  // ==================== DRONE SERVICES ====================
+  // Skills: drone_photography, drone_videography, drone_wedding, drone_survey,
+  //         drone_inspection, drone_events, drone_real_estate, fpv_drone, drone_agriculture, drone_delivery
+  {
+    id: 'drone1',
     service: 'Wedding Drone Coverage',
-    category: 'drone_services',
+    category: 'Drone Services',
     skillMatch: ['drone_photography', 'drone_videography', 'drone_wedding'],
     customer: 'Kapoor Wedding',
     customerRating: 4.9,
-    customerJobs: 5,
     description: 'Aerial shots and cinematic drone video for wedding ceremony.',
-    photos: ['photo1.jpg'],
+    photos: 1,
     budget: '₹15,000 - ₹25,000',
     budgetMin: 15000,
     budgetMax: 25000,
@@ -362,19 +526,17 @@ const ALL_WISHES = [
     distance: 8.5,
     urgent: false,
     postedTime: '1 day ago',
-    estimatedDuration: '6-8 hours',
     preferredDate: 'Feb 20',
   },
   {
-    id: 'dr2',
+    id: 'drone2',
     service: 'Real Estate Aerial Shots',
-    category: 'drone_services',
+    category: 'Drone Services',
     skillMatch: ['drone_photography', 'drone_videography', 'drone_real_estate'],
     customer: 'DLF Builders',
     customerRating: 4.8,
-    customerJobs: 30,
     description: 'Drone video and photos of new residential project for marketing.',
-    photos: [],
+    photos: 0,
     budget: '₹12,000 - ₹18,000',
     budgetMin: 12000,
     budgetMax: 18000,
@@ -382,19 +544,17 @@ const ALL_WISHES = [
     distance: 12.0,
     urgent: false,
     postedTime: '2 days ago',
-    estimatedDuration: '3-4 hours',
     preferredDate: 'This Week',
   },
   {
-    id: 'dr3',
+    id: 'drone3',
     service: 'Event Aerial Coverage',
-    category: 'drone_services',
+    category: 'Drone Services',
     skillMatch: ['drone_photography', 'drone_videography', 'drone_events'],
     customer: 'Corporate Event Org',
     customerRating: 4.7,
-    customerJobs: 18,
     description: 'Drone coverage for outdoor corporate event. 500+ attendees.',
-    photos: [],
+    photos: 0,
     budget: '₹8,000 - ₹12,000',
     budgetMin: 8000,
     budgetMax: 12000,
@@ -402,19 +562,17 @@ const ALL_WISHES = [
     distance: 18.0,
     urgent: false,
     postedTime: '4 hrs ago',
-    estimatedDuration: '4-5 hours',
     preferredDate: 'Saturday',
   },
   {
-    id: 'dr4',
+    id: 'drone4',
     service: 'Land Survey Drone',
-    category: 'drone_services',
+    category: 'Drone Services',
     skillMatch: ['drone_survey', 'drone_photography'],
     customer: 'Agri Farms Ltd',
     customerRating: 4.6,
-    customerJobs: 12,
     description: 'Agricultural land survey using drone. 50 acres plot mapping.',
-    photos: [],
+    photos: 0,
     budget: '₹20,000 - ₹30,000',
     budgetMin: 20000,
     budgetMax: 30000,
@@ -422,21 +580,39 @@ const ALL_WISHES = [
     distance: 25.0,
     urgent: false,
     postedTime: '1 day ago',
-    estimatedDuration: '1 day',
     preferredDate: 'Next Week',
   },
-  
-  // ==================== WELLNESS & BEAUTY ====================
   {
-    id: 'b1',
+    id: 'drone5',
+    service: 'Building Inspection Drone',
+    category: 'Drone Services',
+    skillMatch: ['drone_inspection', 'drone_photography'],
+    customer: 'Construction Co',
+    customerRating: 4.8,
+    description: 'High-rise building facade inspection using drone.',
+    photos: 0,
+    budget: '₹10,000 - ₹15,000',
+    budgetMin: 10000,
+    budgetMax: 15000,
+    location: 'Sector 65',
+    distance: 7.2,
+    urgent: false,
+    postedTime: '2 days ago',
+    preferredDate: 'This Week',
+  },
+
+  // ==================== WELLNESS & BEAUTY ====================
+  // Skills: massage, spa_home, haircut_men, haircut_women, facial, makeup,
+  //         mehendi, manicure, waxing, yoga, personal_trainer, physiotherapy, dietician
+  {
+    id: 'beauty1',
     service: 'Bridal Makeup',
-    category: 'wellness_beauty',
-    skillMatch: ['makeup', 'facial', 'haircut_women'],
+    category: 'Beauty',
+    skillMatch: ['makeup', 'haircut_women'],
     customer: 'Priya Bride',
     customerRating: 5.0,
-    customerJobs: 2,
     description: 'Complete bridal makeup for wedding day. HD makeup preferred.',
-    photos: ['photo1.jpg'],
+    photos: 1,
     budget: '₹15,000 - ₹25,000',
     budgetMin: 15000,
     budgetMax: 25000,
@@ -444,19 +620,17 @@ const ALL_WISHES = [
     distance: 5.5,
     urgent: false,
     postedTime: '2 days ago',
-    estimatedDuration: '4-5 hours',
     preferredDate: 'Feb 14',
   },
   {
-    id: 'b2',
+    id: 'beauty2',
     service: 'Home Spa Session',
-    category: 'wellness_beauty',
+    category: 'Wellness',
     skillMatch: ['massage', 'spa_home', 'facial'],
     customer: 'Anjali Verma',
     customerRating: 4.8,
-    customerJobs: 15,
     description: 'Full body massage and facial at home. Relaxation session.',
-    photos: [],
+    photos: 0,
     budget: '₹2,000 - ₹3,000',
     budgetMin: 2000,
     budgetMax: 3000,
@@ -464,19 +638,17 @@ const ALL_WISHES = [
     distance: 3.2,
     urgent: false,
     postedTime: '3 hrs ago',
-    estimatedDuration: '2-3 hours',
     preferredDate: 'Today',
   },
   {
-    id: 'b3',
+    id: 'beauty3',
     service: 'Mehendi for Wedding',
-    category: 'wellness_beauty',
+    category: 'Beauty',
     skillMatch: ['mehendi'],
     customer: 'Gupta Family',
     customerRating: 4.9,
-    customerJobs: 10,
     description: 'Bridal mehendi for bride and 10 family members.',
-    photos: ['photo1.jpg'],
+    photos: 1,
     budget: '₹8,000 - ₹12,000',
     budgetMin: 8000,
     budgetMax: 12000,
@@ -484,21 +656,56 @@ const ALL_WISHES = [
     distance: 15.0,
     urgent: false,
     postedTime: '1 day ago',
-    estimatedDuration: '5-6 hours',
     preferredDate: 'Feb 13',
   },
-  
+  {
+    id: 'beauty4',
+    service: 'Yoga Sessions at Home',
+    category: 'Wellness',
+    skillMatch: ['yoga'],
+    customer: 'Sunita Malhotra',
+    customerRating: 4.7,
+    description: 'Weekly yoga sessions at home. Beginner level.',
+    photos: 0,
+    budget: '₹3,000 - ₹5,000',
+    budgetMin: 3000,
+    budgetMax: 5000,
+    location: 'Sector 42',
+    distance: 4.0,
+    urgent: false,
+    postedTime: '6 hrs ago',
+    preferredDate: 'Weekly',
+  },
+  {
+    id: 'beauty5',
+    service: 'Personal Trainer - Weight Loss',
+    category: 'Wellness',
+    skillMatch: ['personal_trainer'],
+    customer: 'Ravi Kumar',
+    customerRating: 4.6,
+    description: 'Looking for personal trainer for weight loss program. Home visits.',
+    photos: 0,
+    budget: '₹8,000 - ₹12,000',
+    budgetMin: 8000,
+    budgetMax: 12000,
+    location: 'Sector 55',
+    distance: 5.8,
+    urgent: false,
+    postedTime: '1 day ago',
+    preferredDate: 'Monthly',
+  },
+
   // ==================== PET SERVICES ====================
+  // Skills: pet_grooming, dog_walking, pet_sitting, pet_boarding, pet_training, vet_visit, aquarium, bird_care
   {
     id: 'pet1',
     service: 'Dog Grooming at Home',
-    category: 'pet_services',
+    category: 'Pet Services',
     skillMatch: ['pet_grooming'],
     customer: 'Rohit Saxena',
     customerRating: 4.8,
-    customerJobs: 8,
     description: 'Golden Retriever needs full grooming - bath, hair cut, nail trim.',
-    photos: ['photo1.jpg'],
+    photos: 1,
     budget: '₹1,200 - ₹1,800',
     budgetMin: 1200,
     budgetMax: 1800,
@@ -506,19 +713,17 @@ const ALL_WISHES = [
     distance: 4.8,
     urgent: false,
     postedTime: '2 hrs ago',
-    estimatedDuration: '2-3 hours',
     preferredDate: 'Tomorrow',
   },
   {
     id: 'pet2',
     service: 'Pet Sitting - 3 Days',
-    category: 'pet_services',
-    skillMatch: ['pet_sitting', 'pet_boarding', 'dog_walking'],
+    category: 'Pet Services',
+    skillMatch: ['pet_sitting', 'pet_boarding'],
     customer: 'Sneha Malik',
     customerRating: 4.7,
-    customerJobs: 5,
     description: 'Need someone to take care of my cat for 3 days while I travel.',
-    photos: [],
+    photos: 0,
     budget: '₹2,000 - ₹3,000',
     budgetMin: 2000,
     budgetMax: 3000,
@@ -526,21 +731,115 @@ const ALL_WISHES = [
     distance: 3.5,
     urgent: true,
     postedTime: '1 hr ago',
-    estimatedDuration: '3 days',
     preferredDate: 'Starting Friday',
   },
-  
+  {
+    id: 'pet3',
+    service: 'Daily Dog Walking',
+    category: 'Pet Services',
+    skillMatch: ['dog_walking'],
+    customer: 'Ankit Sharma',
+    customerRating: 4.5,
+    description: 'Need dog walker for morning and evening walks. Labrador.',
+    photos: 0,
+    budget: '₹3,000 - ₹4,000',
+    budgetMin: 3000,
+    budgetMax: 4000,
+    location: 'Sector 31',
+    distance: 2.8,
+    urgent: false,
+    postedTime: '5 hrs ago',
+    preferredDate: 'Monthly',
+  },
+
+  // ==================== TECH SERVICES ====================
+  // Skills: computer_repair, phone_repair, tablet_repair, data_recovery, virus_removal,
+  //         software_install, networking, smart_home, cctv, printer, gaming_setup, website
+  {
+    id: 'tech1',
+    service: 'Laptop Repair - Not Starting',
+    category: 'Tech Services',
+    skillMatch: ['computer_repair'],
+    customer: 'Amit Choudhary',
+    customerRating: 4.6,
+    description: 'HP laptop not turning on. Might be motherboard issue.',
+    photos: 0,
+    budget: '₹1,500 - ₹3,000',
+    budgetMin: 1500,
+    budgetMax: 3000,
+    location: 'Sector 14',
+    distance: 2.2,
+    urgent: true,
+    postedTime: '30 min ago',
+    preferredDate: 'Today',
+  },
+  {
+    id: 'tech2',
+    service: 'CCTV Installation - Home',
+    category: 'Tech Services',
+    skillMatch: ['cctv', 'networking'],
+    customer: 'Security Conscious',
+    customerRating: 4.8,
+    description: '4 camera CCTV system installation with mobile app access.',
+    photos: 0,
+    budget: '₹8,000 - ₹15,000',
+    budgetMin: 8000,
+    budgetMax: 15000,
+    location: 'Sector 57',
+    distance: 6.0,
+    urgent: false,
+    postedTime: '1 day ago',
+    preferredDate: 'This Week',
+  },
+  {
+    id: 'tech3',
+    service: 'WiFi Network Setup',
+    category: 'Tech Services',
+    skillMatch: ['networking'],
+    customer: 'Home Office User',
+    customerRating: 4.5,
+    description: 'Mesh WiFi setup for 3-floor house. Need good coverage.',
+    photos: 0,
+    budget: '₹2,000 - ₹4,000',
+    budgetMin: 2000,
+    budgetMax: 4000,
+    location: 'Sector 46',
+    distance: 4.2,
+    urgent: false,
+    postedTime: '8 hrs ago',
+    preferredDate: 'Weekend',
+  },
+  {
+    id: 'tech4',
+    service: 'Smart Home Setup',
+    category: 'Tech Services',
+    skillMatch: ['smart_home', 'networking'],
+    customer: 'Tech Enthusiast',
+    customerRating: 4.9,
+    description: 'Alexa-based smart home setup. Lights, AC, curtains automation.',
+    photos: 0,
+    budget: '₹5,000 - ₹10,000',
+    budgetMin: 5000,
+    budgetMax: 10000,
+    location: 'DLF Phase 5',
+    distance: 7.5,
+    urgent: false,
+    postedTime: '2 days ago',
+    preferredDate: 'Next Week',
+  },
+
   // ==================== EDUCATION & TUTORING ====================
+  // Skills: math_tutor, science_tutor, english_tutor, hindi_tutor, coding_tutor,
+  //         music_lessons, art_lessons, dance_lessons, foreign_lang, exam_prep, nursery_teach, special_needs
   {
     id: 'edu1',
     service: 'Math Tutor for Class 10',
-    category: 'education',
+    category: 'Education',
     skillMatch: ['math_tutor', 'exam_prep'],
     customer: 'Parent - Vinay Khanna',
     customerRating: 4.9,
-    customerJobs: 12,
     description: 'Need tutor for Class 10 math. Board exam preparation.',
-    photos: [],
+    photos: 0,
     budget: '₹800 - ₹1,200',
     budgetMin: 800,
     budgetMax: 1200,
@@ -548,19 +847,17 @@ const ALL_WISHES = [
     distance: 2.5,
     urgent: false,
     postedTime: '4 hrs ago',
-    estimatedDuration: '2 hrs/day',
     preferredDate: 'Ongoing',
   },
   {
     id: 'edu2',
     service: 'Guitar Lessons at Home',
-    category: 'education',
+    category: 'Education',
     skillMatch: ['music_lessons'],
     customer: 'Teenage Student',
     customerRating: 4.6,
-    customerJobs: 3,
     description: 'Beginner guitar lessons for 15-year-old. Acoustic guitar.',
-    photos: [],
+    photos: 0,
     budget: '₹600 - ₹1,000',
     budgetMin: 600,
     budgetMax: 1000,
@@ -568,21 +865,57 @@ const ALL_WISHES = [
     distance: 5.8,
     urgent: false,
     postedTime: '1 day ago',
-    estimatedDuration: '1 hr/session',
     preferredDate: 'Weekends',
   },
-  
-  // ==================== EVENTS & ENTERTAINMENT ====================
   {
-    id: 'ev1',
+    id: 'edu3',
+    service: 'Coding Classes for Kids',
+    category: 'Education',
+    skillMatch: ['coding_tutor'],
+    customer: 'Parent - Tech Dad',
+    customerRating: 4.7,
+    description: 'Python and Scratch programming for 12-year-old.',
+    photos: 0,
+    budget: '₹1,500 - ₹2,500',
+    budgetMin: 1500,
+    budgetMax: 2500,
+    location: 'Sector 40',
+    distance: 3.5,
+    urgent: false,
+    postedTime: '2 days ago',
+    preferredDate: 'Weekly',
+  },
+  {
+    id: 'edu4',
+    service: 'Dance Classes - Kathak',
+    category: 'Education',
+    skillMatch: ['dance_lessons'],
+    customer: 'Dance Enthusiast',
+    customerRating: 4.8,
+    description: 'Classical Kathak dance lessons at home. Beginner.',
+    photos: 0,
+    budget: '₹1,000 - ₹1,500',
+    budgetMin: 1000,
+    budgetMax: 1500,
+    location: 'Sector 28',
+    distance: 2.9,
+    urgent: false,
+    postedTime: '3 days ago',
+    preferredDate: 'Weekends',
+  },
+
+  // ==================== EVENTS & ENTERTAINMENT ====================
+  // Skills: dj, event_decor, balloon_decor, flower_decor, catering, anchor,
+  //         magic_show, clown, live_music, standup, game_host, puppet_show
+  {
+    id: 'event1',
     service: 'DJ for Birthday Party',
-    category: 'events_entertainment',
-    skillMatch: ['dj', 'live_music', 'anchor'],
+    category: 'Events',
+    skillMatch: ['dj', 'live_music'],
     customer: 'Birthday Host',
     customerRating: 4.8,
-    customerJobs: 6,
     description: '50th birthday party. 4 hours of music, 50 guests.',
-    photos: [],
+    photos: 0,
     budget: '₹8,000 - ₹12,000',
     budgetMin: 8000,
     budgetMax: 12000,
@@ -590,19 +923,17 @@ const ALL_WISHES = [
     distance: 7.5,
     urgent: false,
     postedTime: '2 days ago',
-    estimatedDuration: '4-5 hours',
     preferredDate: 'Saturday',
   },
   {
-    id: 'ev2',
+    id: 'event2',
     service: 'Balloon & Flower Decoration',
-    category: 'events_entertainment',
+    category: 'Events',
     skillMatch: ['balloon_decor', 'flower_decor', 'event_decor'],
     customer: 'Baby Shower Host',
     customerRating: 4.9,
-    customerJobs: 10,
     description: 'Baby shower decoration. Theme: Pastel colors. Balloons + flowers.',
-    photos: ['photo1.jpg'],
+    photos: 1,
     budget: '₹5,000 - ₹8,000',
     budgetMin: 5000,
     budgetMax: 8000,
@@ -610,8 +941,180 @@ const ALL_WISHES = [
     distance: 6.2,
     urgent: false,
     postedTime: '1 day ago',
-    estimatedDuration: '3-4 hours',
     preferredDate: 'Sunday',
+  },
+  {
+    id: 'event3',
+    service: 'Event Anchor / MC',
+    category: 'Events',
+    skillMatch: ['anchor'],
+    customer: 'Corporate Event',
+    customerRating: 4.7,
+    description: 'Need professional MC for product launch event. Bilingual.',
+    photos: 0,
+    budget: '₹10,000 - ₹15,000',
+    budgetMin: 10000,
+    budgetMax: 15000,
+    location: 'Cyber Hub',
+    distance: 5.0,
+    urgent: false,
+    postedTime: '3 days ago',
+    preferredDate: 'Feb 25',
+  },
+  {
+    id: 'event4',
+    service: 'Kids Party - Magic Show',
+    category: 'Events',
+    skillMatch: ['magic_show', 'clown'],
+    customer: 'Kids Birthday',
+    customerRating: 4.6,
+    description: 'Magic show for 6-year-old birthday party. 1.5 hours.',
+    photos: 0,
+    budget: '₹3,000 - ₹5,000',
+    budgetMin: 3000,
+    budgetMax: 5000,
+    location: 'Sector 22',
+    distance: 3.0,
+    urgent: false,
+    postedTime: '5 hrs ago',
+    preferredDate: 'Sunday',
+  },
+
+  // ==================== VEHICLE SERVICES ====================
+  // Skills: car_wash, car_detailing, bike_wash, car_service, bike_repair,
+  //         puncture, battery_service, denting_painting, car_polish, ac_service_car
+  {
+    id: 'vehicle1',
+    service: 'Premium Car Detailing',
+    category: 'Vehicle Services',
+    skillMatch: ['car_detailing', 'car_wash', 'car_polish'],
+    customer: 'BMW Owner',
+    customerRating: 4.9,
+    description: 'Full interior and exterior detailing for BMW 5 series.',
+    photos: 0,
+    budget: '₹3,000 - ₹5,000',
+    budgetMin: 3000,
+    budgetMax: 5000,
+    location: 'Sector 54',
+    distance: 4.5,
+    urgent: false,
+    postedTime: '6 hrs ago',
+    preferredDate: 'Tomorrow',
+  },
+  {
+    id: 'vehicle2',
+    service: 'Bike Service at Home',
+    category: 'Vehicle Services',
+    skillMatch: ['bike_repair', 'car_service'],
+    customer: 'Biker',
+    customerRating: 4.5,
+    description: 'Royal Enfield needs general service. Oil change, chain service.',
+    photos: 0,
+    budget: '₹800 - ₹1,200',
+    budgetMin: 800,
+    budgetMax: 1200,
+    location: 'Sector 37',
+    distance: 3.2,
+    urgent: false,
+    postedTime: '2 hrs ago',
+    preferredDate: 'Today',
+  },
+
+  // ==================== GARDEN & OUTDOOR ====================
+  // Skills: gardening, lawn_mowing, tree_trimming, landscaping, pest_control,
+  //         termite, tank_cleaning, solar_cleaning, terrace_garden, irrigation
+  {
+    id: 'garden1',
+    service: 'Garden Maintenance',
+    category: 'Garden Services',
+    skillMatch: ['gardening', 'lawn_mowing', 'tree_trimming'],
+    customer: 'Villa Owner',
+    customerRating: 4.8,
+    description: 'Monthly garden maintenance. Lawn mowing, plant care, trimming.',
+    photos: 1,
+    budget: '₹2,000 - ₹3,000',
+    budgetMin: 2000,
+    budgetMax: 3000,
+    location: 'DLF Phase 2',
+    distance: 5.5,
+    urgent: false,
+    postedTime: '1 day ago',
+    preferredDate: 'Monthly',
+  },
+  {
+    id: 'garden2',
+    service: 'Pest Control - Full House',
+    category: 'Garden Services',
+    skillMatch: ['pest_control', 'termite'],
+    customer: 'Home Owner',
+    customerRating: 4.6,
+    description: 'Complete pest control for 3BHK. Cockroach and ant treatment.',
+    photos: 0,
+    budget: '₹1,500 - ₹2,500',
+    budgetMin: 1500,
+    budgetMax: 2500,
+    location: 'Sector 43',
+    distance: 3.8,
+    urgent: true,
+    postedTime: '4 hrs ago',
+    preferredDate: 'Tomorrow',
+  },
+  {
+    id: 'garden3',
+    service: 'Water Tank Cleaning',
+    category: 'Garden Services',
+    skillMatch: ['tank_cleaning'],
+    customer: 'Apartment Society',
+    customerRating: 4.7,
+    description: 'Underground water tank cleaning. 10,000 liters capacity.',
+    photos: 0,
+    budget: '₹3,000 - ₹5,000',
+    budgetMin: 3000,
+    budgetMax: 5000,
+    location: 'Sector 52',
+    distance: 4.2,
+    urgent: false,
+    postedTime: '2 days ago',
+    preferredDate: 'This Week',
+  },
+
+  // ==================== CARE SERVICES ====================
+  // Skills: babysitting, nanny, elder_care, nurse_care, companion, patient_attendant, new_mom
+  {
+    id: 'care1',
+    service: 'Babysitter for Evening',
+    category: 'Care Services',
+    skillMatch: ['babysitting', 'nanny'],
+    customer: 'Working Parents',
+    customerRating: 4.8,
+    description: 'Need babysitter for 3-year-old. Evening 5-9 PM.',
+    photos: 0,
+    budget: '₹500 - ₹800',
+    budgetMin: 500,
+    budgetMax: 800,
+    location: 'Sector 45',
+    distance: 3.5,
+    urgent: true,
+    postedTime: '1 hr ago',
+    preferredDate: 'Today',
+  },
+  {
+    id: 'care2',
+    service: 'Elder Care - Daily Visit',
+    category: 'Care Services',
+    skillMatch: ['elder_care', 'companion'],
+    customer: 'Son of Patient',
+    customerRating: 4.9,
+    description: 'Daily 4-hour visit for elderly mother. Light care and company.',
+    photos: 0,
+    budget: '₹8,000 - ₹12,000',
+    budgetMin: 8000,
+    budgetMax: 12000,
+    location: 'Sector 30',
+    distance: 2.8,
+    urgent: false,
+    postedTime: '2 days ago',
+    preferredDate: 'Monthly',
   },
 ];
 
@@ -623,210 +1126,171 @@ export default function NearbyWishesScreen() {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [sortBy, setSortBy] = useState<'distance' | 'budget' | 'time'>('distance');
 
-  // Get user's skills
-  const userSkills = user?.agent_skills || [];
+  // Get user's skills - memoized to prevent unnecessary recalculations
+  const userSkills = useMemo(() => {
+    const skills = user?.agent_skills || [];
+    console.log('🎯 User Skills:', skills);
+    return skills;
+  }, [user?.agent_skills]);
 
   // Filter wishes based on user's skills
   const filteredWishes = useMemo(() => {
-    // If user has no skills, show nothing (shouldn't happen)
-    if (userSkills.length === 0) {
+    console.log('🔍 Filtering wishes...');
+    console.log('  - User has', userSkills.length, 'skills:', userSkills);
+    console.log('  - Radius:', radius, 'km');
+    
+    // If user has no skills, show nothing
+    if (!userSkills || userSkills.length === 0) {
+      console.log('  ❌ No skills - returning empty');
       return [];
     }
 
-    // Filter wishes that match user's skills AND are within radius
-    return ALL_WISHES
-      .filter(wish => {
-        // Check if any of the user's skills match the wish's skill requirements
-        const skillsMatch = wish.skillMatch.some(requiredSkill => 
-          userSkills.includes(requiredSkill)
-        );
-        // Check if within radius
-        const withinRadius = wish.distance <= radius;
-        return skillsMatch && withinRadius;
-      })
-      .sort((a, b) => {
-        if (sortBy === 'distance') return a.distance - b.distance;
-        if (sortBy === 'budget') return b.budgetMax - a.budgetMax;
-        return 0; // time - keep original order (newest first)
-      });
+    const filtered = ALL_WISHES.filter(wish => {
+      // Check if within radius first
+      const withinRadius = wish.distance <= radius;
+      if (!withinRadius) return false;
+      
+      // Check if any of the user's skills match the wish's skill requirements
+      const skillsMatch = wish.skillMatch.some(requiredSkill => 
+        userSkills.includes(requiredSkill)
+      );
+      
+      if (skillsMatch) {
+        console.log(`  ✅ MATCH: "${wish.service}" (skills: ${wish.skillMatch.join(', ')})`);
+      }
+      
+      return skillsMatch;
+    });
+
+    // Sort
+    const sorted = filtered.sort((a, b) => {
+      if (sortBy === 'distance') return a.distance - b.distance;
+      if (sortBy === 'budget') return b.budgetMax - a.budgetMax;
+      return 0;
+    });
+
+    console.log(`  📊 Found ${sorted.length} matching wishes`);
+    return sorted;
   }, [userSkills, radius, sortBy]);
 
-  const onRefresh = () => {
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1500);
-  };
+  }, []);
 
-  const renderMapView = () => (
-    <View style={styles.mapContainer}>
-      {/* Simple map placeholder */}
-      <View style={styles.mapPlaceholder}>
-        <View style={styles.mapGrid}>
-          {/* Simulated map with pins */}
-          <View style={styles.yourLocation}>
-            <View style={styles.yourLocationDot} />
-            <View style={styles.yourLocationRing} />
-            <Text style={styles.youLabel}>You</Text>
-          </View>
-          
-          {/* Radius circle */}
-          <View style={[styles.radiusCircle, { width: radius * 30, height: radius * 30 }]} />
-          
-          {/* Wish pins */}
-          {filteredWishes.slice(0, 5).map((wish, index) => (
-            <TouchableOpacity
-              key={wish.id}
-              style={[
-                styles.wishPin,
-                { 
-                  top: 80 + (index * 35) % 150,
-                  left: 60 + (index * 50) % 200,
-                }
-              ]}
-              onPress={() => router.push(`/(main)/wish-detail?id=${wish.id}`)}
-            >
-              <View style={[styles.pinHead, wish.urgent && styles.pinHeadUrgent]}>
-                <Text style={styles.pinEmoji}>🧹</Text>
-              </View>
-              <View style={styles.pinTail} />
-              <View style={styles.pinLabel}>
-                <Text style={styles.pinDistance}>{wish.distance}km</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+  const handleExpandRadius = useCallback(() => {
+    setRadius(10);
+  }, []);
+
+  // Render empty state with user's skills
+  const renderEmptyState = () => (
+    <View style={styles.emptyCard}>
+      <Text style={styles.emptyEmoji}>🔍</Text>
+      <Text style={styles.emptyTitle}>No Matching Wishes</Text>
+      <Text style={styles.emptyText}>
+        {radius < 10 
+          ? `No wishes within ${radius}km match your skills. Try increasing the radius.`
+          : `No wishes currently available for your registered skills in this area.`
+        }
+      </Text>
+      {userSkills.length > 0 && (
+        <View style={styles.skillsHint}>
+          <Text style={styles.skillsHintLabel}>Your skills:</Text>
+          <Text style={styles.skillsHintText}>
+            {userSkills.slice(0, 3).map(s => s.replace(/_/g, ' ')).join(', ')}
+            {userSkills.length > 3 ? '...' : ''}
+          </Text>
         </View>
-        
-        <View style={styles.mapOverlay}>
-          <Ionicons name="map" size={40} color={COLORS.textMuted} />
-          <Text style={styles.mapOverlayText}>Interactive map coming soon</Text>
-        </View>
-      </View>
+      )}
+      {radius < 10 && (
+        <TouchableOpacity style={styles.expandRadiusBtn} onPress={handleExpandRadius}>
+          <Ionicons name="expand-outline" size={16} color={COLORS.primary} />
+          <Text style={styles.expandRadiusBtnText}>Expand to 10km</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
-  const renderListView = () => (
-    <ScrollView 
-      style={styles.listContainer}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
-      }
+  // Render wish card
+  const renderWishCard = (wish: typeof ALL_WISHES[0]) => (
+    <TouchableOpacity 
+      key={wish.id} 
+      style={styles.wishCard}
+      onPress={() => router.push(`/(main)/wish-detail?id=${wish.id}`)}
+      activeOpacity={0.7}
     >
-      {filteredWishes.length === 0 ? (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyEmoji}>🔍</Text>
-          <Text style={styles.emptyTitle}>No Matching Wishes</Text>
-          <Text style={styles.emptyText}>
-            {radius < 10 
-              ? `No wishes within ${radius}km match your skills. Try increasing the radius.`
-              : `No wishes currently available for your registered skills in this area.`
-            }
-          </Text>
-          {userSkills.length > 0 && (
-            <View style={styles.skillsHint}>
-              <Text style={styles.skillsHintLabel}>Your skills:</Text>
-              <Text style={styles.skillsHintText}>{userSkills.slice(0, 3).join(', ')}{userSkills.length > 3 ? '...' : ''}</Text>
+      {/* Header */}
+      <View style={styles.wishHeader}>
+        <View style={styles.wishServiceRow}>
+          <Text style={styles.wishService} numberOfLines={1}>{wish.service}</Text>
+          {wish.urgent && (
+            <View style={styles.urgentBadge}>
+              <Ionicons name="flash" size={10} color="#FFF" />
+              <Text style={styles.urgentText}>Urgent</Text>
             </View>
-          )}
-          {radius < 10 && (
-            <TouchableOpacity style={styles.expandRadiusBtn} onPress={() => setRadius(10)}>
-              <Ionicons name="expand-outline" size={16} color={COLORS.primary} />
-              <Text style={styles.expandRadiusBtnText}>Expand to 10km</Text>
-            </TouchableOpacity>
           )}
         </View>
-      ) : (
-        filteredWishes.map((wish) => (
-          <TouchableOpacity 
-            key={wish.id} 
-            style={styles.wishCard}
-            onPress={() => router.push(`/(main)/wish-detail?id=${wish.id}`)}
-            activeOpacity={0.7}
-          >
-            {/* Header */}
-            <View style={styles.wishHeader}>
-              <View style={styles.wishServiceRow}>
-                <Text style={styles.wishService}>{wish.service}</Text>
-                {wish.urgent && (
-                  <View style={styles.urgentBadge}>
-                    <Ionicons name="flash" size={10} color="#FFF" />
-                    <Text style={styles.urgentText}>Urgent</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={styles.wishBudget}>{wish.budget}</Text>
-            </View>
+        <Text style={styles.wishBudget}>{wish.budget}</Text>
+      </View>
 
-            {/* Description */}
-            <Text style={styles.wishDescription} numberOfLines={2}>{wish.description}</Text>
+      {/* Category & Photos */}
+      <View style={styles.wishMeta}>
+        <View style={styles.categoryBadge}>
+          <Text style={styles.categoryText}>{wish.category}</Text>
+        </View>
+        {wish.photos > 0 && (
+          <View style={styles.photoBadge}>
+            <Ionicons name="image" size={12} color={COLORS.textSecondary} />
+            <Text style={styles.photoText}>{wish.photos} photo{wish.photos > 1 ? 's' : ''}</Text>
+          </View>
+        )}
+      </View>
 
-            {/* Photos indicator */}
-            {wish.photos.length > 0 && (
-              <View style={styles.photosRow}>
-                <Ionicons name="images-outline" size={14} color={COLORS.primary} />
-                <Text style={styles.photosText}>{wish.photos.length} photo{wish.photos.length > 1 ? 's' : ''} attached</Text>
-              </View>
-            )}
+      {/* Description */}
+      <Text style={styles.wishDescription} numberOfLines={2}>{wish.description}</Text>
 
-            {/* Customer info */}
-            <View style={styles.customerRow}>
-              <View style={styles.customerAvatar}>
-                <Text style={styles.customerInitial}>{wish.customer[0]}</Text>
-              </View>
-              <View style={styles.customerInfo}>
-                <Text style={styles.customerName}>{wish.customer}</Text>
-                <View style={styles.customerMeta}>
-                  <Ionicons name="star" size={12} color={COLORS.warning} />
-                  <Text style={styles.customerRating}>{wish.customerRating}</Text>
-                  <Text style={styles.customerJobs}>• {wish.customerJobs} jobs</Text>
-                </View>
-              </View>
-            </View>
+      {/* Footer */}
+      <View style={styles.wishFooter}>
+        <View style={styles.customerInfo}>
+          <View style={styles.customerAvatar}>
+            <Text style={styles.customerInitial}>{wish.customer.charAt(0)}</Text>
+          </View>
+          <View>
+            <Text style={styles.customerName}>{wish.customer}</Text>
+            <Text style={styles.customerRating}>⭐ {wish.customerRating}</Text>
+          </View>
+        </View>
+        <View style={styles.wishLocation}>
+          <View style={styles.distanceRow}>
+            <Ionicons name="location" size={14} color={COLORS.primary} />
+            <Text style={styles.distanceText}>{wish.distance} km</Text>
+          </View>
+          <Text style={styles.postedTime}>{wish.postedTime}</Text>
+        </View>
+      </View>
 
-            {/* Footer */}
-            <View style={styles.wishFooter}>
-              <View style={styles.wishMeta}>
-                <View style={styles.metaItem}>
-                  <Ionicons name="navigate" size={14} color={COLORS.primary} />
-                  <Text style={[styles.metaText, { color: COLORS.primary, fontWeight: '600' }]}>{wish.distance} km</Text>
-                </View>
-                <View style={styles.metaItem}>
-                  <Ionicons name="time-outline" size={14} color={COLORS.textMuted} />
-                  <Text style={styles.metaText}>{wish.postedTime}</Text>
-                </View>
-                <View style={styles.metaItem}>
-                  <Ionicons name="calendar-outline" size={14} color={COLORS.textMuted} />
-                  <Text style={styles.metaText}>{wish.preferredDate}</Text>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
-            </View>
-          </TouchableOpacity>
-        ))
-      )}
-      <View style={{ height: 100 }} />
-    </ScrollView>
+      {/* Preferred Date */}
+      <View style={styles.dateRow}>
+        <Ionicons name="calendar-outline" size={14} color={COLORS.textMuted} />
+        <Text style={styles.dateText}>{wish.preferredDate}</Text>
+      </View>
+    </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Nearby Wishes</Text>
+        <Text style={styles.headerTitle}>📍 Nearby Wishes</Text>
         <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh}>
           <Ionicons name="refresh" size={22} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
 
-      {/* Radius Controller */}
-      <View style={styles.radiusController}>
+      {/* Radius Control */}
+      <View style={styles.radiusControl}>
         <View style={styles.radiusHeader}>
-          <View style={styles.radiusLabelRow}>
-            <Ionicons name="locate" size={18} color={COLORS.primary} />
-            <Text style={styles.radiusLabel}>Search Radius</Text>
-          </View>
+          <Text style={styles.radiusLabel}>Search Radius</Text>
           <View style={styles.radiusValue}>
             <Text style={styles.radiusNumber}>{radius}</Text>
             <Text style={styles.radiusUnit}>km</Text>
@@ -843,56 +1307,45 @@ export default function NearbyWishesScreen() {
           maximumTrackTintColor={COLORS.border}
           thumbTintColor={COLORS.primary}
         />
-        <View style={styles.radiusMarks}>
-          <Text style={styles.radiusMark}>1km</Text>
-          <Text style={styles.radiusMark}>5km</Text>
-          <Text style={styles.radiusMark}>10km</Text>
+        <View style={styles.radiusMarkers}>
+          <Text style={styles.radiusMarker}>1km</Text>
+          <Text style={styles.radiusMarker}>5km</Text>
+          <Text style={styles.radiusMarker}>10km</Text>
         </View>
       </View>
 
-      {/* Results Info & Sort */}
-      <View style={styles.resultsBar}>
+      {/* Results Header */}
+      <View style={styles.resultsHeader}>
         <Text style={styles.resultsCount}>
           {filteredWishes.length} wish{filteredWishes.length !== 1 ? 'es' : ''} found
         </Text>
-        <View style={styles.viewToggle}>
+        <View style={styles.sortContainer}>
           <TouchableOpacity
-            style={[styles.viewBtn, viewMode === 'list' && styles.viewBtnActive]}
-            onPress={() => setViewMode('list')}
+            style={[styles.sortBtn, sortBy === 'distance' && styles.sortBtnActive]}
+            onPress={() => setSortBy('distance')}
           >
-            <Ionicons name="list" size={18} color={viewMode === 'list' ? '#FFF' : COLORS.textMuted} />
+            <Text style={[styles.sortBtnText, sortBy === 'distance' && styles.sortBtnTextActive]}>Nearest</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.viewBtn, viewMode === 'map' && styles.viewBtnActive]}
-            onPress={() => setViewMode('map')}
+            style={[styles.sortBtn, sortBy === 'budget' && styles.sortBtnActive]}
+            onPress={() => setSortBy('budget')}
           >
-            <Ionicons name="map" size={18} color={viewMode === 'map' ? '#FFF' : COLORS.textMuted} />
+            <Text style={[styles.sortBtnText, sortBy === 'budget' && styles.sortBtnTextActive]}>Highest ₹</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Sort Options */}
-      <View style={styles.sortBar}>
-        <Text style={styles.sortLabel}>Sort by:</Text>
-        {[
-          { key: 'distance', label: 'Nearest' },
-          { key: 'budget', label: 'Highest Budget' },
-          { key: 'time', label: 'Most Recent' },
-        ].map((option) => (
-          <TouchableOpacity
-            key={option.key}
-            style={[styles.sortBtn, sortBy === option.key && styles.sortBtnActive]}
-            onPress={() => setSortBy(option.key as any)}
-          >
-            <Text style={[styles.sortBtnText, sortBy === option.key && styles.sortBtnTextActive]}>
-              {option.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Content */}
-      {viewMode === 'list' ? renderListView() : renderMapView()}
+      {/* Wishes List */}
+      <ScrollView
+        style={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+        }
+      >
+        {filteredWishes.length === 0 ? renderEmptyState() : filteredWishes.map(renderWishCard)}
+        <View style={{ height: 100 }} />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -904,39 +1357,30 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: COLORS.cardBg,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: COLORS.text,
   },
   refreshBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 8,
+    backgroundColor: COLORS.primary + '15',
+    borderRadius: 10,
   },
-  radiusController: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 16,
+  radiusControl: {
     backgroundColor: COLORS.cardBg,
-    borderRadius: 14,
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -944,24 +1388,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  radiusLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    marginBottom: 8,
   },
   radiusLabel: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    color: COLORS.text,
+    color: COLORS.textSecondary,
   },
   radiusValue: {
     flexDirection: 'row',
     alignItems: 'baseline',
   },
   radiusNumber: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
     color: COLORS.primary,
   },
@@ -975,53 +1414,30 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 40,
   },
-  radiusMarks: {
+  radiusMarkers: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
+    marginTop: -5,
   },
-  radiusMark: {
+  radiusMarker: {
     fontSize: 11,
     color: COLORS.textMuted,
   },
-  resultsBar: {
+  resultsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 12,
   },
   resultsCount: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: COLORS.text,
   },
-  viewToggle: {
+  sortContainer: {
     flexDirection: 'row',
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  viewBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  viewBtnActive: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 6,
-  },
-  sortBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
     gap: 8,
-  },
-  sortLabel: {
-    fontSize: 13,
-    color: COLORS.textMuted,
-    marginRight: 4,
   },
   sortBtn: {
     paddingHorizontal: 12,
@@ -1038,7 +1454,7 @@ const styles = StyleSheet.create({
   sortBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: COLORS.textMuted,
   },
   sortBtnTextActive: {
     color: COLORS.primary,
@@ -1123,8 +1539,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 10,
-    gap: 10,
+    marginBottom: 8,
+    gap: 12,
   },
   wishServiceRow: {
     flexDirection: 'row',
@@ -1143,9 +1559,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.error,
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: 10,
     gap: 3,
   },
   urgentText: {
@@ -1158,213 +1574,104 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.success,
     flexShrink: 0,
-    minWidth: 90,
-    textAlign: 'right',
   },
-  wishDescription: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
+  wishMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 10,
   },
-  photosRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    backgroundColor: COLORS.primary + '10',
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  photosText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  customerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  customerAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  categoryBadge: {
     backgroundColor: COLORS.primary + '15',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
-  customerInitial: {
-    fontSize: 15,
-    fontWeight: '700',
+  categoryText: {
+    fontSize: 11,
+    fontWeight: '600',
     color: COLORS.primary,
   },
-  customerInfo: {
-    flex: 1,
-  },
-  customerName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  customerMeta: {
+  photoBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
     gap: 4,
   },
-  customerRating: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.text,
+  photoText: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
   },
-  customerJobs: {
-    fontSize: 12,
-    color: COLORS.textMuted,
+  wishDescription: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 18,
+    marginBottom: 12,
   },
   wishFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
   },
-  wishMeta: {
+  customerInfo: {
     flexDirection: 'row',
-    gap: 14,
+    alignItems: 'center',
+    gap: 10,
   },
-  metaItem: {
+  customerAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  customerInitial: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  customerName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  customerRating: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginTop: 1,
+  },
+  wishLocation: {
+    alignItems: 'flex-end',
+  },
+  distanceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  metaText: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-  },
-  mapContainer: {
-    flex: 1,
-    margin: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: COLORS.cardBg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  mapPlaceholder: {
-    flex: 1,
-    backgroundColor: '#E8F4FD',
-    position: 'relative',
-  },
-  mapGrid: {
-    flex: 1,
-    position: 'relative',
-  },
-  yourLocation: {
-    position: 'absolute',
-    top: '45%',
-    left: '45%',
-    alignItems: 'center',
-  },
-  yourLocationDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: COLORS.primary,
-    borderWidth: 3,
-    borderColor: '#FFF',
-  },
-  yourLocationRing: {
-    position: 'absolute',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.primary + '20',
-    top: -12,
-    left: -12,
-  },
-  youLabel: {
-    fontSize: 10,
+  distanceText: {
+    fontSize: 13,
     fontWeight: '600',
     color: COLORS.primary,
-    marginTop: 4,
   },
-  radiusCircle: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: COLORS.primary + '40',
-    backgroundColor: COLORS.primary + '10',
-    transform: [{ translateX: -75 }, { translateY: -75 }],
-  },
-  wishPin: {
-    position: 'absolute',
-    alignItems: 'center',
-  },
-  pinHead: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.cardBg,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.success,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  pinHeadUrgent: {
-    borderColor: COLORS.error,
-  },
-  pinEmoji: {
-    fontSize: 16,
-  },
-  pinTail: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 6,
-    borderRightWidth: 6,
-    borderTopWidth: 8,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: COLORS.cardBg,
-    marginTop: -1,
-  },
-  pinLabel: {
-    backgroundColor: COLORS.text,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+  postedTime: {
+    fontSize: 11,
+    color: COLORS.textMuted,
     marginTop: 2,
   },
-  pinDistance: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#FFF',
-  },
-  mapOverlay: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
+  dateRow: {
     flexDirection: 'row',
-    gap: 12,
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
   },
-  mapOverlayText: {
-    fontSize: 14,
+  dateText: {
+    fontSize: 12,
     color: COLORS.textMuted,
   },
 });
