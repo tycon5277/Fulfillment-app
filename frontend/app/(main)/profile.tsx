@@ -21,8 +21,8 @@ import * as api from '../../src/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Theme
-const COLORS = {
+// Dark Theme for Mobile/Carpet Genie
+const DARK_COLORS = {
   background: '#08080C',
   backgroundSecondary: '#0F0F14',
   cardBg: '#16161E',
@@ -39,7 +39,32 @@ const COLORS = {
   textSecondary: '#94A3B8',
   textMuted: '#64748B',
   error: '#F87171',
+  success: '#10B981',
 };
+
+// Light Theme for Skilled Genie
+const LIGHT_COLORS = {
+  background: '#FDF8F3',
+  backgroundSecondary: '#F5EDE4',
+  cardBg: '#FFFFFF',
+  cardBorder: '#E8DFD5',
+  primary: '#D97706',
+  primaryLight: '#F59E0B',
+  cyan: '#0891B2',
+  blue: '#2563EB',
+  green: '#059669',
+  amber: '#D97706',
+  magenta: '#C026D3',
+  pink: '#DB2777',
+  text: '#44403C',
+  textSecondary: '#78716C',
+  textMuted: '#A8A29E',
+  error: '#DC2626',
+  success: '#059669',
+};
+
+// Default to dark (will be overridden in component)
+let COLORS = DARK_COLORS;
 
 // Mock earnings data
 const MOCK_EARNINGS = {
