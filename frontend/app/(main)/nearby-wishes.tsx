@@ -713,9 +713,26 @@ export default function NearbyWishesScreen() {
     >
       {filteredWishes.length === 0 ? (
         <View style={styles.emptyCard}>
-          <Ionicons name="search-outline" size={48} color={COLORS.textMuted} />
-          <Text style={styles.emptyTitle}>No Wishes Nearby</Text>
-          <Text style={styles.emptyText}>Try increasing the radius to find more wishes in your area.</Text>
+          <Text style={styles.emptyEmoji}>🔍</Text>
+          <Text style={styles.emptyTitle}>No Matching Wishes</Text>
+          <Text style={styles.emptyText}>
+            {radius < 10 
+              ? `No wishes within ${radius}km match your skills. Try increasing the radius.`
+              : `No wishes currently available for your registered skills in this area.`
+            }
+          </Text>
+          {userSkills.length > 0 && (
+            <View style={styles.skillsHint}>
+              <Text style={styles.skillsHintLabel}>Your skills:</Text>
+              <Text style={styles.skillsHintText}>{userSkills.slice(0, 3).join(', ')}{userSkills.length > 3 ? '...' : ''}</Text>
+            </View>
+          )}
+          {radius < 10 && (
+            <TouchableOpacity style={styles.expandRadiusBtn} onPress={() => setRadius(10)}>
+              <Ionicons name="expand-outline" size={16} color={COLORS.primary} />
+              <Text style={styles.expandRadiusBtnText}>Expand to 10km</Text>
+            </TouchableOpacity>
+          )}
         </View>
       ) : (
         filteredWishes.map((wish) => (
