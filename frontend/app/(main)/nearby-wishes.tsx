@@ -629,9 +629,12 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   wishBudget: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: COLORS.success,
+    flexShrink: 0,
+    minWidth: 90,
+    textAlign: 'right',
   },
   wishDescription: {
     fontSize: 14,
