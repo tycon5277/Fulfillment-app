@@ -213,6 +213,11 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, []);
 
+  // If skilled genie accidentally lands here, show nothing (redirect handled in layout)
+  if (isSkilledGenie) {
+    return null;
+  }
+
   const handleButtonPressIn = () => {
     Animated.spring(buttonScale, {
       toValue: 0.95,
