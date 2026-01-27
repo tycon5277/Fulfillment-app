@@ -363,7 +363,7 @@ export default function MainLayout() {
         }}
       />
 
-      {/* Profile - All partners */}
+      {/* Profile - Non-skilled partners (Mobile Genie, Vendor, Promoter) */}
       <Tabs.Screen
         name="profile"
         options={{
@@ -373,6 +373,21 @@ export default function MainLayout() {
               <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
             </View>
           ),
+          href: isSkilledGenie ? null : '/(main)/profile',
+        }}
+      />
+
+      {/* Skilled Profile - Skilled Genie only with dedicated earnings */}
+      <Tabs.Screen
+        name="skilled-profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && styles.iconContainerSkilledActive]}>
+              <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
+            </View>
+          ),
+          href: isSkilledGenie ? '/(main)/skilled-profile' : null,
         }}
       />
 
