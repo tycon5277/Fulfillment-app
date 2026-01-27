@@ -434,20 +434,25 @@ const styles = StyleSheet.create({
   serviceHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
   },
   serviceInfo: {
     flex: 1,
+    flexShrink: 1,
   },
   serviceTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 10,
     marginBottom: 6,
   },
   serviceTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: COLORS.text,
+    flexShrink: 1,
   },
   urgentBadge: {
     flexDirection: 'row',
