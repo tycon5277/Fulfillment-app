@@ -1365,6 +1365,89 @@ async def seed_skilled_genie_user(response: Response):
     }
 
 
+@api_router.post("/seed/drone-genie")
+async def seed_drone_genie_user(response: Response):
+    """Create a test Drone Photography Genie user with active session for testing"""
+    user_id = f"user_drone_test"
+    session_token = f"session_drone_{uuid.uuid4().hex[:16]}"
+    
+    # Create or update the drone genie user
+    drone_user = {
+        "user_id": user_id,
+        "phone": "9111222333",
+        "name": "Arjun Kapoor",
+        "email": "arjun.drone@test.com",
+        "picture": None,
+        "date_of_birth": "1992-03-10",
+        "address": "Sector 45, Gurgaon",
+        "addresses": [],
+        "partner_type": "agent",
+        "partner_status": "available",
+        "partner_rating": 4.9,
+        "partner_total_tasks": 85,
+        "partner_total_earnings": 125000.0,
+        "agent_type": "skilled",  # SKILLED GENIE - Drone Specialist
+        "agent_vehicle": None,
+        "agent_vehicle_registration": None,
+        "agent_vehicle_make": None,
+        "agent_vehicle_model": None,
+        "agent_vehicle_color": None,
+        "agent_is_electric": False,
+        "agent_services": [],
+        "agent_skills": ["drone_photography", "drone_videography", "drone_wedding", "drone_events", "drone_real_estate"],
+        "agent_has_vehicle": True,
+        "agent_rating": 4.9,
+        "agent_total_deliveries": 0,
+        "vendor_shop_name": None,
+        "vendor_shop_type": None,
+        "vendor_shop_address": None,
+        "vendor_shop_location": None,
+        "vendor_can_deliver": False,
+        "vendor_categories": [],
+        "vendor_is_verified": False,
+        "promoter_business_name": None,
+        "promoter_type": None,
+        "promoter_description": None,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.users.update_one(
+        {"user_id": user_id},
+        {"$set": drone_user},
+        upsert=True
+    )
+    
+    # Create session
+    session = {
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": datetime.now(timezone.utc) + timedelta(days=30),
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.user_sessions.update_one(
+        {"user_id": user_id},
+        {"$set": session},
+        upsert=True
+    )
+    
+    # Set session cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=30 * 24 * 60 * 60
+    )
+    
+    return {
+        "message": "Drone Genie test user created",
+        "session_token": session_token,
+        "user": drone_user
+    }
+
+
 @api_router.post("/seed/mobile-genie")
 async def seed_mobile_genie_user(response: Response):
     """Create a test Mobile/Carpet Genie user with active session for testing"""
