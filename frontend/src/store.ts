@@ -90,11 +90,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   sessionToken: null,
   isLoading: true,
+  isUserLoaded: false,  // Start as false
   stats: null,
   activeWork: [],
   isOnline: false,
   
-  setUser: (user) => set({ user }),
+  setUser: (user) => set({ user, isUserLoaded: true }),  // Mark as loaded when user is set
   setSessionToken: async (token) => {
     if (token) {
       await AsyncStorage.setItem('session_token', token);
@@ -104,6 +105,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ sessionToken: token });
   },
   setIsLoading: (loading) => set({ isLoading: loading }),
+  setIsUserLoaded: (loaded) => set({ isUserLoaded: loaded }),
   setStats: (stats) => set({ stats }),
   setIsOnline: (online) => set({ isOnline: online }),
   setActiveWork: (work) => set({ activeWork: work }),
@@ -112,7 +114,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   
   logout: async () => {
     await AsyncStorage.removeItem('session_token');
-    set({ user: null, sessionToken: null, stats: null, isOnline: false, activeWork: [] });
+    set({ user: null, sessionToken: null, stats: null, isOnline: false, activeWork: [], isUserLoaded: false });
   },
   
   loadStoredAuth: async () => {
