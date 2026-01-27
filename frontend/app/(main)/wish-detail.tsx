@@ -474,6 +474,8 @@ const styles = StyleSheet.create({
   },
   budgetSection: {
     alignItems: 'flex-end',
+    flexShrink: 0,
+    minWidth: 100,
   },
   budgetLabel: {
     fontSize: 12,
@@ -481,7 +483,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   budget: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '800',
     color: COLORS.success,
   },
