@@ -1,0 +1,137 @@
+<analysis>
+
+**original_problem_statement**: The user wants to build out the Skilled Genie portion of the app. The core requirements are:
+1.  **Skill-Based Wish Filtering**: A Skilled Genie must *only* see service requests (wishes) that match the skills they registered for. This is a critical, core feature. For example, a user registered with Drone Photography skills should not see House Cleaning wishes.
+2.  **New Tabbed Interface for Skilled Genies**: The main screen for a Skilled Genie must have the following tabs:
+    *   **Appointments**: A new tab (replacing Hub Orders) showing a work schedule/calendar.
+    *   **Nearby Wishes**: A new tab to browse available wishes in their area, with a radius controller and a refresh button.
+    *   **Chat**: A dedicated tab for communication.
+3.  **Detailed Wish View**: Tapping a wish card should open a full-screen view with complete details, wisher's location on a map, photos, and options to chat or book an appointment.
+4.  **Professional UI/UX**: The entire Skilled Genie flow should use a light, professional Claymorphism theme with cream/warm tones.
+5.  **Enhanced Setup Flow**: The  screen must be redesigned to include:
+    *   Restriction on selecting skills from different main categories (e.g., can't select Plumbing and Spa at the same time).
+    *   An enhanced Tell Your Story section with a Bio tab (including sample text), a Social tab for linking profiles (Instagram, YouTube, etc.), and a Certs tab for adding certifications.
+6.  **Dedicated Profile & Earnings**: The profile page for Skilled Genies must be separate from the Carpet Genie flow, use the light theme, and have its own dedicated Earnings section.
+
+**User's preferred language**: English
+
+**what currently exists?**
+- A full-stack Expo/FastAPI application with two distinct user flows: Carpet Genie (dark/gamified) and Skilled Genie (light/professional).
+- A fully implemented tab-based UI for Skilled Genies with four new functional screens: , , , and . These screens are populated with comprehensive mock data on the frontend.
+- A completely redesigned  screen featuring a Claymorphism design, skill category restrictions, and the enhanced Tell Your Story section with Bio, Social, and Certs tabs.
+- A dedicated, theme-adaptive profile page for Skilled Genies at , which is separate from the Carpet Genie profile and includes a tab for Earnings.
+- The critical **skill-based wish filtering logic is implemented** in . It filters a large mock dataset based on the logged-in user's skills from the .
+- A robust loading mechanism is in place in . It uses an  flag from the  to show a loading screen, preventing the UI from rendering until user data is fetched. This is intended to fix the tab bar glitch.
+- Backend test endpoints (, , ) have been created to facilitate testing by creating pre-configured users.
+
+**Last working item**:
+- **Last item agent was working**: The agent was addressing the user's critical feedback that the skill-based filtering was still showing false matches and that the tab bar glitch was still occurring. To provide a clean slate for testing, the agent cleared all user data from the database. It then overwrote  with a new version containing a definitive, comprehensive set of mock wishes covering all possible skill categories to ensure testing would be accurate.
+- **Status**: IN PROGRESS
+- **Agent Testing Done**: Y (Agent's tests showed filtering worked, but user is not convinced)
+- **Which testing method agent to use?**: Frontend testing agent. The next agent must perform a comprehensive end-to-end test starting from a fresh registration to definitively verify the two critical user-reported issues: the tab glitch and the skill-filtering accuracy.
+- **User Testing Done**: N (User's last test failed, prompting this work)
+
+**All Pending/In progress Issue list**:
+- **Issue 1**: (P0) The bottom tab bar intermittently shows the wrong tabs for Skilled Genies (e.g., Hub Order) upon initial login.
+- **Issue 2**: (P0) The user reports that skill-based wish filtering is still showing false matches, despite the agent's tests indicating it works.
+
+  **Issues Detail**:
+  - **Issue 1: Tab Bar Glitch**
+     - **Attempted fixes**: A robust loading mechanism was implemented. In , an  flag was added, which is set to  only after the  API call completes. In , a full-screen loading component is rendered if , which should prevent the tabs from rendering with incomplete user data.
+     - **Next debug checklist**:
+       1.  Start with a completely fresh session (all user data has been cleared).
+       2.  Register a new Skilled Genie account from scratch.
+       3.  Upon first landing on the home screen, observe the tab bar immediately.
+       4.  If the glitch still occurs, review the state updates in  and the conditional rendering logic in . Check for any possible race conditions where  might be set prematurely or the layout component re-renders unexpectedly.
+     - **Why fix this issue and what will be achieved with the fix?**: This is a major UI/UX bug that creates a confusing and unprofessional first impression for the user. Fixing it is critical for build stability.
+     - **Status**: IN PROGRESS
+     - **Is recurring issue?**: Y
+     - **Should Test frontend/backend/both after fix?**: frontend
+     - **Blocked on other issue**: None
+
+  - **Issue 2: Skill-Based Filtering Accuracy**
+     - **Attempted fixes**: The agent implemented the core filtering logic in  which compares  with a  array in the mock wish data. The agent created a comprehensive mock dataset covering all skills and successfully tested that a Drone Genie only saw drone-related wishes. The user was not convinced. The agent has just overwritten  again with an even more robust mock dataset.
+     - **Next debug checklist**:
+       1.  Register a new Skilled Genie with a specific, niche skill set (e.g., Drone Photography or Appliance Repair - Wishes tab.
+       3.  Verify that *only* wishes matching that exact skill set appear.
+       4.  Use the radius slider to see if more distant, but still matching, wishes appear.
+       5.  If any non-matching wishes appear, add  statements inside the  filtering function in  to inspect  and the  for the incorrectly displayed wish. Verify that the skill IDs in  exactly match the  IDs in the mock data.
+     - **Why fix this issue and what will be achieved with the fix?**: This is the most critical feature of the Skilled Genie flow. The entire value proposition depends on Genies seeing relevant job requests.
+     - **Status**: USER VERIFICATION PENDING
+     - **Is recurring issue?**: Y
+     - **Should Test frontend/backend/both after fix?**: frontend
+     - **Blocked on other issue**: None
+
+**In progress Task List**:
+- None. All focus is on resolving the two P0 issues above.
+
+**Upcoming and Future Tasks**
+- **Upcoming Tasks**:
+    - **P0: Backend Implementation for Wishes**: Replace the frontend mock data in  with a real backend API endpoint (). This endpoint must accept user location and skills and return filtered results from the database.
+    - **P1: Backend Implementation for Appointments**: Create the backend infrastructure to allow booking, viewing, and managing appointments. The  screen currently uses mock data.
+    - **P2: Backend Implementation for Chat**: The  screen is a UI-only mock. A real-time chat system (e.g., using WebSockets) needs to be built.
+    - **P3: Persist User-Entered Profile Data**: The Tell Your Story data (bio, social links, certs) is currently only stored in frontend state during the setup flow. It needs to be saved to the user's profile in the database via an API call.
+- **Future Tasks**:
+    - Integrate a real maps API (e.g., Google Maps) to replace the map placeholders in  and .
+    - Implement the Assign to another Genie functionality for task re-assignment.
+
+**Completed work in this session**
+- **Skilled Genie Tab UI**: Implemented the full tab navigation for Skilled Genies (Home, Nearby, Schedule, Chats, Profile) and verified that Carpet Genies retain their original tabs.
+- **All New Screens Built**: Created and styled the four new screens with mock data: , , , .
+- ** Redesign**: Completely redesigned the skill setup flow with a Claymorphism style, category-locking logic, and the enhanced Tell Your Story section (Bio, Social, Certs).
+- **Dedicated Skilled Profile**: Created , a separate, light-themed profile page for Skilled Genies with its own Earnings tab, and wired it into the layout.
+- **Multiple Critical Bug Fixes**:
+    - Resolved price overlapping issues on both wish cards () and the wish detail screen ().
+    - Fixed a React hook violation in  that was causing crashes.
+    - Fixed the initial blank screen issue by adding a redirect from  to  for skilled genies.
+- **Test Infrastructure**: Created several backend endpoints () to generate test users with specific roles and skills, significantly speeding up the debugging process.
+
+**Earlier issues found/mentioned but not fixed**
+- The two P0 issues listed in All Pending/In progress Issue list (Tab Bar Glitch and Skill Filtering) are the primary unresolved problems.
+
+**Known issue recurrence from previous fork**
+- **Issue recurrence in previous fork**: The Hub Orders tab incorrectly showing for Skilled Genies.
+- **Recurrence count**: This issue has been reported by the user at least 3 times and fixed by the agent multiple times. The latest fix involves the  flag and a full-screen loader.
+- **Status**: IN PROGRESS (The user's last message indicates it may still be happening).
+
+**Code Architecture**
+isUserLoaded
+
+**Key Technical Concepts**
+- **Role-Based UI/UX**: The app maintains two distinct UIs (light vs. dark) and navigation structures based on .
+- **Robust Loading State**: Using a dedicated  flag in Zustand, set only after an async user fetch completes, to prevent UI rendering with incomplete data. A full-screen loader in the root layout () blocks rendering until this flag is true.
+- **Conditional Routing**: Using a combination of conditional  props in  and  in  to direct users to the correct home screen for their role.
+- **Frontend Mocking for Development**: All new features are driven by a comprehensive, structured mock data array within the component files (e.g., ), allowing for rapid UI development before backend implementation.
+- **Backend Seeding for Testing**: Creation of dedicated API endpoints (e.g., ) to instantly create test users with specific roles and skills, bypassing flaky UI login flows in the test environment.
+
+**key DB schema**
+- No changes were made to the database schema. The  and  collections were dropped multiple times to clear data for testing.
+
+**changes in tech stack**
+- [13:17:43] Installing 1 SDK 54.0.0 compatible native module using Yarn.
+[13:17:43] > yarn add @react-native-community/slider@5.0.1
+yarn add v1.22.22
+[1/4] Resolving packages...
+[2/4] Fetching packages...
+[3/4] Linking dependencies...
+[4/4] Building fresh packages...
+success Saved lockfile.
+success Saved 1 new dependency.
+info Direct dependencies
+└─ @react-native-community/slider@5.0.1
+info All dependencies
+└─ @react-native-community/slider@5.0.1
+Done in 3.88s. was run to add a slider component.
+
+**All files of reference**
+- : **Critical File**. Contains the skill-filtering logic and the comprehensive mock data that drives the feature. This is where the user-reported false match issue likely lies.
+- : **Critical File**. Contains the navigation logic and the loading screen implementation intended to fix the tab-bar glitch.
+- : **Critical File**. Defines the  state variable, which is key to fixing the race condition.
+- : Contains all the skill definitions and their IDs, which must match the data in .
+- : Contains the test data seeding endpoints.
+
+**Areas that need refactoring**:
+- The  screen contains a hardcoded Todays Schedule" section with cleaning appointments. This is confusing when testing with a non-cleaning Genie (like a drone pilot). This mock data should be removed or made dynamic to avoid confusion.
+
+**Critical Info for New Agent**
+- **Start with the Users Two Issues**: Your immediate and only priority is to definitively solve the two P0 issues: the **tab bar glitch** and the **skill-filtering accuracy**. Do not move on to new features until these are resolved and verified.
