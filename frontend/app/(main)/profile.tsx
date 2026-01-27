@@ -440,34 +440,34 @@ export default function ProfileScreen() {
         </View>
 
         {/* Quick Actions */}
-        <View style={styles.quickActions}>
-          <TouchableOpacity style={styles.actionItem}>
-            <View style={[styles.actionIcon, { backgroundColor: COLORS.cyan + '20' }]}>
-              <Ionicons name="document-text" size={22} color={COLORS.cyan} />
+        <View style={[styles.quickActions, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
+          <TouchableOpacity style={[styles.actionItem, { borderBottomColor: colors.cardBorder }]}>
+            <View style={[styles.actionIcon, { backgroundColor: colors.cyan + '20' }]}>
+              <Ionicons name="document-text" size={22} color={colors.cyan} />
             </View>
-            <Text style={styles.actionText}>Documents</Text>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+            <Text style={[styles.actionText, { color: colors.text }]}>Documents</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionItem}>
-            <View style={[styles.actionIcon, { backgroundColor: COLORS.amber + '20' }]}>
-              <Ionicons name="help-circle" size={22} color={COLORS.amber} />
+          <TouchableOpacity style={[styles.actionItem, { borderBottomColor: colors.cardBorder }]}>
+            <View style={[styles.actionIcon, { backgroundColor: colors.amber + '20' }]}>
+              <Ionicons name="help-circle" size={22} color={colors.amber} />
             </View>
-            <Text style={styles.actionText}>Help & Support</Text>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+            <Text style={[styles.actionText, { color: colors.text }]}>Help & Support</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionItem}>
-            <View style={[styles.actionIcon, { backgroundColor: COLORS.primary + '20' }]}>
-              <Ionicons name="information-circle" size={22} color={COLORS.primary} />
+          <TouchableOpacity style={[styles.actionItem, { borderBottomColor: 'transparent' }]}>
+            <View style={[styles.actionIcon, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="information-circle" size={22} color={colors.primary} />
             </View>
-            <Text style={styles.actionText}>About</Text>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+            <Text style={[styles.actionText, { color: colors.text }]}>About</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color={COLORS.error} />
-          <Text style={styles.logoutText}>Logout</Text>
+        <TouchableOpacity style={[styles.logoutButton, { borderColor: colors.error }]} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={20} color={colors.error} />
+          <Text style={[styles.logoutText, { color: colors.error }]}>Logout</Text>
         </TouchableOpacity>
 
         <View style={{ height: 100 }} />
