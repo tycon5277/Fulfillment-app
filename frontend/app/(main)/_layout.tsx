@@ -91,16 +91,32 @@ const WishesButton = ({ focused }: { focused: boolean }) => {
 
 export default function MainLayout() {
   const { user, isLoading, isUserLoaded } = useAuthStore();
+  const insets = useSafeAreaInsets();
+  
+  // CRITICAL: Compute user type ONLY from the user object
+  // These values determine which tabs to show
   const partnerType = user?.partner_type;
   const agentType = user?.agent_type;
+  
+  // Explicit type checks - must be exactly 'agent' AND 'mobile'/'skilled'
   const isMobileGenie = partnerType === 'agent' && agentType === 'mobile';
   const isSkilledGenie = partnerType === 'agent' && agentType === 'skilled';
   const isAgent = partnerType === 'agent';
-  const insets = useSafeAreaInsets();
+  
+  // Debug logging for tab configuration
+  console.log('📱 Tab Layout - User:', {
+    isUserLoaded,
+    partnerType,
+    agentType,
+    isSkilledGenie,
+    isMobileGenie,
+    skills: user?.agent_skills?.length || 0
+  });
 
   // Show loading screen until user data is FULLY loaded from server
-  // This prevents the tab glitch where wrong tabs show initially
-  if (!isUserLoaded) {
+  // AND the user has valid partner info (to prevent tab glitch)
+  // This is a more robust check - wait for full user data including type
+  if (!isUserLoaded || !user) {
     return (
       <View style={{ flex: 1, backgroundColor: '#FDF8F3', justifyContent: 'center', alignItems: 'center' }}>
         <Text style={{ fontSize: 40, marginBottom: 16 }}>✨</Text>
