@@ -326,43 +326,6 @@ export default function SkilledHomeScreen() {
           </TouchableOpacity>
         </View>
       )}
-
-      {/* Quick Actions */}
-      <View style={styles.quickActions}>
-        <Text style={styles.quickActionsTitle}>Quick Actions</Text>
-        <View style={styles.quickActionsGrid}>
-          <TouchableOpacity 
-            style={styles.quickActionBtn}
-            onPress={() => router.push('/(main)/appointments')}
-          >
-            <View style={[styles.quickActionIcon, { backgroundColor: COLORS.primary + '15' }]}>
-              <Ionicons name="calendar-outline" size={22} color={COLORS.primary} />
-            </View>
-            <Text style={styles.quickActionText}>Schedule</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.quickActionBtn}
-            onPress={() => router.push('/(main)/skilled-chats')}
-          >
-            <View style={[styles.quickActionIcon, { backgroundColor: COLORS.secondary + '15' }]}>
-              <Ionicons name="chatbubbles-outline" size={22} color={COLORS.secondary} />
-            </View>
-            <Text style={styles.quickActionText}>Chats</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickActionBtn}>
-            <View style={[styles.quickActionIcon, { backgroundColor: COLORS.success + '15' }]}>
-              <Ionicons name="wallet-outline" size={22} color={COLORS.success} />
-            </View>
-            <Text style={styles.quickActionText}>Earnings</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickActionBtn}>
-            <View style={[styles.quickActionIcon, { backgroundColor: COLORS.warning + '15' }]}>
-              <Ionicons name="star-outline" size={22} color={COLORS.warning} />
-            </View>
-            <Text style={styles.quickActionText}>Reviews</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
     </>
   );
 
