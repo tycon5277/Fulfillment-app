@@ -90,7 +90,7 @@ const WishesButton = ({ focused }: { focused: boolean }) => {
 };
 
 export default function MainLayout() {
-  const { user, isLoading } = useAuthStore();
+  const { user, isLoading, isUserLoaded } = useAuthStore();
   const partnerType = user?.partner_type;
   const agentType = user?.agent_type;
   const isMobileGenie = partnerType === 'agent' && agentType === 'mobile';
@@ -98,12 +98,14 @@ export default function MainLayout() {
   const isAgent = partnerType === 'agent';
   const insets = useSafeAreaInsets();
 
-  // Show loading screen while user data is being fetched to prevent tab glitch
-  if (isLoading || !user) {
+  // Show loading screen until user data is FULLY loaded from server
+  // This prevents the tab glitch where wrong tabs show initially
+  if (!isUserLoaded) {
     return (
       <View style={{ flex: 1, backgroundColor: '#FDF8F3', justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ fontSize: 32, marginBottom: 12 }}>✨</Text>
-        <Text style={{ fontSize: 16, color: '#78716C' }}>Loading...</Text>
+        <Text style={{ fontSize: 40, marginBottom: 16 }}>✨</Text>
+        <Text style={{ fontSize: 18, fontWeight: '600', color: '#44403C', marginBottom: 8 }}>QuickWish</Text>
+        <Text style={{ fontSize: 14, color: '#78716C' }}>Loading your dashboard...</Text>
       </View>
     );
   }
