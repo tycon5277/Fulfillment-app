@@ -592,7 +592,10 @@ export default function SkilledSetupScreen() {
     setIsSubmitting(true);
     setError(null);
     try {
-      await api.registerAsAgent({
+      console.log('🚀 Registering Skilled Genie with skills:', selectedSkills);
+      
+      // Register as agent
+      const registerResponse = await api.registerAsAgent({
         phone: user?.phone || '',
         agent_type: 'skilled',
         skills: selectedSkills,
@@ -600,6 +603,26 @@ export default function SkilledSetupScreen() {
         has_vehicle: false,
       });
       
+      console.log('✅ Registration successful:', registerResponse.data);
+      
+      // CRITICAL: Fetch the updated user data and update the store BEFORE navigation
+      // This ensures the tab bar and filtering logic have the correct user data
+      const meResponse = await api.getMe();
+      const updatedUser = meResponse.data;
+      
+      console.log('👤 Updated user data:', {
+        partner_type: updatedUser.partner_type,
+        agent_type: updatedUser.agent_type,
+        agent_skills: updatedUser.agent_skills,
+      });
+      
+      // Update the local store with fresh user data
+      setUser(updatedUser);
+      
+      // Small delay to ensure state is propagated before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Now navigate
       router.replace('/(main)/skilled-home');
     } catch (err: any) {
       console.error('Error updating profile:', err);
