@@ -48,11 +48,6 @@ export default function HomeScreen() {
   // Skilled Genie uses a different screen - handled in _layout.tsx
   const isSkilledGenie = user?.partner_type === 'agent' && user?.agent_type === 'skilled';
   
-  // If skilled genie accidentally lands here, show nothing (redirect handled in layout)
-  if (isSkilledGenie) {
-    return null;
-  }
-  
   const [isOnline, setIsOnline] = useState(storeIsOnline);
   const [stats, setStats] = useState<PartnerStats | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -74,6 +69,11 @@ export default function HomeScreen() {
   const dotGlow = useRef(new Animated.Value(0.5)).current;
 
   const isMobileGenie = user?.agent_type === 'mobile';
+  
+  // If skilled genie accidentally lands here, show nothing (redirect handled in layout)
+  if (isSkilledGenie) {
+    return null;
+  }
 
   // Generate map tiles for current location using Carto (light warm theme)
   useEffect(() => {
