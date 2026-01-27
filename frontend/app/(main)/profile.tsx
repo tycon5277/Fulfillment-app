@@ -100,6 +100,10 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedEarningsTab, setSelectedEarningsTab] = useState<'all' | 'hub' | 'wishes'>('all');
   
+  // Determine theme based on user type
+  const isSkilledGenie = user?.partner_type === 'agent' && user?.agent_type === 'skilled';
+  const colors = isSkilledGenie ? LIGHT_COLORS : DARK_COLORS;
+  
   // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
