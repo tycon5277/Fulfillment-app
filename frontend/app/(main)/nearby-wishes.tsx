@@ -599,17 +599,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 10,
+    gap: 10,
   },
   wishServiceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     flex: 1,
+    flexWrap: 'wrap',
   },
   wishService: {
     fontSize: 16,
     fontWeight: '700',
     color: COLORS.text,
+    flexShrink: 1,
   },
   urgentBadge: {
     flexDirection: 'row',
