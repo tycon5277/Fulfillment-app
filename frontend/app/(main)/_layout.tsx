@@ -98,15 +98,25 @@ export default function MainLayout() {
   const isAgent = partnerType === 'agent';
   const insets = useSafeAreaInsets();
 
+  // Show loading screen while user data is being fetched to prevent tab glitch
+  if (isLoading || !user) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#FDF8F3', justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ fontSize: 32, marginBottom: 12 }}>✨</Text>
+        <Text style={{ fontSize: 16, color: '#78716C' }}>Loading...</Text>
+      </View>
+    );
+  }
+
   // Get role-specific colors
   const getThemeColors = () => {
     if (isSkilledGenie) {
       // Light professional theme for Skilled Genie
       return {
-        background: '#FFFFFF',
-        border: '#E2E8F0',
-        active: '#2563EB',  // Professional Blue
-        inactive: '#94A3B8',
+        background: '#FDF8F3',  // Warm cream for Skilled Genie
+        border: '#E8DFD5',
+        active: '#D97706',  // Warm amber
+        inactive: '#A8A29E',
       };
     }
     if (isMobileGenie) {
@@ -129,9 +139,6 @@ export default function MainLayout() {
 
   const colors = getThemeColors();
   const tabBarHeight = isSkilledGenie ? 56 + insets.bottom : 65 + insets.bottom;
-
-  // Hide Orders tab if user is not loaded yet (to prevent flash of wrong tabs)
-  const hideOrdersTab = !user || partnerType === 'promoter' || isSkilledGenie;
 
   // Set initial route based on user type
   const initialRoute = isSkilledGenie ? 'skilled-home' : 'home';
