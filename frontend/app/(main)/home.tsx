@@ -69,11 +69,6 @@ export default function HomeScreen() {
   const dotGlow = useRef(new Animated.Value(0.5)).current;
 
   const isMobileGenie = user?.agent_type === 'mobile';
-  
-  // If skilled genie accidentally lands here, show nothing (redirect handled in layout)
-  if (isSkilledGenie) {
-    return null;
-  }
 
   // Generate map tiles for current location using Carto (light warm theme)
   useEffect(() => {
