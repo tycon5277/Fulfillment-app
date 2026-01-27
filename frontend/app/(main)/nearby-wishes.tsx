@@ -1129,9 +1129,15 @@ export default function NearbyWishesScreen() {
   // Get user's skills - memoized to prevent unnecessary recalculations
   const userSkills = useMemo(() => {
     const skills = user?.agent_skills || [];
-    console.log('🎯 User Skills:', skills);
+    console.log('🎯 User Skills:', JSON.stringify(skills));
+    console.log('👤 Full user state:', {
+      partner_type: user?.partner_type,
+      agent_type: user?.agent_type,
+      skills_count: skills.length,
+      user_id: user?.user_id
+    });
     return skills;
-  }, [user?.agent_skills]);
+  }, [user?.agent_skills, user?.partner_type, user?.agent_type, user?.user_id]);
 
   // Filter wishes based on user's skills
   const filteredWishes = useMemo(() => {
