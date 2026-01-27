@@ -369,14 +369,6 @@ export default function MainLayout() {
         }}
       />
 
-      {/* Hidden screens for chat */}
-      <Tabs.Screen
-        name="chat/[roomId]"
-        options={{
-          href: null,
-        }}
-      />
-
       {/* Hidden screens for wish detail (accessed via push navigation) */}
       <Tabs.Screen
         name="wish-detail"
