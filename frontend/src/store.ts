@@ -68,6 +68,7 @@ interface AuthState {
   user: User | null;
   sessionToken: string | null;
   isLoading: boolean;
+  isUserLoaded: boolean;  // True only after user data has been fetched from server
   stats: PartnerStats | null;
   isOnline: boolean;
   activeWork: ActiveWork[];
@@ -75,6 +76,7 @@ interface AuthState {
   setUser: (user: User | null) => void;
   setSessionToken: (token: string | null) => void;
   setIsLoading: (loading: boolean) => void;
+  setIsUserLoaded: (loaded: boolean) => void;
   setStats: (stats: PartnerStats | null) => void;
   setIsOnline: (online: boolean) => void;
   setActiveWork: (work: ActiveWork[]) => void;
