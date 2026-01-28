@@ -212,6 +212,18 @@ export default function SkilledHomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'schedule' | 'wishes'>('overview');
   
+  // Get skill-based appointments for this user
+  const userSkills = user?.agent_skills || [];
+  const userCategory = getUserCategory(userSkills);
+  const todayAppointments = getAppointmentsForUser(userSkills);
+  
+  // Calculate stats based on appointments
+  const stats = {
+    ...DEFAULT_STATS,
+    todayEarnings: todayAppointments.reduce((sum, apt) => sum + (apt.status === 'completed' ? apt.earnings : 0), 0),
+    todayAppointments: todayAppointments.length,
+  };
+  
   const onRefresh = () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1500);
