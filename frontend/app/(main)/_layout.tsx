@@ -436,6 +436,12 @@ export default function MainLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="appointment-detail"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
