@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/store';
+import { getUserCategory, MOCK_APPOINTMENTS } from '../../src/skillMockData';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -32,212 +33,6 @@ const COLORS = {
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-// =============================================================================
-// SKILL-BASED APPOINTMENTS DATA
-// =============================================================================
-
-// Skill category mappings
-const SKILL_CATEGORIES: { [key: string]: string } = {
-  // Home Services (Cleaning)
-  deep_cleaning: 'cleaning', regular_cleaning: 'cleaning', kitchen_cleaning: 'cleaning',
-  bathroom_cleaning: 'cleaning', carpet_cleaning: 'cleaning', sofa_cleaning: 'cleaning',
-  laundry: 'cleaning', dishwashing: 'cleaning', window_cleaning: 'cleaning',
-  organizing: 'cleaning', mattress_cleaning: 'cleaning', chimney_cleaning: 'cleaning',
-  
-  // Repair & Maintenance
-  plumbing: 'repair', electrical: 'repair', carpentry: 'repair', painting: 'repair',
-  ac_repair: 'repair', refrigerator: 'repair', washing_machine: 'repair', tv_repair: 'repair',
-  microwave: 'repair', geyser: 'repair', fan_repair: 'repair', inverter: 'repair',
-  furniture_assembly: 'repair', door_lock: 'repair', waterproofing: 'repair',
-  
-  // Driver Services
-  personal_driver: 'driver', outstation_driver: 'driver', corporate_driver: 'driver',
-  airport_transfer: 'driver', night_driver: 'driver', wedding_driver: 'driver',
-  vip_driver: 'driver', female_driver: 'driver', elderly_driver: 'driver', medical_transport: 'driver',
-  
-  // Photography & Videography
-  wedding_photography: 'photo', portrait_photo: 'photo', event_photography: 'photo',
-  product_photography: 'photo', fashion_photography: 'photo', food_photography: 'photo',
-  real_estate_photo: 'photo', wedding_video: 'video', corporate_video: 'video',
-  music_video: 'video', documentary: 'video', live_streaming: 'video',
-  video_editing: 'video', photo_editing: 'photo',
-  
-  // Drone Services
-  drone_photography: 'drone', drone_videography: 'drone', drone_wedding: 'drone',
-  drone_survey: 'drone', drone_inspection: 'drone', drone_events: 'drone',
-  drone_real_estate: 'drone', fpv_drone: 'drone', drone_agriculture: 'drone', drone_delivery: 'drone',
-  
-  // Wellness & Beauty
-  massage: 'wellness', spa_home: 'wellness', haircut_men: 'beauty', haircut_women: 'beauty',
-  facial: 'beauty', makeup: 'beauty', mehendi: 'beauty', manicure: 'beauty',
-  waxing: 'beauty', yoga: 'wellness', personal_trainer: 'wellness', physiotherapy: 'wellness', dietician: 'wellness',
-  
-  // Pet Services
-  pet_grooming: 'pet', dog_walking: 'pet', pet_sitting: 'pet', pet_boarding: 'pet',
-  pet_training: 'pet', vet_visit: 'pet', aquarium: 'pet', bird_care: 'pet',
-  
-  // Tech Services
-  computer_repair: 'tech', phone_repair: 'tech', tablet_repair: 'tech', data_recovery: 'tech',
-  virus_removal: 'tech', software_install: 'tech', networking: 'tech', smart_home: 'tech',
-  cctv: 'tech', printer: 'tech', gaming_setup: 'tech', website: 'tech',
-  
-  // Education
-  math_tutor: 'education', science_tutor: 'education', english_tutor: 'education',
-  hindi_tutor: 'education', coding_tutor: 'education', music_lessons: 'education',
-  art_lessons: 'education', dance_lessons: 'education', foreign_lang: 'education',
-  exam_prep: 'education', nursery_teach: 'education', special_needs: 'education',
-  
-  // Events
-  dj: 'events', event_decor: 'events', balloon_decor: 'events', flower_decor: 'events',
-  catering: 'events', anchor: 'events', magic_show: 'events', clown: 'events',
-  live_music: 'events', standup: 'events', game_host: 'events', puppet_show: 'events',
-};
-
-// Category-based appointments
-const APPOINTMENTS_BY_CATEGORY: { [key: string]: { [date: string]: any[] } } = {
-  cleaning: {
-    '2026-01-26': [
-      { id: 'a1', service: 'Deep House Cleaning', customer: 'Priya Patel', time: '10:00 AM', duration: '3 hrs', status: 'completed', earnings: 2500, location: 'DLF Phase 3' },
-      { id: 'a2', service: 'Kitchen Cleaning', customer: 'Rahul Sharma', time: '2:00 PM', duration: '2 hrs', status: 'in_progress', earnings: 1200, location: 'Sector 21' },
-    ],
-    '2026-01-27': [
-      { id: 'a3', service: 'Full House Cleaning', customer: 'Amit Verma', time: '9:00 AM', duration: '5 hrs', status: 'upcoming', earnings: 4000, location: 'Cyber Hub' },
-    ],
-    '2026-01-28': [
-      { id: 'a4', service: 'Office Cleaning', customer: 'TechCorp Ltd', time: '8:00 AM', duration: '4 hrs', status: 'upcoming', earnings: 3500, location: 'Tech Park' },
-    ],
-  },
-  drone: {
-    '2026-01-26': [
-      { id: 'a1', service: 'Wedding Aerial Shoot', customer: 'Kapoor Family', time: '8:00 AM', duration: '6 hrs', status: 'completed', earnings: 25000, location: 'Farmhouse, Chattarpur' },
-    ],
-    '2026-01-27': [
-      { id: 'a2', service: 'Real Estate Drone Video', customer: 'DLF Builders', time: '2:00 PM', duration: '3 hrs', status: 'upcoming', earnings: 15000, location: 'New Gurgaon' },
-      { id: 'a3', service: 'Event Aerial Coverage', customer: 'TechCorp', time: '5:00 PM', duration: '2 hrs', status: 'upcoming', earnings: 12000, location: 'Cyber Hub' },
-    ],
-    '2026-01-28': [
-      { id: 'a4', service: 'Land Survey Mapping', customer: 'Agriculture Dept', time: '7:00 AM', duration: '8 hrs', status: 'upcoming', earnings: 35000, location: 'Sonipat' },
-    ],
-    '2026-01-29': [],
-    '2026-01-30': [
-      { id: 'a5', service: 'Building Inspection', customer: 'SafetyFirst Inc', time: '10:00 AM', duration: '4 hrs', status: 'upcoming', earnings: 18000, location: 'Dwarka' },
-    ],
-  },
-  photo: {
-    '2026-01-26': [
-      { id: 'a1', service: 'Wedding Photography', customer: 'Sharma Wedding', time: '7:00 AM', duration: '10 hrs', status: 'completed', earnings: 35000, location: 'ITC Grand' },
-    ],
-    '2026-01-27': [
-      { id: 'a2', service: 'Product Photoshoot', customer: 'FashionBrand', time: '11:00 AM', duration: '4 hrs', status: 'upcoming', earnings: 12000, location: 'Studio 14' },
-    ],
-    '2026-01-28': [
-      { id: 'a3', service: 'Birthday Photography', customer: 'Verma Family', time: '4:00 PM', duration: '3 hrs', status: 'upcoming', earnings: 8000, location: 'Sector 50' },
-    ],
-  },
-  repair: {
-    '2026-01-26': [
-      { id: 'a1', service: 'AC Repair', customer: 'Vikram Singh', time: '9:00 AM', duration: '2 hrs', status: 'completed', earnings: 1800, location: 'Sector 45' },
-      { id: 'a2', service: 'Plumbing Work', customer: 'Amit Kumar', time: '1:00 PM', duration: '1.5 hrs', status: 'in_progress', earnings: 900, location: 'MG Road' },
-    ],
-    '2026-01-27': [
-      { id: 'a3', service: 'Electrical Repair', customer: 'Sanjay Gupta', time: '4:00 PM', duration: '3 hrs', status: 'upcoming', earnings: 2200, location: 'DLF Cyber Hub' },
-    ],
-    '2026-01-28': [
-      { id: 'a4', service: 'Refrigerator Service', customer: 'Sharma Residence', time: '10:00 AM', duration: '2 hrs', status: 'upcoming', earnings: 1500, location: 'Sector 22' },
-    ],
-  },
-  beauty: {
-    '2026-01-26': [
-      { id: 'a1', service: 'Bridal Makeup', customer: 'Priya (Bride)', time: '5:00 AM', duration: '4 hrs', status: 'completed', earnings: 25000, location: 'South City' },
-    ],
-    '2026-01-27': [
-      { id: 'a2', service: 'Hair & Facial', customer: 'Meera Kapoor', time: '2:00 PM', duration: '2 hrs', status: 'upcoming', earnings: 3000, location: 'Sector 42' },
-      { id: 'a3', service: 'Mehendi Design', customer: 'Gupta Family', time: '6:00 PM', duration: '5 hrs', status: 'upcoming', earnings: 12000, location: 'Wedding Venue' },
-    ],
-  },
-  wellness: {
-    '2026-01-26': [
-      { id: 'a1', service: 'Deep Tissue Massage', customer: 'Anjali Verma', time: '10:00 AM', duration: '1.5 hrs', status: 'completed', earnings: 2500, location: 'Sector 29' },
-    ],
-    '2026-01-27': [
-      { id: 'a2', service: 'Yoga Session', customer: 'Group Class', time: '6:00 AM', duration: '1 hr', status: 'upcoming', earnings: 1500, location: 'DLF Park' },
-      { id: 'a3', service: 'Personal Training', customer: 'Ravi Kumar', time: '7:00 PM', duration: '1 hr', status: 'upcoming', earnings: 1200, location: 'Home Gym' },
-    ],
-  },
-  pet: {
-    '2026-01-26': [
-      { id: 'a1', service: 'Dog Grooming', customer: 'Bruno (Labrador)', time: '10:00 AM', duration: '2 hrs', status: 'completed', earnings: 1800, location: 'Sector 50' },
-    ],
-    '2026-01-27': [
-      { id: 'a2', service: 'Pet Sitting', customer: 'Milo (Cat)', time: '12:00 PM', duration: '3 days', status: 'upcoming', earnings: 3000, location: 'Sector 47' },
-    ],
-    '2026-01-28': [
-      { id: 'a3', service: 'Dog Training', customer: 'Max (German Shepherd)', time: '7:00 AM', duration: '1 hr', status: 'upcoming', earnings: 1000, location: 'Sector 31' },
-    ],
-  },
-  tech: {
-    '2026-01-26': [
-      { id: 'a1', service: 'Laptop Repair', customer: 'Amit Choudhary', time: '10:00 AM', duration: '2 hrs', status: 'completed', earnings: 2500, location: 'Sector 14' },
-    ],
-    '2026-01-27': [
-      { id: 'a2', service: 'CCTV Installation', customer: 'Home Security', time: '2:00 PM', duration: '4 hrs', status: 'upcoming', earnings: 12000, location: 'Sector 57' },
-    ],
-    '2026-01-28': [
-      { id: 'a3', service: 'Smart Home Setup', customer: 'Tech Enthusiast', time: '5:00 PM', duration: '3 hrs', status: 'upcoming', earnings: 8000, location: 'DLF Phase 5' },
-    ],
-  },
-  education: {
-    '2026-01-26': [
-      { id: 'a1', service: 'Math Tutoring', customer: 'Khanna Student', time: '4:00 PM', duration: '2 hrs', status: 'completed', earnings: 1200, location: 'Sector 15' },
-    ],
-    '2026-01-27': [
-      { id: 'a2', service: 'Coding Class', customer: 'Young Coder', time: '5:00 PM', duration: '1.5 hrs', status: 'upcoming', earnings: 2500, location: 'Sector 40' },
-      { id: 'a3', service: 'Piano Lesson', customer: 'Music Student', time: '7:00 PM', duration: '1 hr', status: 'upcoming', earnings: 1000, location: 'DLF Phase 1' },
-    ],
-  },
-  driver: {
-    '2026-01-26': [
-      { id: 'a1', service: 'Airport Transfer', customer: 'Kavita Joshi', time: '4:00 AM', duration: '1.5 hrs', status: 'completed', earnings: 1200, location: 'Sector 44 → IGI T3' },
-      { id: 'a2', service: 'Corporate Chauffeur', customer: 'Mr. Malhotra', time: '9:00 AM', duration: '8 hrs', status: 'completed', earnings: 2500, location: 'Multiple Stops' },
-    ],
-    '2026-01-27': [
-      { id: 'a3', service: 'Wedding Car Service', customer: 'Kapoor Wedding', time: '5:00 PM', duration: '6 hrs', status: 'upcoming', earnings: 4000, location: 'Chattarpur' },
-    ],
-  },
-  events: {
-    '2026-01-27': [
-      { id: 'a1', service: 'DJ at Birthday', customer: 'Birthday Host', time: '7:00 PM', duration: '4 hrs', status: 'upcoming', earnings: 12000, location: 'Sector 31 Farmhouse' },
-    ],
-    '2026-01-28': [
-      { id: 'a2', service: 'Event Decoration', customer: 'Baby Shower', time: '10:00 AM', duration: '5 hrs', status: 'upcoming', earnings: 8000, location: 'Golf Course Ext' },
-    ],
-  },
-};
-
-// Function to get user's primary category
-const getUserCategory = (skills: string[]): string => {
-  if (!skills || skills.length === 0) return 'cleaning';
-  
-  const categoryCounts: { [key: string]: number } = {};
-  skills.forEach(skill => {
-    const category = SKILL_CATEGORIES[skill];
-    if (category) {
-      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-    }
-  });
-  
-  let maxCategory = 'cleaning';
-  let maxCount = 0;
-  Object.entries(categoryCounts).forEach(([cat, count]) => {
-    if (count > maxCount) {
-      maxCount = count;
-      maxCategory = cat;
-    }
-  });
-  
-  return maxCategory;
-};
-
 export default function AppointmentsScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -248,7 +43,7 @@ export default function AppointmentsScreen() {
   // Get user's category and appointments
   const userSkills = user?.agent_skills || [];
   const userCategory = getUserCategory(userSkills);
-  const categoryAppointments = APPOINTMENTS_BY_CATEGORY[userCategory] || APPOINTMENTS_BY_CATEGORY['cleaning'];
+  const categoryAppointments = MOCK_APPOINTMENTS[userCategory] || MOCK_APPOINTMENTS['home_services'] || [];
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -275,7 +70,9 @@ export default function AppointmentsScreen() {
   const weekDates = getWeekDates();
   const todayKey = formatDateKey(new Date());
   const selectedKey = formatDateKey(selectedDate);
-  const appointments = categoryAppointments[selectedKey] || [];
+  
+  // Use the same appointments for all days (mock data)
+  const appointments = categoryAppointments;
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -291,8 +88,8 @@ export default function AppointmentsScreen() {
   };
 
   const hasAppointments = (date: Date) => {
-    const key = formatDateKey(date);
-    return categoryAppointments[key]?.length > 0;
+    // Show appointments on all days for demo
+    return categoryAppointments.length > 0;
   };
 
   const navigateDate = (direction: number) => {
