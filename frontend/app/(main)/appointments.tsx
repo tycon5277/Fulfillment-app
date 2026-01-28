@@ -601,4 +601,55 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFF',
   },
+  // Filter Tab Styles
+  filterContainer: {
+    marginTop: 12,
+    marginHorizontal: 16,
+  },
+  filterScroll: {
+    gap: 8,
+  },
+  filterTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: COLORS.cardBg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    gap: 6,
+  },
+  filterTabActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  filterTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  filterTabTextActive: {
+    color: '#FFFFFF',
+  },
+  filterBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: COLORS.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  filterBadgeActive: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+  },
+  filterBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+  },
+  filterBadgeTextActive: {
+    color: '#FFFFFF',
+  },
 });
