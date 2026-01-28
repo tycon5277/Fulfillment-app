@@ -33,12 +33,21 @@ const COLORS = {
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
+// Filter tabs for sorting appointments
+const FILTER_TABS = [
+  { key: 'all', label: 'All' },
+  { key: 'upcoming', label: 'Upcoming' },
+  { key: 'in_progress', label: 'In Progress' },
+  { key: 'completed', label: 'Completed' },
+];
+
 export default function AppointmentsScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+  const [selectedFilter, setSelectedFilter] = useState('all');
 
   // Get user's category and appointments
   const userSkills = user?.agent_skills || [];
@@ -71,8 +80,30 @@ export default function AppointmentsScreen() {
   const todayKey = formatDateKey(new Date());
   const selectedKey = formatDateKey(selectedDate);
   
-  // Use the same appointments for all days (mock data)
-  const appointments = categoryAppointments;
+  // Filter and sort appointments
+  const filteredAppointments = useMemo(() => {
+    let filtered = [...categoryAppointments];
+    
+    // Apply filter
+    if (selectedFilter !== 'all') {
+      filtered = filtered.filter(apt => apt.status === selectedFilter);
+    }
+    
+    // Sort: in_progress first, then upcoming, then completed
+    const statusOrder: { [key: string]: number } = {
+      'in_progress': 0,
+      'upcoming': 1,
+      'completed': 2,
+    };
+    
+    filtered.sort((a, b) => {
+      const orderA = statusOrder[a.status] ?? 3;
+      const orderB = statusOrder[b.status] ?? 3;
+      return orderA - orderB;
+    });
+    
+    return filtered;
+  }, [categoryAppointments, selectedFilter]);
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -88,7 +119,6 @@ export default function AppointmentsScreen() {
   };
 
   const hasAppointments = (date: Date) => {
-    // Show appointments on all days for demo
     return categoryAppointments.length > 0;
   };
 
@@ -97,6 +127,14 @@ export default function AppointmentsScreen() {
     newDate.setDate(newDate.getDate() + direction);
     setSelectedDate(newDate);
   };
+
+  // Get counts for filter badges
+  const filterCounts = useMemo(() => ({
+    all: categoryAppointments.length,
+    upcoming: categoryAppointments.filter(a => a.status === 'upcoming').length,
+    in_progress: categoryAppointments.filter(a => a.status === 'in_progress').length,
+    completed: categoryAppointments.filter(a => a.status === 'completed').length,
+  }), [categoryAppointments]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
