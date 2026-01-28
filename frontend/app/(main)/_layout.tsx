@@ -416,6 +416,26 @@ export default function MainLayout() {
           href: null,
         }}
       />
+
+      {/* Hidden screens for detail pages (accessed via navigation, not tabs) */}
+      <Tabs.Screen
+        name="earnings-detail"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="reviews-detail"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="appointments-summary"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
