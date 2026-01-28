@@ -1,150 +1,169 @@
 <analysis>
 
-**original_problem_statement**: The user wants to build a Quickwish Genie mobile fulfillment app. The latest user requests are:
-1.  **Fix Hub Orders**: The Hub Orders tab should display available orders when the Genie is online. Currently, it's empty.
-2.  **Simplify Propose Terms**: The contract proposal screen in the  flow should be simpler, focusing only on the agreed price and a description of the tasks. The Estimated Completion Time field was removed.
-3.  **Refine Offline Behavior**:
-    *   When a Genie goes offline, they should not see any available Hub Orders or Wishes.
-    *   The Deliveries tab should only show *completed* tasks when the Genie is offline.
-    *   A Genie with an active (accepted) Wish or Hub Order cannot go offline. They should see a warning pop-up with an option to re-assign the task to another Genie.
-4.  **Rename Deliveries Tab**: The Deliveries tab should be renamed to something more general like My Quests to reflect that Genies can perform various tasks, not just deliveries.
-5.  **Add Back Navigation**: Ensure all screens have a back button to allow users to navigate to the previous page.
-6.  **Redesign Login Screen**: The initial screen of the app should have Login and Register options and be redesigned to match the app's gamified, dark theme.
+**original_problem_statement**: The user wants to build out the Skilled Genie portion of the app. The core feature is that Genies must only see work (wishes) that matches their registered skills.
+
+The project has evolved to address several UI/UX issues and feature enhancements based on user feedback:
+1.  **Critical Fixes**: Resolve a recurring tab bar glitch where the wrong tabs show for a Skilled Genie on login, and fix false matches in the skill-based wish filtering.
+2.  **UI Consistency**: Ensure that all mock data (on the home screen, appointments tab, and chats tab) is skill-aware and dynamically reflects the logged-in Genie's skills (e.g., a Culinary Genie should not see Cleaning appointments).
+3.  **Enhanced Home Screen**: The stats cards (Earnings, Appointments, Rating) on the skilled genie home page must be clickable, leading to dedicated, detailed pages for each.
+4.  **UI Cleanup**:
+    *   Rename the Nearby tab to Work Orders.
+    *   Remove Platform Fee and Withdraw to Bank options from the Earnings page, as the platform does not charge fees.
+    *   Move access points for the new Earnings and Reviews detail pages to the Profile screen, and hide these detail pages from the main bottom tab bar.
+5.  **Schedule Tab Enhancement**:
+    *   Implement filter tabs within the Schedule screen to sort appointments by status (Upcoming, In Progress, Completed).
+    *   Completed appointments should be sorted to the bottom of the list.
+    *   Make individual appointment cards clickable, navigating to a new  page.
+    *   The  page should provide a workflow to change the date/time for Upcoming appointments.
 
 **User's preferred language**: English
 
 **what currently exists?**
-- A full-stack Expo/FastAPI application with a heavily gamified UI.
-- A completely redesigned and on-brand welcome/login/OTP flow in .
-- A centralized  and  state in the Zustand store () that is now used by , , and  to ensure consistent state across the app.
-- A comprehensive, multi-step wish fulfillment flow in : Waiting -> Incoming -> Negotiating (with Chat & a simplified Propose Terms screen) -> Contract Sent -> In Progress.
-- A warning system in  that prevents a Genie with active work from going offline, presenting a modal with an option to re-assign the task.
-- Back buttons have been added to the headers of the , ,  (now ), and throughout the new  flow.
-- The Deliveries tab has been renamed to My Quests in the main layout .
-- The  file was completely rewritten to handle the new logic for My Quests (showing active vs. completed tasks based on online status).
+- The two critical P0 issues (tab bar glitch and skill filtering inaccuracy) have been resolved and verified. The fix involved updating the local user state in the Zustand store immediately after registration *before* navigating, which ensures all UI components render with the correct user role and skills.
+- A centralized, skill-aware mock data system has been implemented in . This file maps every available skill to a category and provides relevant mock data for appointments, chats, and stats.
+- The , , , and  screens all consume this centralized mock data, providing a consistent experience (e.g., a Culinary Genie sees only cooking-related data across the app).
+- Three new clickable detail pages have been created: , , and .
+- The UI has been cleaned up per user requests: the Nearby tab is now Work Orders, the Earnings page is simplified, and the new detail pages are correctly hidden from the tab bar and are accessible from the Profile screen.
+- Several backend seed endpoints (, ) exist for rapid testing of different skill-based user flows.
 
 **Last working item**:
-- **Last item agent was working**: The agent was implementing the user's request to rename the Deliveries tab to My Quests and adjust its functionality. This involved rewriting the  file to filter displayed tasks based on the Genie's online status (showing only completed tasks when offline).
+- **Last item agent was working**: Implementing the user's request to enhance the Schedule tab (). The agent was in the process of adding filter tabs to sort appointments by status (Upcoming, In Progress, Completed, All). It successfully added the state management () and filtering logic () but was interrupted while attempting to add the necessary CSS styles for the new filter tab UI components.
 - **Status**: IN PROGRESS
 - **Agent Testing Done**: N
-- **Which testing method agent to use?**: Frontend testing agent. The next agent must first **rename the file  to **. Then, log in, navigate to the My Quests tab while Online to see active/completed tasks, go Offline from the Home screen, and navigate back to My Quests to verify that only completed tasks are visible.
+- **Which testing method agent to use?**: frontend testing agent
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-- **Issue 1**: (P0) Hub Orders are not displayed when the Genie is online.
-  - **Issues Detail**:
-     - **Issue 1**:
-       - **Attempted fixes**: The agent correctly identified that  was using a local state for  and fixed it to use the global Zustand store. However, the screen still appears empty because there is no mock order data in the backend database for the API to return.
-       - **Next debug checklist**:
-         1.  Modify the backend ( or a seeding script) to insert a few mock hub orders into the MongoDB database on startup or via a debug endpoint.
-         2.  Restart the backend service.
-         3.  Log in as a Carpet Genie, go online, and navigate to the Hub Order tab.
-         4.  Verify that the mock orders are now being displayed.
-       - **Why fix this issue and what will be achieved with the fix?**: This is a core functionality for Carpet Genies. Fixing this will make the Hub Order flow testable and functional.
-       - **Status**: IN PROGRESS
-       - **Is recurring issue?**: N
-       - **Should Test frontend/backend/both after fix?**: both
-       - **Blocked on other issue**: None
+- **Issue 1**: (P0) The Schedule tab enhancement is incomplete. The UI for the filter tabs (Upcoming, In Progress, etc.) is missing, and the  page has not been created.
+
+  **Issues Detail**:
+  - **Issue 1: Schedule Tab Enhancement Incomplete**
+     - **Attempted fixes**: The agent successfully added the state and filtering logic to  to create a  array. It then encountered a command-line syntax error while trying to add the new styles to the .
+     - **Next debug checklist**:
+       1.  Open .
+       2.  Locate the  block.
+       3.  Add the required styles for the filter tabs (, , , , ).
+       4.  Ensure the JSX for rendering the filter tabs is correctly placed above the appointment list.
+       5.  Create a new file  for the appointment details.
+       6.  Update the  handler for the appointment cards in  to navigate to this new detail page, passing the appointment ID.
+       7.  Implement the UI for the detail page, including a conditional Reschedule button for appointments with .
+     - **Why fix this issue and what will be achieved with the fix?**: This will complete a key user request, making the Schedule screen much more usable for Genies by allowing them to manage their appointments effectively.
+     - **Status**: IN PROGRESS
+     - **Is recurring issue?**: N
+     - **Should Test frontend/backend/both after fix?**: frontend
+     - **Blocked on other issue**: None
 
 **In progress Task List**:
-- **Task 1**: (P0) Finalize and Test My Quests tab functionality.
-  - **Where to resume**: The logic has been rewritten in . The next steps are:
-    1.  Rename the file  to .
-    2.  Restart the Expo server.
-    3.  Thoroughly test the screen's behavior both online and offline using the screenshot tool.
-  - **What will be achieved with this?**: This will complete the user's request to rename the tab and implement the correct offline/online views for a Genie's tasks.
-  - **Status**: IN PROGRESS
-  - **Should Test frontend/backend/both after fix?**: frontend
-  - **Blocked on something**: None
+- **Task 1**: Complete the Schedule Tab Enhancement
+     - **Where to resume**: . The styling for the filter tabs needs to be added, and the  page needs to be created and linked.
+     - **What will be achieved with this?**: A fully functional schedule screen with sorting and drill-down capabilities.
+     - **Status**: IN PROGRESS
+     - **Should Test frontend/backend/both after fix?**: frontend
+     - **Blocked on something**: None
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks**:
-    - **P0: Implement Task Re-assignment**: The warning modal that prevents going offline has been built, but the Assign to another Genie functionality is not implemented. This needs a backend endpoint and frontend logic to execute.
-    - **P1: Configure User Roles**: Implement the full setup, dashboard, and API integrations for Skilled Genie, Vendor, and Promoter user types.
-    - **P2: Real API Integrations**: Integrate APIs for Maps (real navigation), identity verification, etc.
+    - **P0: Backend Implementation for Wishes**: Replace the frontend mock data in  with a real backend API endpoint ().
+    - **P1: Backend Implementation for Appointments**: Create the backend infrastructure to allow booking, viewing, and managing appointments, replacing the mock data in  and .
+    - **P2: Backend Implementation for Chat**: The  screen is a UI-only mock. A real-time chat system needs to be built.
+    - **P3: Persist User-Entered Profile Data**: The Tell Your Story data (bio, social links, certs) is currently only stored in frontend state. It needs to be saved to the database.
+
 - **Future Tasks**:
-    - **P1**: Implement the real order flow, moving away from mocked data.
+    - Integrate a real maps API to replace placeholders.
+    - Implement Assign to another Genie functionality.
 
 **Completed work in this session**
-- **Login/Auth Redesign**: Completely overhauled the welcome, login, and OTP screens () with a beautiful, on-brand, gamified dark theme.
-- **Fixed Incoming Wish Card Bug**: Resolved a critical UI bug where wish details were not visible. The root cause was identified as Metro bundler caching, and the fix was verified.
-- **Centralized Online State**: Refactored the app to use a single  state from the Zustand store (), eliminating state synchronization issues between screens.
-- **New Wish Negotiation Flow**: Implemented a complete, multi-step wish negotiation process ():
-    - Renamed Accept to Start Negotiation.
-    - Added a  state with Chat and Propose Terms tabs.
-    - Simplified the Propose Terms screen to only include price and task details.
-    - Added  and  states with corresponding UI.
-- **Cannot Go Offline Feature**: Implemented a warning modal in  that prevents Genies from going offline if they have active work, correctly using the new  state in Zustand.
-- **Added Back Navigation**: Added back buttons to headers on ,  (now ), , and the new  flow for improved usability.
-- **Deliveries Tab Renamed to My Quests**: Updated the tab name in  and completely rewrote the  file with the new logic (pending file rename and testing).
-- **Removed Unwanted Tip**: Removed the stay in high demand area tip from the  screen.
+- **Critical Stability Fixes**:
+  - **Tab Bar Glitch (FIXED)**: Resolved the race condition that caused the wrong tabs to show on login.
+  - **Skill-Based Filtering (FIXED)**: Ensured user skills are correctly loaded into the state, making the wish filtering accurate.
+- **Skill-Aware Mock Data**:
+  - Created a centralized mock data utility ().
+  - Refactored , , and  to display dynamic, skill-relevant mock data.
+  - Added mock wishes for all skill categories to .
+- **New Feature: Detailed Stats Pages**:
+  - Created three new detail pages: , , and .
+  - Made the stat cards on  clickable, navigating to these new pages.
+- **UI/UX Refinements**:
+  - Renamed Nearby tab to Work Orders.
+  - Simplified the Earnings page by removing platform fees and withdraw options.
+  - Moved navigation for detail pages to the Profile screen and hid them from the main tab bar using  in .
 
 **Earlier issues found/mentioned but not fixed**
-- The Hub Orders not showing issue is the primary one, as detailed in the All Pending/In progress Issue list.
+- None. All previously identified issues have been addressed and resolved.
+
+**Known issue recurrence from previous fork**
+  - **Issue recurrence in previous fork**: The Hub Orders tab incorrectly showing for Skilled Genies.
+  - **Recurrence count**: 3+
+  - **Status**: RESOLVED. The definitive fix was to ensure  and  are called after registration and before navigation, which has been verified.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **State Management**: Zustand is now the definitive source of truth for global states like  and . This was a major architectural improvement.
-- **State Machines**: The  component implements a complex local state machine to manage the flow from  through , , and .
-- **Component-Based UI**: Reusable components like  are used for consistent, gamified user interactions.
-- **Conditional Rendering**: Heavily used to manage different UI states for online/offline status, user types, and the wish fulfillment process.
+- **Role-Based UI/UX**: The app maintains two distinct UIs and navigation structures based on .
+- **Robust Loading State**: Using an  flag combined with ensuring the  object is populated post-login/registration to prevent race conditions.
+- **Centralized Mock Data**: A dedicated utility () provides consistent, skill-aware mock data across multiple components, making the UI feel dynamic and realistic.
+- **Tab Bar Visibility Control**: Using  in the   file to create screens that are part of the stack but are not visible in the bottom tab navigator.
+- **Backend Seeding for Testing**: Using  with dedicated API endpoints () to instantly create test users with specific roles and skills, which has proven essential for reliable testing.
 
 **key DB schema**
-- No changes were made to the database schema in this session.
+- No changes to the DB schema in this session.
+
+**changes in tech stack**
+- None.
 
 **All files of reference**
-- : **Completely Rewritten**. Contains the new welcome screen and redesigned login/OTP flow.
-- : **Completely Rewritten**. Contains the new negotiation and contract state machine.
-- : **Modified**. Now the single source of truth for  and  status.
-- : **Modified**. Connects to the Zustand store and contains the cannot go offline warning modal.
-- : **Modified**. Renamed the Deliveries tab to My Quests.
-- : **Rewritten**. Contains all logic for the My Quests screen. **Needs to be renamed to **.
-- : **Modified**. Now uses the global Zustand  state.
-- , : **Modified** to include a back navigation button.
+- : **CRITICAL FILE**. The agent was actively editing this file to add sorting tabs. The next agent must resume work here.
+- : The centralized source of truth for all mock data. May need to be referenced when building the  page.
+- : Defines the app's navigation structure and tab visibility.
+- : Contains the seed endpoints used for testing.
 
 **Areas that need refactoring**:
-- The file  **MUST** be renamed to  to match the route name defined in .
+- The mock data generation, while now centralized, could be further refined. All screens (, , ) now contain the same helper functions (, ). This logic could be moved into the  utility itself to be more DRY.
 
 **Critical Info for New Agent**
-- **Zustand is King**: All checks for online/offline status () and active jobs () **must** go through the Zustand store (). Do not use local state for this.
-- **File Rename Required**: You must start by renaming  to . The app will not work correctly until you do.
-- **Hub Orders are Empty**: The Hub Order screen is not showing data because the backend database is empty. You need to add mock orders to the backend to test this flow.
-- **Metro Caching**: If your UI changes do not appear after saving a file, the Metro bundler cache is the likely culprit. Restarting the Expo server (expo: ERROR (not running)
-expo: started) usually fixes this.
+- **Your immediate priority is to finish the Schedule tab enhancement.** Start by opening .
+- You need to add the CSS styles for the filter tabs that the previous agent started implementing.
+- After styling, you must create the  page and link it from the appointment cards. This new page needs a conditional Reschedule workflow.
+- Use the backend seed endpoints to test. {"message":"Culinary Genie test user created","session_token":"session_culinary_f418c39ac2c3471b","user":{"user_id":"user_culinary_test","phone":"9555444333","name":"Meera Chef","email":"meera.chef@test.com","picture":null,"date_of_birth":"1988-05-15","address":"Sector 29, Gurgaon","addresses":[],"partner_type":"agent","partner_status":"available","partner_rating":4.8,"partner_total_tasks":95,"partner_total_earnings":175000.0,"agent_type":"skilled","agent_vehicle":null,"agent_vehicle_registration":null,"agent_vehicle_make":null,"agent_vehicle_model":null,"agent_vehicle_color":null,"agent_is_electric":false,"agent_services":[],"agent_skills":["home_cook","tiffin","bbq","ethnic_cuisine","diet_meal"],"agent_has_vehicle":false,"agent_rating":4.8,"agent_total_deliveries":0,"vendor_shop_name":null,"vendor_shop_type":null,"vendor_shop_address":null,"vendor_shop_location":null,"vendor_can_deliver":false,"vendor_categories":[],"vendor_is_verified":false,"promoter_business_name":null,"promoter_type":null,"promoter_description":null,"created_at":"2026-01-28T10:35:41.801534+00:00"}} is a reliable way to get a logged-in session for a skilled genie.
+- All critical stability bugs have been fixed. The current task is a feature enhancement.
 
-**Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Okayed the name My Quests and told the agent to proceed. (DONE)
-2.  **User**: Provided feedback on offline behavior for Deliveries tab and suggested renaming it. (IN PROGRESS)
-3.  **User**: Requested fixes for Hub Orders (not showing up), simplification of Propose Terms, and logic to prevent going offline with active work. (IN PROGRESS)
-4.  **User**: Confirmed that real orders are for later and asked for a redesign of the initial login/register screen. (DONE)
-5.  **User**: Provided credits. (ACKNOWLEDGED)
-6.  **User**: Confirmed plan. (ACKNOWLEDGED)
-7.  **User**: Fixed a bug where wishes pop up when offline, removed an unneeded tip, and added a new negotiation->contract flow with status tracking and back navigation. (DONE)
+**documents created in this job**
+- 
+
+**Last 10 User Messages and any pending HUMAN messages** 
+1.  **User**: Enhance the Schedule tab with sorting, clickable items to a detail page, and a reschedule workflow. (IN PROGRESS)
+2.  **User**: Reports that new detail pages are incorrectly appearing in the bottom tab bar. (RESOLVED)
+3.  **User**: Requests UI cleanup: rename Nearby to Work Orders, simplify Earnings page, and move detail page access to the Profile screen. (RESOLVED)
+4.  **User**: Requests that the stats cards on the home screen become clickable and lead to detailed pages. (RESOLVED)
+5.  **User**: Reports that mock data is still incorrect for their chosen skill (Culinary). Provides a clear strategy for fixing it. (RESOLVED)
+6.  **User**: Reports that mock data for a Drone Pilot is inconsistent across Home, Appointments, and Chat screens (shows cleaning data). (RESOLVED)
+7.  **User**: Acknowledges fixes for tab glitch and filtering but requests that inconsistent mock data in other tabs be fixed. (ADDRESSED)
+8.  **User**: Confirms the fix for tab bar and filtering looks good. (ADDRESSED)
+9.  **User**: Agrees with the plan to implement a comprehensive skill-based mock data system. (ADDRESSED)
+10. **User**: Confirms the agent's summary of fixes and next steps. (ADDRESSED)
 
 **Project Health Check:**
-- **Broken**:
-    - The Hub Order flow is non-functional as no orders are displayed, even when online, due to a lack of backend data.
-    - The My Quests tab will be broken until  is renamed to .
-- **Mocked**:
-    - All data remains hardcoded. The app does not yet have a persistent database for orders, wishes, etc. The new negotiation flow relies on local state simulation.
+- **Broken**: Nothing is critically broken. The core stability issues have been resolved.
+- **Mocked**: The entire data flow for the Skilled Genie (wishes, appointments, chats, earnings) is still mocked on the frontend. The next major phase of work will be to replace this with backend APIs.
 
 **3rd Party Integrations**
-- No new integrations were added. Existing ones include Carto/Leaflet.js, expo-linear-gradient, and react-native-svg.
+- : Used for the radius controller in .
 
 **Testing status**
-- **Testing agent used after significant changes**: YES, the screenshot tool was used extensively to verify UI changes after redesigns and bug fixes.
-- **Troubleshoot agent used after agent stuck in loop**: NO.
-- **Test files created**: []
-- **Known regressions**: None. The previous regression (incoming wish card) was fixed.
+- **Testing agent used after significant changes**: No, manual testing with  and backend seeding was used for the last set of verifications.
+- **Troubleshoot agent used after agent stuck in loop**: No.
+- **Test files created**: None.
+- **Known regressions**: None.
 
 **Credentials to test flow:**
-- **Phone Number**: Any 10-digit number.
-- **OTP**: 
+- **Manual Registration**: Any 10-digit phone number, OTP is .
+- **Backend Seed Endpoints (Recommended)**:
+    - {"message":"Culinary Genie test user created","session_token":"session_culinary_ee8e6895ea384095","user":{"user_id":"user_culinary_test","phone":"9555444333","name":"Meera Chef","email":"meera.chef@test.com","picture":null,"date_of_birth":"1988-05-15","address":"Sector 29, Gurgaon","addresses":[],"partner_type":"agent","partner_status":"available","partner_rating":4.8,"partner_total_tasks":95,"partner_total_earnings":175000.0,"agent_type":"skilled","agent_vehicle":null,"agent_vehicle_registration":null,"agent_vehicle_make":null,"agent_vehicle_model":null,"agent_vehicle_color":null,"agent_is_electric":false,"agent_services":[],"agent_skills":["home_cook","tiffin","bbq","ethnic_cuisine","diet_meal"],"agent_has_vehicle":false,"agent_rating":4.8,"agent_total_deliveries":0,"vendor_shop_name":null,"vendor_shop_type":null,"vendor_shop_address":null,"vendor_shop_location":null,"vendor_can_deliver":false,"vendor_categories":[],"vendor_is_verified":false,"promoter_business_name":null,"promoter_type":null,"promoter_description":null,"created_at":"2026-01-28T10:35:41.854553+00:00"}}
+    - {"message":"Drone Genie test user created","session_token":"session_drone_e8a0bab9123242d7","user":{"user_id":"user_drone_test","phone":"9111222333","name":"Arjun Kapoor","email":"arjun.drone@test.com","picture":null,"date_of_birth":"1992-03-10","address":"Sector 45, Gurgaon","addresses":[],"partner_type":"agent","partner_status":"available","partner_rating":4.9,"partner_total_tasks":85,"partner_total_earnings":125000.0,"agent_type":"skilled","agent_vehicle":null,"agent_vehicle_registration":null,"agent_vehicle_make":null,"agent_vehicle_model":null,"agent_vehicle_color":null,"agent_is_electric":false,"agent_services":[],"agent_skills":["drone_photography","drone_videography","drone_wedding","drone_events","drone_real_estate"],"agent_has_vehicle":true,"agent_rating":4.9,"agent_total_deliveries":0,"vendor_shop_name":null,"vendor_shop_type":null,"vendor_shop_address":null,"vendor_shop_location":null,"vendor_can_deliver":false,"vendor_categories":[],"vendor_is_verified":false,"promoter_business_name":null,"promoter_type":null,"promoter_description":null,"created_at":"2026-01-28T10:35:41.880592+00:00"}}
+    - {"message":"Skilled Genie test user created","session_token":"session_skilled_ae3d049bd74e407a","user":{"user_id":"user_skilled_test","phone":"9999000111","name":"Ramesh Kumar","email":"ramesh@test.com","picture":null,"date_of_birth":"1990-05-15","address":"Sector 21, Gurgaon","addresses":[],"partner_type":"agent","partner_status":"available","partner_rating":4.8,"partner_total_tasks":45,"partner_total_earnings":32500.0,"agent_type":"skilled","agent_vehicle":null,"agent_vehicle_registration":null,"agent_vehicle_make":null,"agent_vehicle_model":null,"agent_vehicle_color":null,"agent_is_electric":false,"agent_services":[],"agent_skills":["cleaning","deep_cleaning","kitchen_cleaning","bathroom_cleaning"],"agent_has_vehicle":true,"agent_rating":4.9,"agent_total_deliveries":0,"vendor_shop_name":null,"vendor_shop_type":null,"vendor_shop_address":null,"vendor_shop_location":null,"vendor_can_deliver":false,"vendor_categories":[],"vendor_is_verified":false,"promoter_business_name":null,"promoter_type":null,"promoter_description":null,"created_at":"2026-01-28T10:35:41.901303+00:00"}} (Cleaning)
 
 **What agent forgot to execute**
-- The agent did not physically rename the file  to  after changing the tab name in the layout file.
-- The agent did not add any mock data to the backend for Hub Orders, which is why the  screen remains empty even after fixing the state management.
+- The agent did not forget to execute a task but was interrupted mid-implementation. It needs to complete adding the styles and creating the detail page for the Schedule tab enhancement.
 
 </analysis>
