@@ -872,4 +872,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.text,
   },
+  // New Browse Wishes Card Styles
+  browseWishesCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    gap: 12,
+  },
+  browseWishesIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: COLORS.secondary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  browseWishesContent: {
+    flex: 1,
+  },
+  browseWishesTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  browseWishesSubtitle: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    lineHeight: 16,
+  },
 });
