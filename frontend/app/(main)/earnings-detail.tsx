@@ -230,12 +230,6 @@ export default function EarningsDetailScreen() {
           ))}
         </View>
 
-        {/* Withdraw Button */}
-        <TouchableOpacity style={styles.withdrawBtn}>
-          <Ionicons name="arrow-down-circle" size={22} color="#FFF" />
-          <Text style={styles.withdrawBtnText}>Withdraw to Bank</Text>
-        </TouchableOpacity>
-
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
