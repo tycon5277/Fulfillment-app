@@ -147,23 +147,29 @@ const getUserCategory = (skills: string[]): string => {
 
 export default function SkilledChatsScreen() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
+
+  // Get user's category and chats
+  const userSkills = user?.agent_skills || [];
+  const userCategory = getUserCategory(userSkills);
+  const categoryChats = CHATS_BY_CATEGORY[userCategory] || CHATS_BY_CATEGORY['cleaning'];
 
   const onRefresh = () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1500);
   };
 
-  const filteredChats = MOCK_CHATS.filter(chat => {
+  const filteredChats = categoryChats.filter(chat => {
     const matchesSearch = chat.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          chat.service.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filter === 'all' || chat.status === filter;
     return matchesSearch && matchesFilter;
   });
 
-  const totalUnread = MOCK_CHATS.reduce((sum, chat) => sum + chat.unread, 0);
+  const totalUnread = categoryChats.reduce((sum, chat) => sum + chat.unread, 0);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
