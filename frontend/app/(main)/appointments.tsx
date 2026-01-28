@@ -199,23 +199,51 @@ export default function AppointmentsScreen() {
       {/* Summary Bar */}
       <View style={styles.summaryBar}>
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryValue}>{appointments.length}</Text>
+          <Text style={styles.summaryValue}>{filteredAppointments.length}</Text>
           <Text style={styles.summaryLabel}>Appointments</Text>
         </View>
         <View style={styles.summaryDivider} />
         <View style={styles.summaryItem}>
           <Text style={styles.summaryValue}>
-            ₹{appointments.reduce((sum, apt) => sum + apt.earnings, 0).toLocaleString()}
+            ₹{filteredAppointments.reduce((sum, apt) => sum + apt.earnings, 0).toLocaleString()}
           </Text>
           <Text style={styles.summaryLabel}>Expected</Text>
         </View>
         <View style={styles.summaryDivider} />
         <View style={styles.summaryItem}>
           <Text style={styles.summaryValue}>
-            {appointments.reduce((sum, apt) => sum + parseFloat(apt.duration), 0)} hrs
+            {filteredAppointments.reduce((sum, apt) => sum + parseFloat(apt.duration), 0)} hrs
           </Text>
           <Text style={styles.summaryLabel}>Total Time</Text>
         </View>
+      </View>
+
+      {/* Filter Tabs */}
+      <View style={styles.filterContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+          {FILTER_TABS.map((tab) => {
+            const count = filterCounts[tab.key as keyof typeof filterCounts];
+            const isActive = selectedFilter === tab.key;
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                style={[styles.filterTab, isActive && styles.filterTabActive]}
+                onPress={() => setSelectedFilter(tab.key)}
+              >
+                <Text style={[styles.filterTabText, isActive && styles.filterTabTextActive]}>
+                  {tab.label}
+                </Text>
+                {count > 0 && (
+                  <View style={[styles.filterBadge, isActive && styles.filterBadgeActive]}>
+                    <Text style={[styles.filterBadgeText, isActive && styles.filterBadgeTextActive]}>
+                      {count}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* Appointments List */}
@@ -226,14 +254,18 @@ export default function AppointmentsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
         }
       >
-        {appointments.length === 0 ? (
+        {filteredAppointments.length === 0 ? (
           <View style={styles.emptyCard}>
             <Ionicons name="calendar-outline" size={48} color={COLORS.textMuted} />
             <Text style={styles.emptyTitle}>No Appointments</Text>
-            <Text style={styles.emptyText}>You don't have any appointments scheduled for this day.</Text>
+            <Text style={styles.emptyText}>
+              {selectedFilter === 'all' 
+                ? "You don't have any appointments scheduled." 
+                : `No ${selectedFilter.replace('_', ' ')} appointments.`}
+            </Text>
           </View>
         ) : (
-          appointments.map((apt, index) => {
+          filteredAppointments.map((apt, index) => {
             const statusStyle = getStatusStyle(apt.status);
             return (
               <TouchableOpacity 
