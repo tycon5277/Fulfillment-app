@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuthStore } from '../../src/store';
 
 const COLORS = {
   background: '#F8FAFC',
@@ -27,59 +28,122 @@ const COLORS = {
   border: '#E2E8F0',
 };
 
-// Mock chat data
-const MOCK_CHATS = [
-  {
-    id: 'c1',
-    customer: 'Amit Kumar',
-    service: 'Bathroom Deep Clean',
-    lastMessage: 'Great! See you at 2 PM then.',
-    time: '2 min ago',
-    unread: 2,
-    status: 'active',
-    avatar: 'A',
-  },
-  {
-    id: 'c2',
-    customer: 'Priya Patel',
-    service: 'Full House Cleaning',
-    lastMessage: 'Can you bring the cleaning supplies?',
-    time: '15 min ago',
-    unread: 1,
-    status: 'active',
-    avatar: 'P',
-  },
-  {
-    id: 'c3',
-    customer: 'Sunita Verma',
-    service: 'Kitchen Cleaning',
-    lastMessage: 'Thank you for the great work!',
-    time: '1 hr ago',
-    unread: 0,
-    status: 'completed',
-    avatar: 'S',
-  },
-  {
-    id: 'c4',
-    customer: 'Rahul Sharma',
-    service: 'Sofa Cleaning',
-    lastMessage: 'I\'ll send the photos shortly',
-    time: '3 hrs ago',
-    unread: 0,
-    status: 'completed',
-    avatar: 'R',
-  },
-  {
-    id: 'c5',
-    customer: 'Neha Gupta',
-    service: 'Office Cleaning',
-    lastMessage: 'The appointment is confirmed for Saturday',
-    time: 'Yesterday',
-    unread: 0,
-    status: 'active',
-    avatar: 'N',
-  },
-];
+// =============================================================================
+// SKILL-BASED CHAT DATA
+// =============================================================================
+
+// Skill category mappings
+const SKILL_CATEGORIES: { [key: string]: string } = {
+  // Home Services (Cleaning)
+  deep_cleaning: 'cleaning', regular_cleaning: 'cleaning', kitchen_cleaning: 'cleaning',
+  bathroom_cleaning: 'cleaning', carpet_cleaning: 'cleaning', sofa_cleaning: 'cleaning',
+  laundry: 'cleaning', dishwashing: 'cleaning', window_cleaning: 'cleaning',
+  organizing: 'cleaning', mattress_cleaning: 'cleaning', chimney_cleaning: 'cleaning',
+  
+  // Repair & Maintenance
+  plumbing: 'repair', electrical: 'repair', carpentry: 'repair', painting: 'repair',
+  ac_repair: 'repair', refrigerator: 'repair', washing_machine: 'repair', tv_repair: 'repair',
+  microwave: 'repair', geyser: 'repair', fan_repair: 'repair', inverter: 'repair',
+  
+  // Drone Services
+  drone_photography: 'drone', drone_videography: 'drone', drone_wedding: 'drone',
+  drone_survey: 'drone', drone_inspection: 'drone', drone_events: 'drone',
+  drone_real_estate: 'drone', fpv_drone: 'drone', drone_agriculture: 'drone',
+  
+  // Photography & Videography
+  wedding_photography: 'photo', portrait_photo: 'photo', event_photography: 'photo',
+  product_photography: 'photo', wedding_video: 'video', corporate_video: 'video',
+  
+  // Beauty & Wellness
+  massage: 'wellness', spa_home: 'wellness', haircut_men: 'beauty', haircut_women: 'beauty',
+  facial: 'beauty', makeup: 'beauty', mehendi: 'beauty', yoga: 'wellness',
+  
+  // Pet Services
+  pet_grooming: 'pet', dog_walking: 'pet', pet_sitting: 'pet', pet_training: 'pet',
+  
+  // Tech Services
+  computer_repair: 'tech', phone_repair: 'tech', cctv: 'tech', smart_home: 'tech',
+  
+  // Education
+  math_tutor: 'education', coding_tutor: 'education', music_lessons: 'education',
+  
+  // Driver Services
+  personal_driver: 'driver', corporate_driver: 'driver', airport_transfer: 'driver',
+};
+
+// Category-based chats
+const CHATS_BY_CATEGORY: { [key: string]: any[] } = {
+  cleaning: [
+    { id: 'c1', customer: 'Amit Kumar', service: 'Deep House Cleaning', lastMessage: 'Great! See you at 2 PM then.', time: '2 min ago', unread: 2, status: 'active', avatar: 'A' },
+    { id: 'c2', customer: 'Priya Patel', service: 'Full House Cleaning', lastMessage: 'Can you bring the cleaning supplies?', time: '15 min ago', unread: 1, status: 'active', avatar: 'P' },
+    { id: 'c3', customer: 'Sunita Verma', service: 'Kitchen Cleaning', lastMessage: 'Thank you for the great work!', time: '1 hr ago', unread: 0, status: 'completed', avatar: 'S' },
+  ],
+  drone: [
+    { id: 'c1', customer: 'Kapoor Family', service: 'Wedding Aerial Shoot', lastMessage: 'Can you capture the Baraat entrance from above?', time: '5 min ago', unread: 3, status: 'active', avatar: 'K' },
+    { id: 'c2', customer: 'DLF Builders', service: 'Real Estate Drone Video', lastMessage: 'Please include all 4 towers in the flyby.', time: '30 min ago', unread: 1, status: 'active', avatar: 'D' },
+    { id: 'c3', customer: 'TechCorp Events', service: 'Event Aerial Coverage', lastMessage: 'The 4K footage was amazing, thank you!', time: '2 hrs ago', unread: 0, status: 'completed', avatar: 'T' },
+    { id: 'c4', customer: 'Agriculture Dept', service: 'Land Survey Mapping', lastMessage: 'Need the orthomosaic maps by Friday.', time: 'Yesterday', unread: 0, status: 'active', avatar: 'A' },
+  ],
+  photo: [
+    { id: 'c1', customer: 'Sharma Wedding', service: 'Wedding Photography', lastMessage: 'Can we do a couple shoot at sunset?', time: '10 min ago', unread: 2, status: 'active', avatar: 'S' },
+    { id: 'c2', customer: 'FashionBrand', service: 'Product Photoshoot', lastMessage: 'We need the edited photos by Monday.', time: '1 hr ago', unread: 1, status: 'active', avatar: 'F' },
+    { id: 'c3', customer: 'Verma Family', service: 'Birthday Photography', lastMessage: 'The candid shots were beautiful!', time: '3 hrs ago', unread: 0, status: 'completed', avatar: 'V' },
+  ],
+  repair: [
+    { id: 'c1', customer: 'Vikram Singh', service: 'AC Repair', lastMessage: 'The AC is cooling much better now, thanks!', time: '20 min ago', unread: 0, status: 'completed', avatar: 'V' },
+    { id: 'c2', customer: 'Amit Kumar', service: 'Plumbing Work', lastMessage: 'Can you bring extra PVC pipes?', time: '45 min ago', unread: 2, status: 'active', avatar: 'A' },
+    { id: 'c3', customer: 'Sanjay Gupta', service: 'Electrical Wiring', lastMessage: 'What time should I expect you tomorrow?', time: '1 hr ago', unread: 1, status: 'active', avatar: 'S' },
+  ],
+  beauty: [
+    { id: 'c1', customer: 'Priya (Bride)', service: 'Bridal Makeup', lastMessage: 'Can we do a trial run this weekend?', time: '15 min ago', unread: 2, status: 'active', avatar: 'P' },
+    { id: 'c2', customer: 'Meera Kapoor', service: 'Hair & Facial', lastMessage: 'Please bring the organic products.', time: '1 hr ago', unread: 1, status: 'active', avatar: 'M' },
+    { id: 'c3', customer: 'Gupta Family', service: 'Mehendi Design', lastMessage: 'The bridal design was stunning!', time: '3 hrs ago', unread: 0, status: 'completed', avatar: 'G' },
+  ],
+  wellness: [
+    { id: 'c1', customer: 'Anjali Verma', service: 'Deep Tissue Massage', lastMessage: 'Can we schedule for next week too?', time: '30 min ago', unread: 1, status: 'active', avatar: 'A' },
+    { id: 'c2', customer: 'Group Class', service: 'Yoga Session', lastMessage: '5 participants confirmed for tomorrow.', time: '2 hrs ago', unread: 0, status: 'active', avatar: 'G' },
+  ],
+  pet: [
+    { id: 'c1', customer: 'Bruno Owner', service: 'Dog Grooming', lastMessage: 'Can you do a summer cut this time?', time: '10 min ago', unread: 2, status: 'active', avatar: 'B' },
+    { id: 'c2', customer: 'Milo Owner', service: 'Pet Sitting', lastMessage: 'He likes to nap in the sunlight.', time: '1 hr ago', unread: 1, status: 'active', avatar: 'M' },
+  ],
+  tech: [
+    { id: 'c1', customer: 'Amit Choudhary', service: 'Laptop Repair', lastMessage: 'The SSD upgrade worked perfectly!', time: '25 min ago', unread: 0, status: 'completed', avatar: 'A' },
+    { id: 'c2', customer: 'Home Security', service: 'CCTV Installation', lastMessage: 'How many cameras for a 3BHK?', time: '1 hr ago', unread: 2, status: 'active', avatar: 'H' },
+  ],
+  education: [
+    { id: 'c1', customer: 'Parent - Khanna', service: 'Math Tutoring', lastMessage: 'His grades have improved a lot!', time: '1 hr ago', unread: 0, status: 'active', avatar: 'K' },
+    { id: 'c2', customer: 'Young Coder', service: 'Coding Class', lastMessage: 'Can we learn Python next?', time: '2 hrs ago', unread: 1, status: 'active', avatar: 'Y' },
+  ],
+  driver: [
+    { id: 'c1', customer: 'Kavita Joshi', service: 'Airport Transfer', lastMessage: 'Flight is at 6 AM, please arrive by 4:30.', time: '10 min ago', unread: 1, status: 'active', avatar: 'K' },
+    { id: 'c2', customer: 'Mr. Malhotra', service: 'Corporate Chauffeur', lastMessage: 'Need pickup from office at 6 PM.', time: '30 min ago', unread: 0, status: 'active', avatar: 'M' },
+  ],
+};
+
+// Function to get user's primary category
+const getUserCategory = (skills: string[]): string => {
+  if (!skills || skills.length === 0) return 'cleaning';
+  
+  const categoryCounts: { [key: string]: number } = {};
+  skills.forEach(skill => {
+    const category = SKILL_CATEGORIES[skill];
+    if (category) {
+      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+    }
+  });
+  
+  let maxCategory = 'cleaning';
+  let maxCount = 0;
+  Object.entries(categoryCounts).forEach(([cat, count]) => {
+    if (count > maxCount) {
+      maxCount = count;
+      maxCategory = cat;
+    }
+  });
+  
+  return maxCategory;
+};
 
 export default function SkilledChatsScreen() {
   const router = useRouter();
