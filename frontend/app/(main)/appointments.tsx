@@ -271,13 +271,13 @@ export default function AppointmentsScreen() {
               <TouchableOpacity 
                 key={apt.id} 
                 style={styles.aptCard}
-                onPress={() => router.push(`/(main)/appointment-detail?id=${apt.id}`)}
+                onPress={() => router.push(`/(main)/appointment-detail?id=${apt.id}&status=${apt.status}`)}
                 activeOpacity={0.7}
               >
                 {/* Timeline */}
                 <View style={styles.timeline}>
                   <View style={[styles.timelineDot, { backgroundColor: statusStyle.text }]} />
-                  {index < appointments.length - 1 && <View style={styles.timelineLine} />}
+                  {index < filteredAppointments.length - 1 && <View style={styles.timelineLine} />}
                 </View>
                 
                 {/* Content */}
