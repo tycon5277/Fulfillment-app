@@ -127,23 +127,44 @@ export default function SkilledHomeScreen() {
         </View>
       </View>
 
-      {/* Stats Grid */}
+      {/* Stats Grid - Now Clickable */}
       <View style={styles.statsGrid}>
-        <View style={[styles.statCard, styles.statCardPrimary]}>
+        <TouchableOpacity 
+          style={[styles.statCard, styles.statCardPrimary]}
+          onPress={() => router.push('/(main)/earnings-detail')}
+          activeOpacity={0.8}
+        >
           <Text style={styles.statIcon}>💰</Text>
           <Text style={styles.statValueWhite}>₹{stats.todayEarnings.toLocaleString()}</Text>
           <Text style={styles.statLabelWhite}>Today</Text>
-        </View>
-        <View style={styles.statCard}>
+          <View style={styles.statCardArrow}>
+            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.statCard}
+          onPress={() => router.push('/(main)/appointments-summary')}
+          activeOpacity={0.8}
+        >
           <Text style={styles.statIcon}>📅</Text>
           <Text style={styles.statValue}>{stats.todayAppointments}</Text>
           <Text style={styles.statLabel}>Appointments</Text>
-        </View>
-        <View style={styles.statCard}>
+          <View style={styles.statCardArrowDark}>
+            <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.statCard}
+          onPress={() => router.push('/(main)/reviews-detail')}
+          activeOpacity={0.8}
+        >
           <Text style={styles.statIcon}>⭐</Text>
           <Text style={styles.statValue}>{stats.rating}</Text>
           <Text style={styles.statLabel}>Rating</Text>
-        </View>
+          <View style={styles.statCardArrowDark}>
+            <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
+          </View>
+        </TouchableOpacity>
       </View>
 
       {/* Quick Stats */}
