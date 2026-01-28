@@ -369,57 +369,23 @@ export default function SkilledHomeScreen() {
         })}
       </View>
 
-      {/* Nearby Wishes Preview */}
+      {/* Nearby Wishes Preview - Simple CTA Card */}
       {isOnline && (
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <Ionicons name="location" size={20} color={COLORS.secondary} />
-              <Text style={styles.sectionTitle}>Nearby Wishes</Text>
-              <View style={styles.wishCountBadge}>
-                <Text style={styles.wishCountText}>{MOCK_NEARBY_WISHES.length}</Text>
-              </View>
+          <TouchableOpacity 
+            style={styles.browseWishesCard}
+            onPress={() => router.push('/(main)/nearby-wishes')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.browseWishesIcon}>
+              <Ionicons name="location" size={28} color={COLORS.secondary} />
             </View>
-            <TouchableOpacity onPress={() => router.push('/(main)/nearby-wishes')}>
-              <Text style={styles.seeAllText}>View Map</Text>
-            </TouchableOpacity>
-          </View>
-
-          {MOCK_NEARBY_WISHES.slice(0, 2).map((wish) => (
-            <TouchableOpacity 
-              key={wish.id} 
-              style={styles.wishCard}
-              onPress={() => router.push(`/(main)/wish-detail?id=${wish.id}`)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.wishContent}>
-                <View style={styles.wishTopRow}>
-                  <Text style={styles.wishService}>{wish.service}</Text>
-                  {wish.urgent && (
-                    <View style={styles.urgentBadge}>
-                      <Ionicons name="flash" size={10} color="#FFF" />
-                      <Text style={styles.urgentText}>Urgent</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={styles.wishCustomer}>{wish.customer} • ⭐ {wish.customerRating}</Text>
-                <View style={styles.wishMeta}>
-                  <View style={styles.wishMetaItem}>
-                    <Ionicons name="navigate-outline" size={12} color={COLORS.primary} />
-                    <Text style={styles.wishMetaText}>{wish.distance}</Text>
-                  </View>
-                  <View style={styles.wishMetaItem}>
-                    <Ionicons name="time-outline" size={12} color={COLORS.textMuted} />
-                    <Text style={styles.wishMetaText}>{wish.postedTime}</Text>
-                  </View>
-                </View>
-              </View>
-              <View style={styles.wishRight}>
-                <Text style={styles.wishBudget}>{wish.budget}</Text>
-                <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
-              </View>
-            </TouchableOpacity>
-          ))}
+            <View style={styles.browseWishesContent}>
+              <Text style={styles.browseWishesTitle}>Browse Nearby Wishes</Text>
+              <Text style={styles.browseWishesSubtitle}>Find service requests matching your skills in your area</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color={COLORS.textMuted} />
+          </TouchableOpacity>
         </View>
       )}
 
