@@ -52,9 +52,17 @@ export default function Index() {
           console.log('User needs to select role, redirecting to role-select');
           router.replace('/role-select');
         } else {
-          // User is fully registered
-          console.log('User is fully registered, redirecting to home');
-          router.replace('/(main)/home');
+          // User is fully registered - route based on user type
+          console.log('User is fully registered, checking user type for routing');
+          
+          // Route Skilled Genies to their dedicated home
+          if (user.partner_type === 'agent' && user.agent_type === 'skilled') {
+            console.log('Routing Skilled Genie to skilled-home');
+            router.replace('/(main)/skilled-home');
+          } else {
+            console.log('Routing to standard home');
+            router.replace('/(main)/home');
+          }
         }
       } catch (error) {
         console.error('Auth check failed:', error);
