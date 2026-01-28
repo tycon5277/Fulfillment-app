@@ -286,17 +286,17 @@ export default function SkilledHomeScreen() {
       <View style={styles.statsGrid}>
         <View style={[styles.statCard, styles.statCardPrimary]}>
           <Text style={styles.statIcon}>💰</Text>
-          <Text style={styles.statValueWhite}>₹{MOCK_STATS.todayEarnings.toLocaleString()}</Text>
+          <Text style={styles.statValueWhite}>₹{stats.todayEarnings.toLocaleString()}</Text>
           <Text style={styles.statLabelWhite}>Today</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statIcon}>📅</Text>
-          <Text style={styles.statValue}>{MOCK_STATS.todayAppointments}</Text>
+          <Text style={styles.statValue}>{stats.todayAppointments}</Text>
           <Text style={styles.statLabel}>Appointments</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statIcon}>⭐</Text>
-          <Text style={styles.statValue}>{MOCK_STATS.rating}</Text>
+          <Text style={styles.statValue}>{stats.rating}</Text>
           <Text style={styles.statLabel}>Rating</Text>
         </View>
       </View>
@@ -305,24 +305,24 @@ export default function SkilledHomeScreen() {
       <View style={styles.quickStatsBar}>
         <View style={styles.quickStatItem}>
           <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
-          <Text style={styles.quickStatValue}>{MOCK_STATS.completedJobs}</Text>
+          <Text style={styles.quickStatValue}>{stats.completedJobs}</Text>
           <Text style={styles.quickStatLabel}>Done</Text>
         </View>
         <View style={styles.quickStatDivider} />
         <View style={styles.quickStatItem}>
           <Ionicons name="time" size={18} color={COLORS.warning} />
-          <Text style={styles.quickStatValue}>{MOCK_STATS.pendingJobs}</Text>
+          <Text style={styles.quickStatValue}>{stats.pendingJobs}</Text>
           <Text style={styles.quickStatLabel}>Pending</Text>
         </View>
         <View style={styles.quickStatDivider} />
         <View style={styles.quickStatItem}>
           <Ionicons name="trending-up" size={18} color={COLORS.primary} />
-          <Text style={styles.quickStatValue}>₹{(MOCK_STATS.weekEarnings/1000).toFixed(1)}K</Text>
+          <Text style={styles.quickStatValue}>₹{(stats.weekEarnings/1000).toFixed(1)}K</Text>
           <Text style={styles.quickStatLabel}>This Week</Text>
         </View>
       </View>
 
-      {/* Today's Schedule */}
+      {/* Today's Schedule - Now Skill-Based */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleRow}>
@@ -334,7 +334,7 @@ export default function SkilledHomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {MOCK_TODAY_APPOINTMENTS.map((apt) => {
+        {todayAppointments.map((apt) => {
           const statusStyle = getStatusStyle(apt.status);
           return (
             <TouchableOpacity 
