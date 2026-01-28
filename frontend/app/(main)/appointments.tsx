@@ -240,9 +240,15 @@ const getUserCategory = (skills: string[]): string => {
 
 export default function AppointmentsScreen() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+
+  // Get user's category and appointments
+  const userSkills = user?.agent_skills || [];
+  const userCategory = getUserCategory(userSkills);
+  const categoryAppointments = APPOINTMENTS_BY_CATEGORY[userCategory] || APPOINTMENTS_BY_CATEGORY['cleaning'];
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -269,7 +275,7 @@ export default function AppointmentsScreen() {
   const weekDates = getWeekDates();
   const todayKey = formatDateKey(new Date());
   const selectedKey = formatDateKey(selectedDate);
-  const appointments = MOCK_APPOINTMENTS[selectedKey] || [];
+  const appointments = categoryAppointments[selectedKey] || [];
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -286,7 +292,7 @@ export default function AppointmentsScreen() {
 
   const hasAppointments = (date: Date) => {
     const key = formatDateKey(date);
-    return MOCK_APPOINTMENTS[key]?.length > 0;
+    return categoryAppointments[key]?.length > 0;
   };
 
   const navigateDate = (direction: number) => {
