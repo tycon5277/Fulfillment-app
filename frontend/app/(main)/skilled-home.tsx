@@ -429,6 +429,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.border,
+    position: 'relative',
   },
   statCardPrimary: {
     backgroundColor: COLORS.primary,
@@ -457,6 +458,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: 'rgba(255,255,255,0.8)',
     marginTop: 2,
+  },
+  statCardArrow: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
+  statCardArrowDark: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
   },
   quickStatsBar: {
     flexDirection: 'row',
