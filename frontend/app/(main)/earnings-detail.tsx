@@ -135,8 +135,8 @@ export default function EarningsDetailScreen() {
 
         {/* Main Earnings Card */}
         <View style={styles.mainEarningsCard}>
-          <Text style={styles.mainEarningsLabel}>Net Earnings</Text>
-          <Text style={styles.mainEarningsValue}>₹{netEarnings.toLocaleString()}</Text>
+          <Text style={styles.mainEarningsLabel}>Total Earnings</Text>
+          <Text style={styles.mainEarningsValue}>₹{(currentData.total + currentData.tips).toLocaleString()}</Text>
           <View style={styles.earningsGrowth}>
             <Ionicons name="trending-up" size={16} color={COLORS.success} />
             <Text style={styles.earningsGrowthText}>+12% from last period</Text>
