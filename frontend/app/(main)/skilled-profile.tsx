@@ -661,11 +661,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 14,
   },
-  actionText: {
+  actionContent: {
     flex: 1,
+  },
+  actionText: {
     fontSize: 15,
     fontWeight: '500',
     color: COLORS.text,
+  },
+  actionSubtext: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 2,
   },
   // Logout
   logoutButton: {
