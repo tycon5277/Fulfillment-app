@@ -192,6 +192,50 @@ export default function SkilledProfileScreen() {
         </View>
       </View>
 
+      {/* Insights & Reports */}
+      <View style={styles.quickActions}>
+        <Text style={styles.sectionTitle}>Insights & Reports</Text>
+        <TouchableOpacity 
+          style={styles.actionItem}
+          onPress={() => router.push('/(main)/earnings-detail')}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: COLORS.success + '15' }]}>
+            <Ionicons name="wallet-outline" size={22} color={COLORS.success} />
+          </View>
+          <View style={styles.actionContent}>
+            <Text style={styles.actionText}>Earnings</Text>
+            <Text style={styles.actionSubtext}>View detailed earnings breakdown</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.actionItem}
+          onPress={() => router.push('/(main)/reviews-detail')}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: COLORS.primary + '15' }]}>
+            <Ionicons name="star-outline" size={22} color={COLORS.primary} />
+          </View>
+          <View style={styles.actionContent}>
+            <Text style={styles.actionText}>Reviews & Ratings</Text>
+            <Text style={styles.actionSubtext}>See customer feedback</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.actionItem}
+          onPress={() => router.push('/(main)/appointments-summary')}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: COLORS.blue + '15' }]}>
+            <Ionicons name="bar-chart-outline" size={22} color={COLORS.blue} />
+          </View>
+          <View style={styles.actionContent}>
+            <Text style={styles.actionText}>Appointments Stats</Text>
+            <Text style={styles.actionSubtext}>View booking analytics</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+        </TouchableOpacity>
+      </View>
+
       {/* Quick Actions */}
       <View style={styles.quickActions}>
         <Text style={styles.sectionTitle}>Account Settings</Text>
