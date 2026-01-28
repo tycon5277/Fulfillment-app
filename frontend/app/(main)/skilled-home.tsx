@@ -106,19 +106,28 @@ export default function SkilledHomeScreen() {
             </View>
             <Text style={styles.quickActionText}>Schedule</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickActionBtn}>
+          <TouchableOpacity 
+            style={styles.quickActionBtn}
+            onPress={() => router.push('/(main)/earnings-detail')}
+          >
             <View style={[styles.quickActionIcon, { backgroundColor: COLORS.success + '15' }]}>
               <Ionicons name="wallet-outline" size={22} color={COLORS.success} />
             </View>
             <Text style={styles.quickActionText}>Earnings</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickActionBtn}>
+          <TouchableOpacity 
+            style={styles.quickActionBtn}
+            onPress={() => router.push('/(main)/reviews-detail')}
+          >
             <View style={[styles.quickActionIcon, { backgroundColor: COLORS.warning + '15' }]}>
               <Ionicons name="star-outline" size={22} color={COLORS.warning} />
             </View>
             <Text style={styles.quickActionText}>Reviews</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickActionBtn}>
+          <TouchableOpacity 
+            style={styles.quickActionBtn}
+            onPress={() => router.push('/(main)/skilled-profile')}
+          >
             <View style={[styles.quickActionIcon, { backgroundColor: COLORS.purple + '15' }]}>
               <Ionicons name="person-outline" size={22} color={COLORS.purple} />
             </View>
