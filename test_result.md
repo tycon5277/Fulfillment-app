@@ -274,6 +274,42 @@ frontend:
           agent: "main"
           comment: "Updated wishes screen for Agents with proper wish type icons, urgent badges, remuneration display, and accept functionality that creates chat rooms."
 
+  - task: "Schedule Tab Filter Tabs"
+    implemented: true
+    working: NA
+    file: "frontend/app/(main)/appointments.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: NA
+          agent: "main"
+          comment: "Added filter tabs (All, Upcoming, In Progress, Completed) to appointments.tsx. Each tab shows a count badge. Appointments are filtered and sorted based on selected tab. In progress appointments show first, then upcoming, then completed."
+
+  - task: "Appointment Detail Page"
+    implemented: true
+    working: NA
+    file: "frontend/app/(main)/appointment-detail.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: NA
+          agent: "main"
+          comment: "Created new appointment-detail.tsx page with: status banner, appointment info card (service, customer, date/time, location, earnings), actions grid (Reschedule, Chat, Call, Cancel) for upcoming appointments, Start Job/Mark Complete buttons based on status, and completed state display. Page is hidden from tab bar via href: null in _layout.tsx."
+
+  - task: "Appointment Reschedule Modal"
+    implemented: true
+    working: NA
+    file: "frontend/app/(main)/appointment-detail.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        - working: NA
+          agent: "main"
+          comment: "Implemented reschedule modal with date picker and time picker using @react-native-community/datetimepicker. Modal shows for upcoming appointments only. Includes success confirmation animation after rescheduling."
+
   - task: "Agent Dashboard Home"
     implemented: true
     working: true
