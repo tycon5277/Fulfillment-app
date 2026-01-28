@@ -152,7 +152,7 @@ export default function EarningsDetailScreen() {
               <View style={[styles.breakdownIcon, { backgroundColor: COLORS.success + '15' }]}>
                 <Ionicons name="wallet" size={18} color={COLORS.success} />
               </View>
-              <Text style={styles.breakdownLabel}>Gross Earnings</Text>
+              <Text style={styles.breakdownLabel}>Service Earnings</Text>
             </View>
             <Text style={styles.breakdownValue}>₹{currentData.total.toLocaleString()}</Text>
           </View>
@@ -167,16 +167,6 @@ export default function EarningsDetailScreen() {
             <Text style={[styles.breakdownValue, { color: COLORS.success }]}>+₹{currentData.tips.toLocaleString()}</Text>
           </View>
 
-          <View style={styles.breakdownItem}>
-            <View style={styles.breakdownLeft}>
-              <View style={[styles.breakdownIcon, { backgroundColor: COLORS.error + '15' }]}>
-                <Ionicons name="remove-circle" size={18} color={COLORS.error} />
-              </View>
-              <Text style={styles.breakdownLabel}>Platform Fee (15%)</Text>
-            </View>
-            <Text style={[styles.breakdownValue, { color: COLORS.error }]}>-₹{currentData.commission.toLocaleString()}</Text>
-          </View>
-
           <View style={styles.breakdownDivider} />
 
           <View style={styles.breakdownItem}>
@@ -184,9 +174,9 @@ export default function EarningsDetailScreen() {
               <View style={[styles.breakdownIcon, { backgroundColor: COLORS.primary + '15' }]}>
                 <Ionicons name="cash" size={18} color={COLORS.primary} />
               </View>
-              <Text style={[styles.breakdownLabel, { fontWeight: '700' }]}>Net to Bank</Text>
+              <Text style={[styles.breakdownLabel, { fontWeight: '700' }]}>Total Earned</Text>
             </View>
-            <Text style={[styles.breakdownValue, { fontWeight: '700', color: COLORS.primary }]}>₹{netEarnings.toLocaleString()}</Text>
+            <Text style={[styles.breakdownValue, { fontWeight: '700', color: COLORS.primary }]}>₹{(currentData.total + currentData.tips).toLocaleString()}</Text>
           </View>
         </View>
 
