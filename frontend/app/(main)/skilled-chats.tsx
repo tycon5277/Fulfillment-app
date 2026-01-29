@@ -131,7 +131,7 @@ export default function SkilledChatsScreen() {
             <TouchableOpacity 
               key={chat.id} 
               style={styles.chatCard}
-              onPress={() => router.push(`/(main)/chat/${chat.id}`)}
+              onPress={() => router.push(`/chat/${chat.id}`)}
               activeOpacity={0.7}
             >
               <View style={styles.avatarContainer}>
