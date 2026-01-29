@@ -1733,7 +1733,7 @@ export default function NearbyWishesScreen() {
     <TouchableOpacity 
       key={wish.id} 
       style={styles.wishCard}
-      onPress={() => router.push(`/(main)/wish-detail?id=${wish.id}`)}
+      onPress={() => setSelectedWish(wish)}
       activeOpacity={0.7}
     >
       {/* Header */}
