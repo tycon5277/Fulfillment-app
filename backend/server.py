@@ -1620,6 +1620,120 @@ async def complete_deal_job(deal_id: str, current_user: User = Depends(require_p
     }
 
 
+# ===================== APPOINTMENTS ENDPOINTS =====================
+
+class AppointmentCreate(BaseModel):
+    deal_id: Optional[str] = None
+    wish_id: Optional[str] = None
+    service_title: str
+    customer_name: str
+    scheduled_date: str
+    scheduled_time: Optional[str] = None
+    location: str
+    price: float
+    notes: Optional[str] = None
+
+@api_router.post("/appointments")
+async def create_appointment(data: AppointmentCreate, current_user: User = Depends(require_partner)):
+    """Create a new appointment from a confirmed deal"""
+    
+    appointment_id = f"apt_{uuid.uuid4().hex[:12]}"
+    
+    appointment_doc = {
+        "appointment_id": appointment_id,
+        "partner_id": current_user.user_id,
+        "deal_id": data.deal_id,
+        "wish_id": data.wish_id,
+        "service_title": data.service_title,
+        "customer_name": data.customer_name,
+        "scheduled_date": data.scheduled_date,
+        "scheduled_time": data.scheduled_time,
+        "location": data.location,
+        "price": data.price,
+        "notes": data.notes,
+        "status": "upcoming",  # upcoming, in_progress, completed, cancelled
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    await db.appointments.insert_one(appointment_doc)
+    
+    logger.info(f"📅 Appointment created: {appointment_id} for {current_user.user_id}")
+    
+    return {
+        "message": "Appointment created successfully",
+        "appointment_id": appointment_id,
+        "appointment": {
+            "appointment_id": appointment_id,
+            "service_title": data.service_title,
+            "scheduled_date": data.scheduled_date,
+            "scheduled_time": data.scheduled_time,
+            "location": data.location,
+            "price": data.price,
+        }
+    }
+
+
+@api_router.get("/appointments")
+async def get_appointments(status: Optional[str] = None, current_user: User = Depends(require_partner)):
+    """Get all appointments for current partner"""
+    query = {"partner_id": current_user.user_id}
+    if status:
+        query["status"] = status
+    
+    appointments = await db.appointments.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    # Convert datetime objects
+    for apt in appointments:
+        for key in ["created_at", "updated_at"]:
+            if key in apt and apt[key]:
+                apt[key] = apt[key].isoformat() if hasattr(apt[key], 'isoformat') else str(apt[key])
+    
+    return {"appointments": appointments, "count": len(appointments)}
+
+
+@api_router.put("/appointments/{appointment_id}")
+async def update_appointment(appointment_id: str, data: AppointmentCreate, current_user: User = Depends(require_partner)):
+    """Update an appointment"""
+    
+    result = await db.appointments.update_one(
+        {"appointment_id": appointment_id, "partner_id": current_user.user_id},
+        {
+            "$set": {
+                "scheduled_date": data.scheduled_date,
+                "scheduled_time": data.scheduled_time,
+                "location": data.location,
+                "notes": data.notes,
+                "updated_at": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    logger.info(f"📅 Appointment updated: {appointment_id}")
+    
+    return {"message": "Appointment updated", "appointment_id": appointment_id}
+
+
+@api_router.delete("/appointments/{appointment_id}")
+async def cancel_appointment(appointment_id: str, current_user: User = Depends(require_partner)):
+    """Cancel an appointment"""
+    
+    result = await db.appointments.update_one(
+        {"appointment_id": appointment_id, "partner_id": current_user.user_id},
+        {"$set": {"status": "cancelled", "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    logger.info(f"❌ Appointment cancelled: {appointment_id}")
+    
+    return {"message": "Appointment cancelled", "appointment_id": appointment_id}
+
+
 # ===================== CHAT ENDPOINTS (SHARED) =====================
 
 @api_router.get("/partner/chat/rooms")
