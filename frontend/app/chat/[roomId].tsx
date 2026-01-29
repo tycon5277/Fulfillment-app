@@ -287,6 +287,13 @@ export default function ChatDetailScreen() {
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   
+  // Appointment editing state
+  const [appointmentData, setAppointmentData] = useState({
+    date: '',
+    time: '',
+    notes: '',
+  });
+  
   // Gamified success modals
   const [showOfferSentSuccess, setShowOfferSentSuccess] = useState(false);
   const [showJobConfirmedSuccess, setShowJobConfirmedSuccess] = useState(false);
