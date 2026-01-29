@@ -1537,6 +1537,133 @@ export default function NearbyWishesScreen() {
     </View>
   );
 
+  // Render job card (for offline mode - accepted/completed jobs)
+  const renderJobCard = (job: typeof MY_JOBS[0]) => {
+    const statusColors = {
+      in_progress: { bg: '#FEF3C7', text: '#D97706' },
+      accepted: { bg: '#DBEAFE', text: '#2563EB' },
+      completed: { bg: '#D1FAE5', text: '#059669' },
+    };
+    const colors = statusColors[job.status as keyof typeof statusColors] || statusColors.accepted;
+
+    return (
+      <TouchableOpacity 
+        key={job.id} 
+        style={styles.wishCard}
+        activeOpacity={0.7}
+      >
+        {/* Header */}
+        <View style={styles.wishHeader}>
+          <View style={styles.wishServiceRow}>
+            <Text style={styles.wishService} numberOfLines={1}>{job.service}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: colors.bg }]}>
+              <Text style={[styles.statusBadgeText, { color: colors.text }]}>{job.statusLabel}</Text>
+            </View>
+          </View>
+          <Text style={styles.wishBudget}>{job.budget}</Text>
+        </View>
+
+        {/* Category */}
+        <View style={styles.wishMeta}>
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryText}>{job.category}</Text>
+          </View>
+        </View>
+
+        {/* Description */}
+        <Text style={styles.wishDescription} numberOfLines={2}>{job.description}</Text>
+
+        {/* Footer */}
+        <View style={styles.wishFooter}>
+          <View style={styles.customerInfo}>
+            <View style={styles.customerAvatar}>
+              <Text style={styles.customerInitial}>{job.customer.charAt(0)}</Text>
+            </View>
+            <View>
+              <Text style={styles.customerName}>{job.customer}</Text>
+              <Text style={styles.customerRating}>⭐ {job.customerRating}</Text>
+            </View>
+          </View>
+          <View style={styles.wishLocation}>
+            <View style={styles.distanceRow}>
+              <Ionicons name="location" size={14} color={COLORS.primary} />
+              <Text style={styles.distanceText}>{job.distance} km</Text>
+            </View>
+            <Text style={styles.postedTime}>{job.location}</Text>
+          </View>
+        </View>
+
+        {/* Schedule Date */}
+        <View style={styles.dateRow}>
+          <Ionicons name="calendar-outline" size={14} color={COLORS.textMuted} />
+          <Text style={styles.dateText}>{job.scheduledDate}</Text>
+        </View>
+
+        {/* Earnings for completed jobs */}
+        {job.status === 'completed' && job.earnings && (
+          <View style={styles.earningsRow}>
+            <Ionicons name="cash-outline" size={14} color={COLORS.success} />
+            <Text style={styles.earningsText}>Earned: ₹{job.earnings.toLocaleString()}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  // Render offline state (my jobs)
+  const renderOfflineContent = () => (
+    <View style={styles.offlineContainer}>
+      {/* Offline Banner */}
+      <View style={styles.offlineBanner}>
+        <Ionicons name="wifi-outline" size={24} color="#6B7280" />
+        <View style={styles.offlineBannerText}>
+          <Text style={styles.offlineTitle}>You're Offline</Text>
+          <Text style={styles.offlineSubtitle}>Go online to see new work orders</Text>
+        </View>
+      </View>
+
+      {/* My Jobs Filter */}
+      <View style={styles.jobFilterContainer}>
+        <TouchableOpacity 
+          style={[styles.jobFilterTab, jobFilter === 'all' && styles.jobFilterTabActive]}
+          onPress={() => setJobFilter('all')}
+        >
+          <Text style={[styles.jobFilterText, jobFilter === 'all' && styles.jobFilterTextActive]}>All</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.jobFilterTab, jobFilter === 'in_progress' && styles.jobFilterTabActive]}
+          onPress={() => setJobFilter('in_progress')}
+        >
+          <Text style={[styles.jobFilterText, jobFilter === 'in_progress' && styles.jobFilterTextActive]}>Active</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.jobFilterTab, jobFilter === 'completed' && styles.jobFilterTabActive]}
+          onPress={() => setJobFilter('completed')}
+        >
+          <Text style={[styles.jobFilterText, jobFilter === 'completed' && styles.jobFilterTextActive]}>Completed</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* My Jobs List */}
+      {myJobs.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyEmoji}>📋</Text>
+          <Text style={styles.emptyTitle}>No Jobs</Text>
+          <Text style={styles.emptyText}>
+            {jobFilter === 'completed' 
+              ? "You haven't completed any jobs yet."
+              : jobFilter === 'in_progress'
+              ? "No active jobs at the moment."
+              : "No jobs to show. Go online to accept new work orders!"
+            }
+          </Text>
+        </View>
+      ) : (
+        myJobs.map(renderJobCard)
+      )}
+    </View>
+  );
+
   // Render wish card
   const renderWishCard = (wish: typeof ALL_WISHES[0]) => (
     <TouchableOpacity 
