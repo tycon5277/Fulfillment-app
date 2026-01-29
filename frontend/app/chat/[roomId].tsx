@@ -101,7 +101,8 @@ const PROGRESS_STEPS = [
 
 export default function ChatDetailScreen() {
   const router = useRouter();
-  const { roomId } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const { roomId, dealId, wishId, wishTitle, wishBudget, wishDescription, customerName, customerRating, wishLocation, wishDate } = params;
   const { user } = useAuthStore();
   const scrollViewRef = useRef<ScrollView>(null);
   const flatListRef = useRef<FlatList>(null);
@@ -116,11 +117,13 @@ export default function ChatDetailScreen() {
   const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
 
   // Deal negotiation states
+  const [currentDealId, setCurrentDealId] = useState<string | null>(dealId as string || null);
   const [dealStatus, setDealStatus] = useState<'negotiating' | 'offer_sent' | 'accepted' | 'in_progress' | 'completed'>('negotiating');
   const [showDealModal, setShowDealModal] = useState(false);
+  const initialPrice = wishBudget ? parseInt(wishBudget as string) : (room?.wish?.remuneration || 1500);
   const [dealOffer, setDealOffer] = useState({
-    price: room?.wish?.remuneration || 1500,
-    scheduledDate: 'Today',
+    price: initialPrice,
+    scheduledDate: (wishDate as string) || 'Today',
     scheduledTime: '2:00 PM',
     notes: '',
   });
