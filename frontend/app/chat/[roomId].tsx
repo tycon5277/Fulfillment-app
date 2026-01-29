@@ -236,10 +236,6 @@ export default function ChatDetailScreen() {
       setIsLoading(false);
     }
   }, [roomId]);
-    } catch (error) {
-      console.error('Error fetching room:', error);
-    }
-  }, [roomId]);
 
   useEffect(() => {
     fetchRoom();
