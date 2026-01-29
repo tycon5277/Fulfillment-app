@@ -1497,7 +1497,7 @@ export default function NearbyWishesScreen() {
 
     console.log(`  📊 Found ${sorted.length} matching wishes`);
     return sorted;
-  }, [userSkills, radius, sortBy]);
+  }, [userSkills, radius, sortBy, isOnline]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
