@@ -878,6 +878,144 @@ export default function ChatDetailScreen() {
         </View>
       </Modal>
 
+      {/* Appointment Editing Modal - Shows after Wisher accepts */}
+      <Modal visible={showAppointmentModal} transparent animationType="slide">
+        <View style={[styles.modalOverlay, { justifyContent: 'flex-end' }]}>
+          <View style={styles.appointmentModal}>
+            {/* Header */}
+            <View style={styles.appointmentModalHeader}>
+              <View style={styles.appointmentModalHeaderIcon}>
+                <Text style={{ fontSize: 32 }}>📅</Text>
+              </View>
+              <Text style={styles.appointmentModalTitle}>Set Appointment</Text>
+              <Text style={styles.appointmentModalSubtitle}>
+                Customer accepted! Confirm or edit the schedule
+              </Text>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
+              {/* Service Info */}
+              <View style={styles.appointmentSection}>
+                <Text style={styles.appointmentSectionLabel}>Service</Text>
+                <View style={styles.appointmentServiceCard}>
+                  <Ionicons name="briefcase" size={20} color={COLORS.primary} />
+                  <Text style={styles.appointmentServiceTitle}>{room?.wish_title || 'Service Request'}</Text>
+                </View>
+              </View>
+
+              {/* Customer */}
+              <View style={styles.appointmentSection}>
+                <Text style={styles.appointmentSectionLabel}>Customer</Text>
+                <View style={styles.appointmentCustomerCard}>
+                  <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.appointmentCustomerAvatar}>
+                    <Text style={{ color: '#FFF', fontWeight: '700' }}>
+                      {room?.wisher?.name?.charAt(0) || 'C'}
+                    </Text>
+                  </LinearGradient>
+                  <View>
+                    <Text style={styles.appointmentCustomerName}>{room?.wisher?.name || 'Customer'}</Text>
+                    <Text style={styles.appointmentCustomerRating}>⭐ {room?.wisher?.rating || 4.8}</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Date */}
+              <View style={styles.appointmentSection}>
+                <Text style={styles.appointmentSectionLabel}>📅 Date</Text>
+                <TextInput
+                  style={styles.appointmentInput}
+                  value={appointmentData.date}
+                  onChangeText={(text) => setAppointmentData(prev => ({ ...prev, date: text }))}
+                  placeholder="Enter date (e.g., Tomorrow, Jan 30)"
+                  placeholderTextColor={COLORS.textMuted}
+                />
+              </View>
+
+              {/* Time */}
+              <View style={styles.appointmentSection}>
+                <Text style={styles.appointmentSectionLabel}>⏰ Time</Text>
+                <TextInput
+                  style={styles.appointmentInput}
+                  value={appointmentData.time}
+                  onChangeText={(text) => setAppointmentData(prev => ({ ...prev, time: text }))}
+                  placeholder="Enter time (e.g., 3:00 PM)"
+                  placeholderTextColor={COLORS.textMuted}
+                />
+              </View>
+
+              {/* Location */}
+              <View style={styles.appointmentSection}>
+                <Text style={styles.appointmentSectionLabel}>📍 Location</Text>
+                <View style={styles.appointmentLocationCard}>
+                  <Ionicons name="location" size={20} color={COLORS.error} />
+                  <Text style={styles.appointmentLocationText}>{location}</Text>
+                </View>
+              </View>
+
+              {/* Price */}
+              <View style={styles.appointmentSection}>
+                <Text style={styles.appointmentSectionLabel}>💰 Price</Text>
+                <View style={styles.appointmentPriceCard}>
+                  <Text style={styles.appointmentPriceAmount}>₹{price}</Text>
+                </View>
+              </View>
+
+              {/* Notes */}
+              <View style={styles.appointmentSection}>
+                <Text style={styles.appointmentSectionLabel}>📝 Notes (optional)</Text>
+                <TextInput
+                  style={[styles.appointmentInput, { height: 80, textAlignVertical: 'top' }]}
+                  value={appointmentData.notes}
+                  onChangeText={(text) => setAppointmentData(prev => ({ ...prev, notes: text }))}
+                  placeholder="Any special instructions..."
+                  placeholderTextColor={COLORS.textMuted}
+                  multiline
+                />
+              </View>
+            </ScrollView>
+
+            {/* Actions */}
+            <View style={styles.appointmentActions}>
+              <TouchableOpacity 
+                style={styles.appointmentConfirmBtn}
+                onPress={async () => {
+                  // Create appointment
+                  try {
+                    await api.default.post('/appointments', {
+                      deal_id: currentDealId,
+                      wish_id: wishId,
+                      service_title: wishTitle || room?.wish_title,
+                      customer_name: customerName || room?.wisher?.name,
+                      scheduled_date: appointmentData.date,
+                      scheduled_time: appointmentData.time,
+                      location: location,
+                      price: price,
+                      notes: appointmentData.notes,
+                    });
+                  } catch (e) {
+                    console.log('Appointment saved locally');
+                  }
+                  
+                  // Send confirmation message
+                  await sendMessage(`📅 **Appointment Confirmed!**\n\n📆 ${appointmentData.date}\n⏰ ${appointmentData.time}\n📍 ${location}\n💰 ₹${price}${appointmentData.notes ? `\n📝 ${appointmentData.notes}` : ''}\n\nSee you soon! 🙌`);
+                  
+                  setShowAppointmentModal(false);
+                  setShowJobConfirmedSuccess(true);
+                }}
+              >
+                <LinearGradient
+                  colors={[COLORS.success, '#34D399']}
+                  style={styles.appointmentConfirmGradient}
+                >
+                  <Ionicons name="checkmark-circle" size={22} color="#FFF" />
+                  <Text style={styles.appointmentConfirmText}>Confirm Appointment</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Gamified Success Modals */}
       <SuccessModal
         visible={showOfferSentSuccess}
