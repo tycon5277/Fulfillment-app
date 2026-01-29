@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,15 @@ import {
   TouchableOpacity,
   RefreshControl,
   TextInput,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/store';
 import { getUserCategory, getChatsForUser } from '../../src/skillMockData';
+import * as api from '../../src/api';
 
 const COLORS = {
   background: '#F8FAFC',
@@ -29,30 +32,102 @@ const COLORS = {
   border: '#E2E8F0',
 };
 
+interface ChatRoom {
+  room_id: string;
+  wish_id: string;
+  wish_title?: string;
+  wisher?: {
+    name: string;
+    phone?: string;
+    rating?: number;
+  };
+  wish?: {
+    title: string;
+    remuneration?: number;
+    status?: string;
+  };
+  status: string;
+  created_at: string;
+  updated_at?: string;
+}
+
 export default function SkilledChatsScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
+  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSeedingChats, setIsSeedingChats] = useState(false);
 
-  // Get user's category and chats
+  // Get user's category and mock chats as fallback
   const userSkills = user?.agent_skills || [];
-  const categoryChats = getChatsForUser(userSkills);
+  const mockChats = getChatsForUser(userSkills);
+
+  const fetchChatRooms = useCallback(async () => {
+    try {
+      const response = await api.getChatRooms();
+      if (response.data && response.data.length > 0) {
+        setChatRooms(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching chat rooms:', error);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchChatRooms();
+  }, [fetchChatRooms]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1500);
+    fetchChatRooms();
   };
 
-  const filteredChats = categoryChats.filter(chat => {
+  const seedChatData = async () => {
+    setIsSeedingChats(true);
+    try {
+      const response = await api.seedChatRooms();
+      Alert.alert('Success', `Created ${response.data.rooms?.length || 0} chat rooms with messages!`);
+      fetchChatRooms();
+    } catch (error: any) {
+      console.error('Error seeding chats:', error);
+      Alert.alert('Error', 'Failed to create chat rooms. Please try again.');
+    } finally {
+      setIsSeedingChats(false);
+    }
+  };
+
+  // Combine real chat rooms with mock data for display
+  const displayChats = useMemo(() => {
+    if (chatRooms.length > 0) {
+      return chatRooms.map(room => ({
+        id: room.room_id,
+        customer: room.wisher?.name || 'Customer',
+        avatar: (room.wisher?.name || 'C').charAt(0),
+        service: room.wish_title || room.wish?.title || 'Service Request',
+        lastMessage: 'Tap to view conversation',
+        time: room.updated_at ? new Date(room.updated_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'Now',
+        unread: 0,
+        status: room.status === 'active' ? 'active' : 'completed',
+        price: room.wish?.remuneration || 0,
+      }));
+    }
+    return mockChats;
+  }, [chatRooms, mockChats]);
+
+  const filteredChats = displayChats.filter(chat => {
     const matchesSearch = chat.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          chat.service.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filter === 'all' || chat.status === filter;
     return matchesSearch && matchesFilter;
   });
 
-  const totalUnread = categoryChats.reduce((sum, chat) => sum + chat.unread, 0);
+  const totalUnread = displayChats.reduce((sum, chat) => sum + chat.unread, 0);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
