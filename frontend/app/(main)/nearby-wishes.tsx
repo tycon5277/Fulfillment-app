@@ -1727,6 +1727,25 @@ export default function NearbyWishesScreen() {
         <Ionicons name="calendar-outline" size={14} color={COLORS.textMuted} />
         <Text style={styles.dateText}>{wish.preferredDate}</Text>
       </View>
+
+      {/* Action Buttons */}
+      <View style={styles.wishActions}>
+        <TouchableOpacity 
+          style={styles.viewDetailsBtn}
+          onPress={() => setSelectedWish(wish)}
+        >
+          <Ionicons name="eye-outline" size={16} color={COLORS.primary} />
+          <Text style={styles.viewDetailsBtnText}>Details</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.acceptChatBtn}
+          onPress={() => handleAcceptAndChat(wish)}
+        >
+          <Ionicons name="chatbubble-ellipses" size={16} color="#FFF" />
+          <Text style={styles.acceptChatBtnText}>Accept & Chat</Text>
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 
