@@ -47,6 +47,17 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user, setUser, isOnline: storeIsOnline, setIsOnline: setStoreIsOnline, activeWork } = useAuthStore();
   
+  // Location tracking hook
+  const { 
+    currentLocation,
+    locationPermissionGranted,
+    isTrackingLocation,
+    requestPermissions,
+    getCurrentLocation,
+    startContinuousTracking,
+    startPeriodicTracking
+  } = useLocationTracking();
+  
   // Skilled Genie uses a different screen - redirect immediately
   const isSkilledGenie = user?.partner_type === 'agent' && user?.agent_type === 'skilled';
   
