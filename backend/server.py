@@ -1620,24 +1620,6 @@ async def complete_deal_job(deal_id: str, current_user: User = Depends(require_p
     }
 
 
-@api_router.get("/deals/my-deals")
-async def get_my_deals(status: Optional[str] = None, current_user: User = Depends(require_partner)):
-    """Get all deals for current partner"""
-    query = {"partner_id": current_user.user_id}
-    if status:
-        query["status"] = status
-    
-    deals = await db.deals.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
-    
-    # Convert datetime objects to strings for JSON serialization
-    for deal in deals:
-        for key in ["created_at", "updated_at", "accepted_at", "rejected_at", "started_at", "completed_at"]:
-            if key in deal and deal[key]:
-                deal[key] = deal[key].isoformat() if hasattr(deal[key], 'isoformat') else str(deal[key])
-    
-    return {"deals": deals, "count": len(deals)}
-
-
 # ===================== CHAT ENDPOINTS (SHARED) =====================
 
 @api_router.get("/partner/chat/rooms")
