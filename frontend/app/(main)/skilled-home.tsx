@@ -59,6 +59,18 @@ export default function SkilledHomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'schedule' | 'wishes'>('overview');
   
+  // Location tracking hook
+  const { 
+    currentLocation, 
+    locationPermissionGranted,
+    isTrackingLocation,
+    requestPermissions,
+    getCurrentLocation,
+    startContinuousTracking,
+    startPeriodicTracking,
+    stopTracking
+  } = useLocationTracking();
+  
   // Get skill-based appointments for this user
   const userSkills = user?.agent_skills || [];
   const userCategory = getUserCategory(userSkills);
@@ -71,13 +83,52 @@ export default function SkilledHomeScreen() {
     todayAppointments: todayAppointments.length,
   };
   
+  // Request location permissions and get initial location on mount
+  useEffect(() => {
+    const initializeLocation = async () => {
+      const granted = await requestPermissions();
+      if (granted) {
+        console.log('📍 Location permissions granted, getting initial location...');
+        await getCurrentLocation();
+        // Start periodic tracking by default (offline mode)
+        if (!isOnline) {
+          startPeriodicTracking();
+        }
+      } else {
+        console.log('❌ Location permissions denied');
+        Alert.alert(
+          'Location Required',
+          'QuickWish needs your location to show you nearby work orders and help customers find you.',
+          [
+            { text: 'Try Again', onPress: requestPermissions },
+            { text: 'Cancel', style: 'cancel' }
+          ]
+        );
+      }
+    };
+    
+    initializeLocation();
+  }, []);
+  
   const onRefresh = () => {
     setRefreshing(true);
+    getCurrentLocation(); // Refresh location on pull
     setTimeout(() => setRefreshing(false), 1500);
   };
 
-  const toggleAvailability = () => {
-    setIsOnline(!isOnline);
+  const toggleAvailability = async () => {
+    const newOnlineState = !isOnline;
+    setIsOnline(newOnlineState);
+    
+    // When going online, start continuous tracking
+    // When going offline, switch to periodic tracking
+    if (newOnlineState) {
+      console.log('🟢 Going ONLINE - starting continuous location tracking');
+      await startContinuousTracking();
+    } else {
+      console.log('🟡 Going OFFLINE - switching to periodic location tracking');
+      await startPeriodicTracking();
+    }
   };
 
   const getStatusStyle = (status: string) => {
