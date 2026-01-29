@@ -2705,4 +2705,144 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFF',
   },
+  // Map Tile Styles
+  mapTile: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#E8F4F8',
+  },
+  mapBackground: {
+    height: 160,
+    backgroundColor: '#E8F4F8',
+    position: 'relative',
+  },
+  mapGrid: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  mapGridLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: '#D1E9EF',
+  },
+  mapGridLineV: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 1,
+    backgroundColor: '#D1E9EF',
+  },
+  mapMarker: {
+    position: 'absolute',
+    alignItems: 'center',
+  },
+  wisherMarker: {},
+  genieMarker: {},
+  markerPin: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  markerLabel: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginTop: -4,
+  },
+  markerLabelText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  distanceLine: {
+    position: 'absolute',
+    top: '42%',
+    left: '38%',
+    width: '25%',
+    height: 2,
+    backgroundColor: COLORS.primary,
+    borderStyle: 'dashed',
+  },
+  mapInfo: {
+    backgroundColor: COLORS.cardBg,
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  mapInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  mapInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  mapInfoText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  mapLocationText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  // Budget Highlight
+  budgetHighlight: {
+    backgroundColor: '#ECFDF5',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  budgetLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textMuted,
+  },
+  budgetAmount: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: COLORS.success,
+    marginVertical: 4,
+  },
+  budgetNote: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  // Customer Large
+  customerAvatarLarge: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  customerInitialLarge: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  customerNameLarge: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  customerRatingLarge: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  customerRatingLabel: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
 });
