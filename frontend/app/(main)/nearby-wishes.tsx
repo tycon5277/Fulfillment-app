@@ -1847,10 +1847,107 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.text,
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  statusIndicator: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusOnline: {
+    backgroundColor: '#D1FAE5',
+  },
+  statusOffline: {
+    backgroundColor: '#F3F4F6',
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
   refreshBtn: {
     padding: 8,
     backgroundColor: COLORS.primary + '15',
     borderRadius: 10,
+  },
+  // Offline mode styles
+  offlineContainer: {
+    paddingHorizontal: 16,
+  },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 12,
+    marginBottom: 16,
+    gap: 12,
+  },
+  offlineBannerText: {
+    flex: 1,
+  },
+  offlineTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  offlineSubtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  jobFilterContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    backgroundColor: COLORS.cardBg,
+    padding: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  jobFilterTab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  jobFilterTabActive: {
+    backgroundColor: COLORS.primary,
+  },
+  jobFilterText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  jobFilterTextActive: {
+    color: '#FFF',
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  earningsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    gap: 6,
+  },
+  earningsText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.success,
   },
   radiusControl: {
     backgroundColor: COLORS.cardBg,
