@@ -251,6 +251,22 @@ export default function ChatDetailScreen() {
     }, 100);
   }, [messages]);
 
+  // Scroll to bottom when keyboard appears
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+    };
+  }, []);
+
   // Cleanup audio on unmount
   useEffect(() => {
     return () => {
