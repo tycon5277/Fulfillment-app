@@ -117,6 +117,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   activeWork: [],
   isOnline: false,
   
+  // Location state
+  currentLocation: null,
+  locationPermissionGranted: false,
+  isTrackingLocation: false,
+  
   setUser: (user) => set({ user, isUserLoaded: true }),  // Mark as loaded when user is set
   setSessionToken: async (token) => {
     if (token) {
@@ -134,9 +139,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   addActiveWork: (work) => set((state) => ({ activeWork: [...state.activeWork, work] })),
   removeActiveWork: (id) => set((state) => ({ activeWork: state.activeWork.filter(w => w.id !== id) })),
   
+  // Location actions
+  setCurrentLocation: (location) => set({ currentLocation: location }),
+  setLocationPermissionGranted: (granted) => set({ locationPermissionGranted: granted }),
+  setIsTrackingLocation: (tracking) => set({ isTrackingLocation: tracking }),
+  
   logout: async () => {
     await AsyncStorage.removeItem('session_token');
-    set({ user: null, sessionToken: null, stats: null, isOnline: false, activeWork: [], isUserLoaded: false });
+    set({ 
+      user: null, 
+      sessionToken: null, 
+      stats: null, 
+      isOnline: false, 
+      activeWork: [], 
+      isUserLoaded: false,
+      currentLocation: null,
+      isTrackingLocation: false
+    });
   },
   
   loadStoredAuth: async () => {
