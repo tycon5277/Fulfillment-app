@@ -12,6 +12,7 @@ import {
   Easing,
   Dimensions,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,7 @@ import { useAuthStore, PartnerStats } from '../../src/store';
 import * as api from '../../src/api';
 import THEME from '../../src/theme';
 import GameModal from '../../src/components/GameModal';
+import { useLocationTracking } from '../../src/hooks/useLocationTracking';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
