@@ -236,6 +236,24 @@ export default function SkilledProfileScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Developer / Demo Section */}
+      <View style={styles.quickActions}>
+        <Text style={styles.sectionTitle}>Developer Tools</Text>
+        <TouchableOpacity 
+          style={styles.actionItem}
+          onPress={() => router.push('/(main)/tracking-demo')}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: COLORS.purple + '15' }]}>
+            <Ionicons name="location-outline" size={22} color={COLORS.purple} />
+          </View>
+          <View style={styles.actionContent}>
+            <Text style={styles.actionText}>Tracking Demo</Text>
+            <Text style={styles.actionSubtext}>Preview Wisher's live tracking view</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+        </TouchableOpacity>
+      </View>
+
       {/* Quick Actions */}
       <View style={styles.quickActions}>
         <Text style={styles.sectionTitle}>Account Settings</Text>
