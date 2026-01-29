@@ -190,6 +190,11 @@ export const updateLocation = (data: {
 
 export const getPartnerLocation = () => api.get('/partner/location');
 
+// Wish Tracking (for Wisher app)
+export const trackWishGenie = (wishId: string) => api.get(`/wishes/${wishId}/track`);
+
+export const getWishStatus = (wishId: string) => api.get(`/wishes/${wishId}/status`);
+
 // Seed data (for testing)
 export const seedOrders = () => api.post('/seed/orders');
 export const seedWishes = () => api.post('/seed/wishes');
