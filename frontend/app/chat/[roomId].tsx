@@ -207,51 +207,53 @@ export default function ChatDetailScreen() {
       if (foundRoom) {
         setRoom(foundRoom);
       } else {
-        // Create a mock room for demo purposes
+        // Use params passed from navigation if room not found in API
         setRoom({
           room_id: roomId as string,
-          wish_id: 'demo_wish',
+          wish_id: (wishId as string) || 'demo_wish',
           wisher_id: 'demo_wisher',
           status: 'active',
-          wish_title: 'Service Request',
+          wish_title: (wishTitle as string) || 'Service Request',
           wish: {
-            title: 'Service Request',
+            title: (wishTitle as string) || 'Service Request',
             wish_type: 'service',
-            remuneration: 1500,
-            status: 'in_progress',
+            remuneration: wishBudget ? parseInt(wishBudget as string) : 1500,
+            status: 'negotiating',
+            description: wishDescription as string,
           },
           wisher: {
-            name: 'Customer',
+            name: (customerName as string) || 'Customer',
             phone: '+91 98765 43210',
-            rating: 4.8,
+            rating: customerRating ? parseFloat(customerRating as string) : 4.8,
           },
         });
       }
     } catch (error: any) {
-      // Create a mock room on error
-      console.log('Chat room not found, using demo data');
+      // Create room from navigation params on error
+      console.log('Chat room not found, using navigation params');
       setRoom({
         room_id: roomId as string,
-        wish_id: 'demo_wish',
+        wish_id: (wishId as string) || 'demo_wish',
         wisher_id: 'demo_wisher',
         status: 'active',
-        wish_title: 'Service Request',
+        wish_title: (wishTitle as string) || 'Service Request',
         wish: {
-          title: 'Service Request',
+          title: (wishTitle as string) || 'Service Request',
           wish_type: 'service',
-          remuneration: 1500,
-          status: 'in_progress',
+          remuneration: wishBudget ? parseInt(wishBudget as string) : 1500,
+          status: 'negotiating',
+          description: wishDescription as string,
         },
         wisher: {
-          name: 'Customer',
+          name: (customerName as string) || 'Customer',
           phone: '+91 98765 43210',
-          rating: 4.8,
+          rating: customerRating ? parseFloat(customerRating as string) : 4.8,
         },
       });
     } finally {
       setIsLoading(false);
     }
-  }, [roomId]);
+  }, [roomId, wishId, wishTitle, wishBudget, wishDescription, customerName, customerRating]);
 
   useEffect(() => {
     fetchRoom();
