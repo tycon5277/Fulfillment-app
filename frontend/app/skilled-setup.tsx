@@ -854,56 +854,13 @@ export default function SkilledSetupScreen() {
     >
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.stepHeader}>
-          <Text style={styles.stepEmoji}>💰</Text>
-          <Text style={styles.stepTitle}>Set Your Rate</Text>
-          <Text style={styles.stepSubtitle}>How much do you charge per hour?</Text>
-        </View>
-
-        <View style={styles.pricingContainer}>
-          <View style={styles.rateInputContainer}>
-            <Text style={styles.currencySymbol}>₹</Text>
-            <TextInput
-              style={styles.rateInput}
-              value={hourlyRate}
-              onChangeText={setHourlyRate}
-              placeholder="80"
-              placeholderTextColor={COLORS.textMuted}
-              keyboardType="numeric"
-            />
-            <Text style={styles.rateLabel}>/hour</Text>
-          </View>
-
-          <View style={styles.ratePresets}>
-            {['80', '150', '200', '300', '500', '800'].map((rate) => (
-              <TouchableOpacity
-                key={rate}
-                style={[styles.presetButton, hourlyRate === rate && styles.presetButtonActive]}
-                onPress={() => setHourlyRate(rate)}
-              >
-                <Text style={[styles.presetText, hourlyRate === rate && styles.presetTextActive]}>
-                  ₹{rate}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <View style={styles.earningsPreview}>
-            <Ionicons name="trending-up" size={24} color={COLORS.success} />
-            <View style={styles.earningsInfo}>
-              <Text style={styles.earningsTitle}>Potential Daily Earnings</Text>
-              <Text style={styles.earningsValue}>
-                ₹{hourlyRate ? parseInt(hourlyRate) * 4 : 0} - ₹{hourlyRate ? parseInt(hourlyRate) * 8 : 0}
-              </Text>
-              <Text style={styles.earningsNote}>Based on 4-8 hours of work</Text>
-            </View>
-          </View>
+          <Text style={styles.stepEmoji}>📍</Text>
+          <Text style={styles.stepTitle}>Service Area</Text>
+          <Text style={styles.stepSubtitle}>How far will you travel for jobs?</Text>
         </View>
 
         {/* Service Area */}
         <View style={styles.serviceAreaSection}>
-          <Text style={styles.sectionLabel}>📍 Service Area</Text>
-          <Text style={styles.sectionDescription}>How far will you travel for jobs?</Text>
-          
           <View style={styles.serviceAreaGrid}>
             {SERVICE_AREAS.map((area) => {
               const isSelected = serviceArea === area.id;
