@@ -1429,6 +1429,10 @@ export default function NearbyWishesScreen() {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [sortBy, setSortBy] = useState<'distance' | 'budget' | 'time'>('distance');
   const [jobFilter, setJobFilter] = useState<'all' | 'in_progress' | 'completed'>('all');
+  
+  // Selected wish for details modal
+  const [selectedWish, setSelectedWish] = useState<typeof ALL_WISHES[0] | null>(null);
+  const [isAccepting, setIsAccepting] = useState(false);
 
   // Get user's skills - memoized to prevent unnecessary recalculations
   const userSkills = useMemo(() => {
