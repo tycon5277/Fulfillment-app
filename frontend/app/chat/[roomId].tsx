@@ -553,15 +553,8 @@ export default function ChatDetailScreen() {
   };
 
   const confirmComplete = async () => {
-    try {
-      // In production, call API to mark wish as complete
-      Alert.alert('🎉 Job Completed!', 'Great work! The customer will be notified.');
-      setShowCompleteModal(false);
-      // Show rating modal
-      setTimeout(() => setShowRatingModal(true), 1000);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to mark as complete');
-    }
+    setShowCompleteModal(false);
+    await handleCompleteDeal();
   };
 
   const submitRating = () => {
