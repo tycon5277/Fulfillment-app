@@ -636,7 +636,7 @@ export default function SkilledSetupScreen() {
     switch (step) {
       case 1: return selectedSkills.length > 0;
       case 2: return experienceLevel !== '';
-      case 3: return hourlyRate !== '' && serviceArea !== '';
+      case 3: return serviceArea !== ''; // Removed hourly rate requirement
       case 4: return true;
     }
     return false;
