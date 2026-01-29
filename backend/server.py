@@ -630,6 +630,69 @@ async def update_partner_status(data: PartnerStatusUpdate, current_user: User = 
     )
     return {"message": f"Status updated to {data.status}"}
 
+
+class LocationUpdate(BaseModel):
+    latitude: float
+    longitude: float
+    accuracy: Optional[float] = None
+    heading: Optional[float] = None
+    speed: Optional[float] = None
+    timestamp: float
+    is_online: bool
+
+
+@api_router.put("/partner/location")
+async def update_partner_location(data: LocationUpdate, current_user: User = Depends(require_partner)):
+    """Update partner's current GPS location"""
+    location_data = {
+        "user_id": current_user.user_id,
+        "latitude": data.latitude,
+        "longitude": data.longitude,
+        "accuracy": data.accuracy,
+        "heading": data.heading,
+        "speed": data.speed,
+        "timestamp": data.timestamp,
+        "is_online": data.is_online,
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    # Upsert location in partner_locations collection
+    await db.partner_locations.update_one(
+        {"user_id": current_user.user_id},
+        {"$set": location_data},
+        upsert=True
+    )
+    
+    # Also update the user's current location for quick access
+    await db.users.update_one(
+        {"user_id": current_user.user_id},
+        {"$set": {
+            "current_location": {
+                "lat": data.latitude,
+                "lng": data.longitude
+            },
+            "location_updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    logger.info(f"📍 Location updated for {current_user.user_id}: ({data.latitude}, {data.longitude}) - {'ONLINE' if data.is_online else 'OFFLINE'}")
+    
+    return {"message": "Location updated", "location": location_data}
+
+
+@api_router.get("/partner/location")
+async def get_partner_location(current_user: User = Depends(require_partner)):
+    """Get partner's last known location"""
+    location = await db.partner_locations.find_one(
+        {"user_id": current_user.user_id},
+        {"_id": 0}
+    )
+    
+    if not location:
+        return {"location": None}
+    
+    return {"location": location}
+
 @api_router.get("/partner/stats")
 async def get_partner_stats(current_user: User = Depends(require_partner)):
     """Get partner's statistics"""
