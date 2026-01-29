@@ -33,6 +33,84 @@ const COLORS = {
 };
 
 // =============================================================================
+// MOCK ACCEPTED/IN-PROGRESS JOBS (shown when offline)
+// =============================================================================
+const MY_JOBS = [
+  {
+    id: 'my_job_1',
+    service: 'Kitchen Deep Cleaning',
+    category: 'Home Services',
+    customer: 'Priya Sharma',
+    customerRating: 4.9,
+    description: 'Complete kitchen cleaning including chimney and cabinets.',
+    budget: '₹1,500',
+    budgetMin: 1500,
+    budgetMax: 1500,
+    location: 'Sector 29, Gurgaon',
+    distance: 2.5,
+    status: 'in_progress',
+    statusLabel: 'In Progress',
+    scheduledDate: 'Today, 2:00 PM',
+    acceptedAt: '2 hours ago',
+  },
+  {
+    id: 'my_job_2',
+    service: 'Full House Cleaning',
+    category: 'Home Services',
+    customer: 'Amit Kumar',
+    customerRating: 4.8,
+    description: '3BHK apartment deep cleaning.',
+    budget: '₹3,000',
+    budgetMin: 3000,
+    budgetMax: 3000,
+    location: 'DLF Phase 3',
+    distance: 4.2,
+    status: 'accepted',
+    statusLabel: 'Scheduled',
+    scheduledDate: 'Tomorrow, 10:00 AM',
+    acceptedAt: '1 day ago',
+  },
+  {
+    id: 'my_job_3',
+    service: 'Bathroom Renovation Cleaning',
+    category: 'Home Services',
+    customer: 'Sunita Verma',
+    customerRating: 4.7,
+    description: 'Post-renovation cleaning for 2 bathrooms.',
+    budget: '₹1,200',
+    budgetMin: 1200,
+    budgetMax: 1200,
+    location: 'Sector 56',
+    distance: 3.8,
+    status: 'completed',
+    statusLabel: 'Completed',
+    scheduledDate: 'Yesterday',
+    acceptedAt: '3 days ago',
+    completedAt: 'Yesterday, 4:30 PM',
+    earnings: 1200,
+  },
+  {
+    id: 'my_job_4',
+    service: 'Office Cleaning',
+    category: 'Home Services',
+    customer: 'Tech Corp Ltd',
+    customerRating: 5.0,
+    description: 'Weekly office cleaning service.',
+    budget: '₹2,500',
+    budgetMin: 2500,
+    budgetMax: 2500,
+    location: 'Cyber Hub',
+    distance: 5.0,
+    status: 'completed',
+    statusLabel: 'Completed',
+    scheduledDate: '2 days ago',
+    acceptedAt: '5 days ago',
+    completedAt: '2 days ago, 6:00 PM',
+    earnings: 2500,
+  },
+];
+
+// =============================================================================
 // COMPREHENSIVE MOCK WISHES - ORGANIZED BY SKILL CATEGORY
 // Each wish has 'skillMatch' array that EXACTLY matches skill IDs from skilled-setup.tsx
 // =============================================================================
