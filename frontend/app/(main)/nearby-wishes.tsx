@@ -1882,6 +1882,166 @@ export default function NearbyWishesScreen() {
           <View style={{ height: 100 }} />
         </ScrollView>
       )}
+
+      {/* Wish Details Modal */}
+      <Modal 
+        visible={selectedWish !== null} 
+        transparent 
+        animationType="slide"
+        onRequestClose={() => setSelectedWish(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.detailsModal}>
+            {/* Handle */}
+            <View style={styles.detailsModalHandle}>
+              <View style={styles.handleBar} />
+            </View>
+
+            {/* Header */}
+            <View style={styles.detailsModalHeader}>
+              <Text style={styles.detailsModalTitle} numberOfLines={2}>
+                {selectedWish?.service}
+              </Text>
+              <TouchableOpacity 
+                style={styles.closeModalBtn}
+                onPress={() => setSelectedWish(null)}
+              >
+                <Ionicons name="close" size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
+              <View style={styles.detailsModalContent}>
+                {/* Category & Urgency */}
+                <View style={styles.detailSection}>
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                    <View style={styles.categoryBadge}>
+                      <Text style={styles.categoryText}>{selectedWish?.category}</Text>
+                    </View>
+                    {selectedWish?.urgent && (
+                      <View style={styles.urgentBadge}>
+                        <Ionicons name="flash" size={10} color="#FFF" />
+                        <Text style={styles.urgentText}>Urgent</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+
+                {/* Description */}
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailSectionTitle}>Description</Text>
+                  <View style={styles.detailSectionContent}>
+                    <Text style={styles.detailDescription}>
+                      {selectedWish?.description}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Budget */}
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailSectionTitle}>Budget</Text>
+                  <View style={styles.detailSectionContent}>
+                    <Text style={styles.detailBudgetValue}>{selectedWish?.budget}</Text>
+                    <Text style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4 }}>
+                      Negotiable based on scope
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Details */}
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailSectionTitle}>Details</Text>
+                  <View style={styles.detailSectionContent}>
+                    <View style={styles.detailRow}>
+                      <Ionicons name="location-outline" size={18} color={COLORS.primary} />
+                      <Text style={styles.detailLabel}>Location</Text>
+                      <Text style={styles.detailValue}>{selectedWish?.location}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Ionicons name="navigate-outline" size={18} color={COLORS.primary} />
+                      <Text style={styles.detailLabel}>Distance</Text>
+                      <Text style={styles.detailValue}>{selectedWish?.distance} km away</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Ionicons name="calendar-outline" size={18} color={COLORS.primary} />
+                      <Text style={styles.detailLabel}>Preferred</Text>
+                      <Text style={styles.detailValue}>{selectedWish?.preferredDate}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Ionicons name="time-outline" size={18} color={COLORS.primary} />
+                      <Text style={styles.detailLabel}>Posted</Text>
+                      <Text style={styles.detailValue}>{selectedWish?.postedTime}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Customer */}
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailSectionTitle}>Customer</Text>
+                  <View style={styles.detailSectionContent}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <View style={styles.customerAvatar}>
+                        <Text style={styles.customerInitial}>
+                          {selectedWish?.customer?.charAt(0)}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.customerName}>{selectedWish?.customer}</Text>
+                        <Text style={styles.customerRating}>⭐ {selectedWish?.customerRating} rating</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Photos */}
+                {selectedWish?.photos && selectedWish.photos > 0 && (
+                  <View style={styles.detailSection}>
+                    <Text style={styles.detailSectionTitle}>Attached Photos</Text>
+                    <View style={[styles.detailSectionContent, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
+                      <Ionicons name="images" size={24} color={COLORS.textSecondary} />
+                      <Text style={{ fontSize: 14, color: COLORS.text }}>
+                        {selectedWish.photos} photo{selectedWish.photos > 1 ? 's' : ''} attached
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+
+            {/* Actions */}
+            <View style={styles.detailsModalActions}>
+              <TouchableOpacity 
+                style={styles.declineBtn}
+                onPress={() => setSelectedWish(null)}
+              >
+                <Text style={styles.declineBtnText}>Not Interested</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.acceptBtn}
+                onPress={() => {
+                  if (selectedWish) {
+                    handleAcceptAndChat(selectedWish);
+                    setSelectedWish(null);
+                  }
+                }}
+              >
+                {isAccepting ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="chatbubble-ellipses" size={18} color="#FFF" />
+                    <Text style={styles.acceptBtnText}>Accept & Chat</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
