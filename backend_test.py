@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 QuickWish Fulfillment Agent Backend API Tests
-Tests the backend API endpoints as specified in the review request.
+Tests the backend API endpoints including Deal Negotiation APIs as specified in the review request.
 """
 
 import requests
@@ -31,6 +31,7 @@ class BackendTester:
     def __init__(self):
         self.session = requests.Session()
         self.results = []
+        self.session_token = None
         
     def log_result(self, test_name, success, details, response_code=None):
         """Log test result"""
