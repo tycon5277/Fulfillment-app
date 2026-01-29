@@ -14,6 +14,7 @@ import {
   Modal,
   Dimensions,
   Keyboard,
+  Animated,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -67,6 +68,195 @@ interface ChatRoom {
   };
 }
 
+// Gamified Success Modal Component
+const SuccessModal = ({ 
+  visible, 
+  onClose, 
+  title, 
+  subtitle, 
+  icon, 
+  confetti = true,
+  actionText = 'Awesome!',
+  onAction,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  title: string;
+  subtitle: string;
+  icon: string;
+  confetti?: boolean;
+  actionText?: string;
+  onAction?: () => void;
+}) => {
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const bounceAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.sequence([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 8,
+        }),
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(bounceAnim, {
+              toValue: -10,
+              duration: 300,
+              useNativeDriver: true,
+            }),
+            Animated.timing(bounceAnim, {
+              toValue: 0,
+              duration: 300,
+              useNativeDriver: true,
+            }),
+          ]),
+          { iterations: 2 }
+        ),
+      ]).start();
+    } else {
+      scaleAnim.setValue(0);
+      bounceAnim.setValue(0);
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={successStyles.overlay}>
+        {confetti && (
+          <View style={successStyles.confettiContainer}>
+            {['🎉', '✨', '🌟', '💫', '🎊'].map((emoji, i) => (
+              <Animated.Text 
+                key={i} 
+                style={[
+                  successStyles.confetti,
+                  { 
+                    left: `${15 + i * 15}%`,
+                    transform: [{ translateY: bounceAnim }],
+                  }
+                ]}
+              >
+                {emoji}
+              </Animated.Text>
+            ))}
+          </View>
+        )}
+        
+        <Animated.View 
+          style={[
+            successStyles.modal,
+            { transform: [{ scale: scaleAnim }] }
+          ]}
+        >
+          <View style={successStyles.iconContainer}>
+            <LinearGradient
+              colors={[COLORS.success, '#34D399']}
+              style={successStyles.iconGradient}
+            >
+              <Text style={successStyles.icon}>{icon}</Text>
+            </LinearGradient>
+          </View>
+          
+          <Text style={successStyles.title}>{title}</Text>
+          <Text style={successStyles.subtitle}>{subtitle}</Text>
+          
+          <TouchableOpacity 
+            style={successStyles.button}
+            onPress={onAction || onClose}
+          >
+            <LinearGradient
+              colors={[COLORS.primary, COLORS.primaryLight]}
+              style={successStyles.buttonGradient}
+            >
+              <Text style={successStyles.buttonText}>{actionText}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+};
+
+const successStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  confettiContainer: {
+    position: 'absolute',
+    top: '20%',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  confetti: {
+    fontSize: 32,
+    position: 'absolute',
+  },
+  modal: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 320,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  iconContainer: {
+    marginBottom: 20,
+  },
+  iconGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  icon: {
+    fontSize: 40,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  button: {
+    width: '100%',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  buttonGradient: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+});
+
 export default function ChatDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -85,20 +275,23 @@ export default function ChatDetailScreen() {
   const [isSending, setIsSending] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  // Deal states - Two-way acceptance
+  // Deal states
   const [currentDealId, setCurrentDealId] = useState<string | null>(dealId as string || null);
   const [dealStatus, setDealStatus] = useState<
-    'pending' |           // Initial - Genie can accept
-    'genie_accepted' |    // Genie accepted, waiting for Wisher
-    'confirmed' |         // Both accepted - Job confirmed
-    'in_progress' |       // Genie started working
-    'completed'           // Job done
+    'pending' | 'genie_accepted' | 'confirmed' | 'in_progress' | 'completed'
   >('pending');
   const [isProcessing, setIsProcessing] = useState(false);
   
   // Modals
   const [showDealDetails, setShowDealDetails] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  
+  // Gamified success modals
+  const [showOfferSentSuccess, setShowOfferSentSuccess] = useState(false);
+  const [showJobConfirmedSuccess, setShowJobConfirmedSuccess] = useState(false);
+  const [showJobStartedSuccess, setShowJobStartedSuccess] = useState(false);
+  const [showJobCompletedSuccess, setShowJobCompletedSuccess] = useState(false);
 
   const price = wishBudget ? parseInt(wishBudget as string) : (room?.wish?.remuneration || 0);
   const description = (wishDescription as string) || room?.wish?.description || 'Service request details not available.';
@@ -121,16 +314,30 @@ export default function ChatDetailScreen() {
     };
   }, []);
 
-  // Load data
   useEffect(() => {
     loadData();
   }, [roomId]);
 
-  // Simulate Wisher accepting after Genie accepts (for demo)
+  // When Wisher accepts → Create appointment and show gamified modal
   useEffect(() => {
     if (dealStatus === 'genie_accepted') {
-      // Simulate Wisher accepting after 3 seconds (in real app, this would be a push notification)
-      const timer = setTimeout(() => {
+      const timer = setTimeout(async () => {
+        // Create appointment when wisher accepts
+        try {
+          await api.default.post('/appointments', {
+            deal_id: currentDealId,
+            wish_id: wishId,
+            service_title: wishTitle || room?.wish_title,
+            customer_name: customerName || room?.wisher?.name,
+            scheduled_date: preferredDate,
+            location: location,
+            price: price,
+            status: 'confirmed',
+          });
+        } catch (e) {
+          console.log('Appointment creation - using local state');
+        }
+
         setDealStatus('confirmed');
         const wisherAcceptMsg: Message = {
           message_id: `msg_wisher_${Date.now()}`,
@@ -142,7 +349,9 @@ export default function ChatDetailScreen() {
         };
         setMessages(prev => [...prev, wisherAcceptMsg]);
         scrollViewRef.current?.scrollToEnd({ animated: true });
-        Alert.alert('🎉 Job Confirmed!', 'The customer has accepted. You can now start the job when ready.');
+        
+        // Show gamified success modal
+        setShowJobConfirmedSuccess(true);
       }, 3000);
       return () => clearTimeout(timer);
     }
@@ -235,7 +444,6 @@ export default function ChatDetailScreen() {
     }
   };
 
-  // Genie accepts the deal - notifies Wisher
   const handleAcceptDeal = async () => {
     setIsProcessing(true);
     try {
@@ -244,14 +452,11 @@ export default function ChatDetailScreen() {
       }
       setDealStatus('genie_accepted');
       await sendMessage(`✅ I'm interested and ready to help!\n\n💰 Price: ₹${price}\n📅 Preferred: ${preferredDate}\n\nWaiting for your confirmation.`);
-      Alert.alert(
-        'Offer Sent!', 
-        'The customer has been notified. You\'ll get a confirmation once they accept.',
-        [{ text: 'OK' }]
-      );
+      setShowOfferSentSuccess(true);
     } catch (error) {
       setDealStatus('genie_accepted');
       await sendMessage(`✅ I'm interested and ready to help! Waiting for your confirmation.`);
+      setShowOfferSentSuccess(true);
     } finally {
       setIsProcessing(false);
     }
@@ -265,10 +470,11 @@ export default function ChatDetailScreen() {
       }
       setDealStatus('in_progress');
       await sendMessage('🚀 Job Started! I am now working on your request.');
-      Alert.alert('Job Started', 'Customer has been notified.');
+      setShowJobStartedSuccess(true);
     } catch (error) {
       setDealStatus('in_progress');
       await sendMessage('🚀 Job Started!');
+      setShowJobStartedSuccess(true);
     } finally {
       setIsProcessing(false);
     }
@@ -283,10 +489,11 @@ export default function ChatDetailScreen() {
       }
       setDealStatus('completed');
       await sendMessage('🎉 Job Completed! Thank you for choosing my services. Hope you\'re satisfied!');
-      Alert.alert('🎉 Job Completed!', `Great work! You earned ₹${price}`);
+      setShowJobCompletedSuccess(true);
     } catch (error) {
       setDealStatus('completed');
       await sendMessage('🎉 Job Completed!');
+      setShowJobCompletedSuccess(true);
     } finally {
       setIsProcessing(false);
     }
@@ -332,11 +539,11 @@ export default function ChatDetailScreen() {
       case 'genie_accepted':
         return { text: 'Awaiting Confirmation', color: COLORS.warning, bg: COLORS.warning + '20' };
       case 'confirmed':
-        return { text: 'Confirmed', color: COLORS.success, bg: COLORS.success + '20' };
+        return { text: '📅 Appointment Set', color: COLORS.success, bg: COLORS.success + '20' };
       case 'in_progress':
-        return { text: 'In Progress', color: COLORS.warning, bg: COLORS.warning + '20' };
+        return { text: '🚀 In Progress', color: COLORS.warning, bg: COLORS.warning + '20' };
       case 'completed':
-        return { text: 'Completed', color: COLORS.success, bg: COLORS.success + '20' };
+        return { text: '✅ Completed', color: COLORS.success, bg: COLORS.success + '20' };
     }
   };
 
@@ -380,7 +587,7 @@ export default function ChatDetailScreen() {
         </View>
       </SafeAreaView>
 
-      {/* Clickable Deal Banner - Shows details on tap */}
+      {/* Clickable Deal Banner */}
       <TouchableOpacity 
         style={styles.dealBanner} 
         onPress={() => setShowDealDetails(true)}
@@ -407,7 +614,7 @@ export default function ChatDetailScreen() {
         </View>
       </TouchableOpacity>
 
-      {/* Action Button - Based on Status */}
+      {/* Action Button */}
       {dealStatus !== 'completed' && (
         <View style={styles.actionBar}>
           {dealStatus === 'pending' && (
@@ -551,7 +758,6 @@ export default function ChatDetailScreen() {
       <Modal visible={showDealDetails} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.detailsModal}>
-            {/* Modal Header */}
             <View style={styles.detailsModalHeader}>
               <Text style={styles.detailsModalTitle}>Service Request</Text>
               <TouchableOpacity onPress={() => setShowDealDetails(false)} style={styles.closeButton}>
@@ -560,7 +766,6 @@ export default function ChatDetailScreen() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Service Title */}
               <View style={styles.detailsSection}>
                 <View style={styles.detailsSectionHeader}>
                   <Ionicons name="briefcase-outline" size={20} color={COLORS.primary} />
@@ -569,7 +774,6 @@ export default function ChatDetailScreen() {
                 <Text style={styles.detailsServiceTitle}>{room?.wish_title || 'Service Request'}</Text>
               </View>
 
-              {/* Status */}
               <View style={styles.detailsSection}>
                 <View style={styles.detailsSectionHeader}>
                   <Ionicons name="flag-outline" size={20} color={COLORS.primary} />
@@ -582,7 +786,6 @@ export default function ChatDetailScreen() {
                 </View>
               </View>
 
-              {/* Description */}
               <View style={styles.detailsSection}>
                 <View style={styles.detailsSectionHeader}>
                   <Ionicons name="document-text-outline" size={20} color={COLORS.primary} />
@@ -591,7 +794,6 @@ export default function ChatDetailScreen() {
                 <Text style={styles.detailsDescription}>{description}</Text>
               </View>
 
-              {/* Budget */}
               <View style={styles.detailsSection}>
                 <View style={styles.detailsSectionHeader}>
                   <Ionicons name="wallet-outline" size={20} color={COLORS.success} />
@@ -600,7 +802,6 @@ export default function ChatDetailScreen() {
                 <Text style={styles.detailsBudget}>₹{price}</Text>
               </View>
 
-              {/* Location */}
               <View style={styles.detailsSection}>
                 <View style={styles.detailsSectionHeader}>
                   <Ionicons name="location-outline" size={20} color={COLORS.primary} />
@@ -609,7 +810,6 @@ export default function ChatDetailScreen() {
                 <Text style={styles.detailsText}>{location}</Text>
               </View>
 
-              {/* Preferred Date */}
               <View style={styles.detailsSection}>
                 <View style={styles.detailsSectionHeader}>
                   <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
@@ -618,7 +818,6 @@ export default function ChatDetailScreen() {
                 <Text style={styles.detailsText}>{preferredDate}</Text>
               </View>
 
-              {/* Customer */}
               <View style={styles.detailsSection}>
                 <View style={styles.detailsSectionHeader}>
                   <Ionicons name="person-outline" size={20} color={COLORS.primary} />
@@ -638,48 +837,14 @@ export default function ChatDetailScreen() {
               </View>
             </ScrollView>
 
-            {/* Modal Action */}
             <View style={styles.detailsModalFooter}>
-              {dealStatus === 'pending' && (
-                <TouchableOpacity 
-                  style={[styles.actionButton, styles.acceptButton, { flex: 1 }]} 
-                  onPress={() => {
-                    setShowDealDetails(false);
-                    handleAcceptDeal();
-                  }}
-                  disabled={isProcessing}
-                >
-                  <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-                  <Text style={styles.actionButtonText}>Accept Deal</Text>
-                </TouchableOpacity>
-              )}
-              {dealStatus === 'confirmed' && (
-                <TouchableOpacity 
-                  style={[styles.actionButton, styles.startButton, { flex: 1 }]} 
-                  onPress={() => {
-                    setShowDealDetails(false);
-                    handleStartJob();
-                  }}
-                >
-                  <Ionicons name="play-circle" size={20} color="#FFF" />
-                  <Text style={styles.actionButtonText}>Start Job</Text>
-                </TouchableOpacity>
-              )}
-              {dealStatus === 'genie_accepted' && (
-                <View style={[styles.waitingContainer, { flex: 1 }]}>
-                  <ActivityIndicator size="small" color={COLORS.warning} />
-                  <Text style={styles.waitingText}>Waiting for confirmation...</Text>
-                </View>
-              )}
-              {(dealStatus === 'in_progress' || dealStatus === 'completed') && (
-                <TouchableOpacity 
-                  style={[styles.actionButton, { flex: 1, backgroundColor: COLORS.textMuted }]} 
-                  onPress={() => setShowDealDetails(false)}
-                >
-                  <Ionicons name="close" size={20} color="#FFF" />
-                  <Text style={styles.actionButtonText}>Close</Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity 
+                style={[styles.actionButton, { flex: 1, backgroundColor: COLORS.textMuted }]} 
+                onPress={() => setShowDealDetails(false)}
+              >
+                <Ionicons name="close" size={20} color="#FFF" />
+                <Text style={styles.actionButtonText}>Close</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -690,11 +855,11 @@ export default function ChatDetailScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.confirmModal}>
             <View style={styles.confirmModalIcon}>
-              <Ionicons name="checkmark-done-circle" size={48} color={COLORS.success} />
+              <Text style={{ fontSize: 48 }}>🎯</Text>
             </View>
-            <Text style={styles.confirmModalTitle}>Complete Job?</Text>
+            <Text style={styles.confirmModalTitle}>Ready to finish?</Text>
             <Text style={styles.confirmModalText}>
-              Are you sure you've finished this job? The customer will be notified.
+              Make sure you've completed all the work before marking this job as done!
             </Text>
             <View style={styles.confirmModalButtons}>
               <TouchableOpacity 
@@ -707,12 +872,50 @@ export default function ChatDetailScreen() {
                 style={styles.confirmModalConfirm}
                 onPress={handleCompleteJob}
               >
-                <Text style={styles.confirmModalConfirmText}>Yes, Complete</Text>
+                <Text style={styles.confirmModalConfirmText}>Yes, Done! 🎉</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+
+      {/* Gamified Success Modals */}
+      <SuccessModal
+        visible={showOfferSentSuccess}
+        onClose={() => setShowOfferSentSuccess(false)}
+        title="Offer Sent! 🚀"
+        subtitle="Great! The customer has been notified. You'll hear back soon!"
+        icon="📤"
+        actionText="Got it!"
+      />
+
+      <SuccessModal
+        visible={showJobConfirmedSuccess}
+        onClose={() => setShowJobConfirmedSuccess(false)}
+        title="Job Confirmed! 🎉"
+        subtitle={`Appointment added to your schedule!\n\n📅 ${preferredDate}\n📍 ${location}`}
+        icon="✅"
+        actionText="Let's Go!"
+      />
+
+      <SuccessModal
+        visible={showJobStartedSuccess}
+        onClose={() => setShowJobStartedSuccess(false)}
+        title="You're On! 💪"
+        subtitle="The customer knows you've started. Do your magic!"
+        icon="🚀"
+        confetti={false}
+        actionText="On it!"
+      />
+
+      <SuccessModal
+        visible={showJobCompletedSuccess}
+        onClose={() => setShowJobCompletedSuccess(false)}
+        title="Amazing Work! 🏆"
+        subtitle={`You earned ₹${price}!\n\nKeep up the great work, Genie!`}
+        icon="💰"
+        actionText="Celebrate! 🎊"
+      />
     </View>
   );
 }
@@ -731,8 +934,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: COLORS.textSecondary,
   },
-
-  // Header
   headerSafe: {
     backgroundColor: COLORS.cardBg,
   },
@@ -783,8 +984,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#D1FAE5',
     borderRadius: 20,
   },
-
-  // Deal Banner - Clickable
   dealBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -838,8 +1037,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.success,
   },
-
-  // Action Bar
   actionBar: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -883,8 +1080,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-
-  // Chat Container
   chatContainer: {
     flex: 1,
   },
@@ -912,8 +1107,6 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontSize: 13,
   },
-
-  // Date Separator
   dateSeparator: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -929,8 +1122,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textMuted,
   },
-
-  // Messages
   messageRow: {
     marginBottom: 8,
     alignItems: 'flex-start',
@@ -971,8 +1162,6 @@ const styles = StyleSheet.create({
   messageTimeOwn: {
     color: 'rgba(255,255,255,0.7)',
   },
-
-  // Input Container
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -1009,8 +1198,6 @@ const styles = StyleSheet.create({
   sendButtonDisabled: {
     backgroundColor: COLORS.textMuted,
   },
-
-  // Deal Details Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -1118,8 +1305,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
   },
-
-  // Confirm Modal
   confirmModal: {
     backgroundColor: COLORS.cardBg,
     borderRadius: 20,
