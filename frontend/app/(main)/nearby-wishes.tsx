@@ -1807,7 +1807,7 @@ export default function NearbyWishesScreen() {
           onPress={() => handleAcceptAndChat(wish)}
         >
           <Ionicons name="chatbubble-ellipses" size={16} color="#FFF" />
-          <Text style={styles.acceptChatBtnText}>Accept & Chat</Text>
+          <Text style={styles.acceptChatBtnText}>Chat & Accept</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
