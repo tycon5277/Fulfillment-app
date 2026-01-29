@@ -115,6 +115,18 @@ export default function ChatDetailScreen() {
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
 
+  // Deal negotiation states
+  const [dealStatus, setDealStatus] = useState<'negotiating' | 'offer_sent' | 'accepted' | 'in_progress' | 'completed'>('negotiating');
+  const [showDealModal, setShowDealModal] = useState(false);
+  const [dealOffer, setDealOffer] = useState({
+    price: room?.wish?.remuneration || 1500,
+    scheduledDate: 'Today',
+    scheduledTime: '2:00 PM',
+    notes: '',
+  });
+  const [counterOfferPrice, setCounterOfferPrice] = useState('');
+  const [showCounterOfferInput, setShowCounterOfferInput] = useState(false);
+
   // Voice recording states
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
