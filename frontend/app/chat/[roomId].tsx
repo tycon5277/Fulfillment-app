@@ -565,6 +565,179 @@ export default function ChatDetailScreen() {
     ]);
   };
 
+  // Deal Negotiation Functions
+  const handleSendOffer = async () => {
+    const offerMessage = `💼 **DEAL OFFER**\n\n📋 Service: ${room?.wish_title || 'Service'}\n💰 Price: ₹${dealOffer.price}\n📅 Date: ${dealOffer.scheduledDate}\n⏰ Time: ${dealOffer.scheduledTime}${dealOffer.notes ? `\n📝 Notes: ${dealOffer.notes}` : ''}\n\n✅ Tap "Accept Deal" below to confirm`;
+    
+    await sendMessage(offerMessage);
+    setDealStatus('offer_sent');
+    setShowDealModal(false);
+    Alert.alert('Offer Sent!', 'Waiting for customer to accept your offer.');
+  };
+
+  const handleAcceptDeal = async () => {
+    setDealStatus('accepted');
+    await sendMessage('✅ Deal Accepted! I will be there as scheduled. 🤝');
+    Alert.alert('🎉 Deal Confirmed!', 'The customer has been notified. You can now start working on this job.', [
+      { text: 'OK' }
+    ]);
+  };
+
+  const handleStartJob = async () => {
+    setDealStatus('in_progress');
+    await sendMessage('🚀 Job Started! I am now working on your request.');
+    Alert.alert('Job Started', 'Customer has been notified that you\'ve started working.');
+  };
+
+  const handleSendCounterOffer = async () => {
+    if (!counterOfferPrice) {
+      Alert.alert('Error', 'Please enter a price for your counter offer.');
+      return;
+    }
+    
+    const counterMessage = `💰 **COUNTER OFFER**\n\nI can do this for ₹${counterOfferPrice}\n\nPlease let me know if this works for you!`;
+    await sendMessage(counterMessage);
+    setShowCounterOfferInput(false);
+    setCounterOfferPrice('');
+  };
+
+  const handleDeclineDeal = () => {
+    Alert.alert(
+      'Decline Deal?',
+      'Are you sure you want to decline this deal?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Decline', 
+          style: 'destructive',
+          onPress: async () => {
+            await sendMessage('❌ I apologize, but I cannot take this job at the moment. Thank you for understanding.');
+            router.back();
+          }
+        }
+      ]
+    );
+  };
+
+  // Render Deal Negotiation Card (shown in chat)
+  const renderDealCard = () => {
+    if (dealStatus === 'completed') return null;
+    
+    return (
+      <View style={styles.dealCard}>
+        {/* Deal Header */}
+        <LinearGradient
+          colors={['#6366F1', '#8B5CF6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.dealCardHeader}
+        >
+          <Ionicons name="briefcase" size={20} color="#FFF" />
+          <Text style={styles.dealCardHeaderText}>
+            {dealStatus === 'negotiating' ? '💬 Negotiating' : 
+             dealStatus === 'offer_sent' ? '📤 Offer Sent' :
+             dealStatus === 'accepted' ? '✅ Deal Accepted' :
+             '🔄 In Progress'}
+          </Text>
+        </LinearGradient>
+
+        {/* Deal Details */}
+        <View style={styles.dealCardBody}>
+          <View style={styles.dealDetailRow}>
+            <Ionicons name="document-text-outline" size={18} color={COLORS.textSecondary} />
+            <Text style={styles.dealDetailText}>{room?.wish_title || 'Service Request'}</Text>
+          </View>
+          
+          <View style={styles.dealDetailRow}>
+            <Ionicons name="cash-outline" size={18} color={COLORS.success} />
+            <Text style={[styles.dealDetailText, { color: COLORS.success, fontWeight: '700' }]}>
+              ₹{room?.wish?.remuneration || dealOffer.price}
+            </Text>
+          </View>
+
+          {/* Action Buttons based on status */}
+          {dealStatus === 'negotiating' && (
+            <View style={styles.dealActions}>
+              <TouchableOpacity 
+                style={styles.dealActionBtn}
+                onPress={() => setShowDealModal(true)}
+              >
+                <Ionicons name="send" size={18} color="#FFF" />
+                <Text style={styles.dealActionBtnText}>Send Offer</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.dealActionBtn, styles.dealActionBtnSecondary]}
+                onPress={() => setShowCounterOfferInput(true)}
+              >
+                <Ionicons name="swap-horizontal" size={18} color={COLORS.primary} />
+                <Text style={[styles.dealActionBtnText, { color: COLORS.primary }]}>Counter</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {dealStatus === 'offer_sent' && (
+            <View style={styles.dealWaiting}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <Text style={styles.dealWaitingText}>Waiting for customer response...</Text>
+            </View>
+          )}
+
+          {dealStatus === 'accepted' && (
+            <View style={styles.dealActions}>
+              <TouchableOpacity 
+                style={[styles.dealActionBtn, { backgroundColor: COLORS.success }]}
+                onPress={handleStartJob}
+              >
+                <Ionicons name="play-circle" size={18} color="#FFF" />
+                <Text style={styles.dealActionBtnText}>Start Job</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {dealStatus === 'in_progress' && (
+            <View style={styles.dealActions}>
+              <TouchableOpacity 
+                style={[styles.dealActionBtn, { backgroundColor: COLORS.warning }]}
+                onPress={handleMarkComplete}
+              >
+                <Ionicons name="checkmark-done-circle" size={18} color="#FFF" />
+                <Text style={styles.dealActionBtnText}>Mark Complete</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* Counter Offer Input */}
+        {showCounterOfferInput && (
+          <View style={styles.counterOfferContainer}>
+            <Text style={styles.counterOfferLabel}>Enter your price:</Text>
+            <View style={styles.counterOfferRow}>
+              <Text style={styles.counterOfferCurrency}>₹</Text>
+              <TextInput
+                style={styles.counterOfferInput}
+                placeholder="1500"
+                keyboardType="numeric"
+                value={counterOfferPrice}
+                onChangeText={setCounterOfferPrice}
+                placeholderTextColor={COLORS.textMuted}
+              />
+              <TouchableOpacity 
+                style={styles.counterOfferSend}
+                onPress={handleSendCounterOffer}
+              >
+                <Ionicons name="send" size={20} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity onPress={() => setShowCounterOfferInput(false)}>
+              <Text style={styles.counterOfferCancel}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleTimeString('en-IN', {
