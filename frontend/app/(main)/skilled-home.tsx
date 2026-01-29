@@ -146,50 +146,7 @@ export default function SkilledHomeScreen() {
 
   const renderOverviewTab = () => (
     <>
-      {/* Quick Actions - Moved to TOP */}
-      <View style={styles.quickActions}>
-        <Text style={styles.quickActionsTitle}>Quick Actions</Text>
-        <View style={styles.quickActionsGrid}>
-          <TouchableOpacity 
-            style={styles.quickActionBtn}
-            onPress={() => router.push('/(main)/appointments')}
-          >
-            <View style={[styles.quickActionIcon, { backgroundColor: COLORS.primary + '15' }]}>
-              <Ionicons name="calendar-outline" size={22} color={COLORS.primary} />
-            </View>
-            <Text style={styles.quickActionText}>Schedule</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.quickActionBtn}
-            onPress={() => router.push('/(main)/earnings-detail')}
-          >
-            <View style={[styles.quickActionIcon, { backgroundColor: COLORS.success + '15' }]}>
-              <Ionicons name="wallet-outline" size={22} color={COLORS.success} />
-            </View>
-            <Text style={styles.quickActionText}>Earnings</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.quickActionBtn}
-            onPress={() => router.push('/(main)/reviews-detail')}
-          >
-            <View style={[styles.quickActionIcon, { backgroundColor: COLORS.warning + '15' }]}>
-              <Ionicons name="star-outline" size={22} color={COLORS.warning} />
-            </View>
-            <Text style={styles.quickActionText}>Reviews</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.quickActionBtn}
-            onPress={() => router.push('/(main)/skilled-profile')}
-          >
-            <View style={[styles.quickActionIcon, { backgroundColor: COLORS.purple + '15' }]}>
-              <Ionicons name="person-outline" size={22} color={COLORS.purple} />
-            </View>
-            <Text style={styles.quickActionText}>Profile</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Stats Grid - Now Clickable */}
+      {/* Stats Grid - Clean and Simple */}
       <View style={styles.statsGrid}>
         <TouchableOpacity 
           style={[styles.statCard, styles.statCardPrimary]}
