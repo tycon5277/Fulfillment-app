@@ -940,28 +940,57 @@ export default function ChatDetailScreen() {
                 </View>
               </View>
 
-              {/* Date */}
+              {/* Date Picker */}
               <View style={styles.appointmentSection}>
                 <Text style={styles.appointmentSectionLabel}>📅 Date</Text>
-                <TextInput
-                  style={styles.appointmentInput}
-                  value={appointmentData.date}
-                  onChangeText={(text) => setAppointmentData(prev => ({ ...prev, date: text }))}
-                  placeholder="Enter date (e.g., Tomorrow, Jan 30)"
-                  placeholderTextColor={COLORS.textMuted}
-                />
+                <TouchableOpacity 
+                  style={styles.dateTimeButton}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Ionicons name="calendar" size={22} color={COLORS.primary} />
+                  <Text style={styles.dateTimeButtonText}>{formatDateDisplay(appointmentDate)}</Text>
+                  <Ionicons name="chevron-down" size={20} color={COLORS.textMuted} />
+                </TouchableOpacity>
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={appointmentDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    minimumDate={new Date()}
+                    onChange={(event, selectedDate) => {
+                      setShowDatePicker(Platform.OS === 'ios');
+                      if (selectedDate) {
+                        setAppointmentDate(selectedDate);
+                      }
+                    }}
+                  />
+                )}
               </View>
 
-              {/* Time */}
+              {/* Time Picker */}
               <View style={styles.appointmentSection}>
                 <Text style={styles.appointmentSectionLabel}>⏰ Time</Text>
-                <TextInput
-                  style={styles.appointmentInput}
-                  value={appointmentData.time}
-                  onChangeText={(text) => setAppointmentData(prev => ({ ...prev, time: text }))}
-                  placeholder="Enter time (e.g., 3:00 PM)"
-                  placeholderTextColor={COLORS.textMuted}
-                />
+                <TouchableOpacity 
+                  style={styles.dateTimeButton}
+                  onPress={() => setShowTimePicker(true)}
+                >
+                  <Ionicons name="time" size={22} color={COLORS.warning} />
+                  <Text style={styles.dateTimeButtonText}>{formatTimeDisplay(appointmentTime)}</Text>
+                  <Ionicons name="chevron-down" size={20} color={COLORS.textMuted} />
+                </TouchableOpacity>
+                {showTimePicker && (
+                  <DateTimePicker
+                    value={appointmentTime}
+                    mode="time"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={(event, selectedTime) => {
+                      setShowTimePicker(Platform.OS === 'ios');
+                      if (selectedTime) {
+                        setAppointmentTime(selectedTime);
+                      }
+                    }}
+                  />
+                )}
               </View>
 
               {/* Location */}
@@ -986,12 +1015,22 @@ export default function ChatDetailScreen() {
                 <Text style={styles.appointmentSectionLabel}>📝 Notes (optional)</Text>
                 <TextInput
                   style={[styles.appointmentInput, { height: 80, textAlignVertical: 'top' }]}
-                  value={appointmentData.notes}
-                  onChangeText={(text) => setAppointmentData(prev => ({ ...prev, notes: text }))}
+                  value={appointmentNotes}
+                  onChangeText={setAppointmentNotes}
                   placeholder="Any special instructions..."
                   placeholderTextColor={COLORS.textMuted}
                   multiline
                 />
+              </View>
+              
+              {/* Future: Google Calendar Sync Note */}
+              <View style={[styles.appointmentSection, { backgroundColor: COLORS.primary + '08', marginHorizontal: 20, borderRadius: 12, padding: 12 }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="sync" size={18} color={COLORS.primary} />
+                  <Text style={{ fontSize: 12, color: COLORS.textSecondary, flex: 1 }}>
+                    Google Calendar sync coming soon! Your appointments will auto-sync with your phone's calendar.
+                  </Text>
+                </View>
               </View>
             </ScrollView>
 
@@ -1000,25 +1039,28 @@ export default function ChatDetailScreen() {
               <TouchableOpacity 
                 style={styles.appointmentConfirmBtn}
                 onPress={async () => {
-                  // Create appointment
+                  const dateStr = formatDateDisplay(appointmentDate);
+                  const timeStr = formatTimeDisplay(appointmentTime);
+                  
+                  // Create appointment in backend
                   try {
                     await api.default.post('/appointments', {
                       deal_id: currentDealId,
                       wish_id: wishId,
                       service_title: wishTitle || room?.wish_title,
                       customer_name: customerName || room?.wisher?.name,
-                      scheduled_date: appointmentData.date,
-                      scheduled_time: appointmentData.time,
+                      scheduled_date: dateStr,
+                      scheduled_time: timeStr,
                       location: location,
                       price: price,
-                      notes: appointmentData.notes,
+                      notes: appointmentNotes,
                     });
                   } catch (e) {
                     console.log('Appointment saved locally');
                   }
                   
                   // Send confirmation message
-                  await sendMessage(`📅 **Appointment Confirmed!**\n\n📆 ${appointmentData.date}\n⏰ ${appointmentData.time}\n📍 ${location}\n💰 ₹${price}${appointmentData.notes ? `\n📝 ${appointmentData.notes}` : ''}\n\nSee you soon! 🙌`);
+                  await sendMessage(`📅 **Appointment Confirmed!**\n\n📆 ${dateStr}\n⏰ ${timeStr}\n📍 ${location}\n💰 ₹${price}${appointmentNotes ? `\n📝 ${appointmentNotes}` : ''}\n\nSee you soon! 🙌`);
                   
                   setShowAppointmentModal(false);
                   setShowJobConfirmedSuccess(true);
