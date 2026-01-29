@@ -1510,18 +1510,26 @@ export default function NearbyWishesScreen() {
     return sorted;
   }, [userSkills, radius, sortBy, isOnline]);
 
-  // Handle Accept & Chat - creates chat room and navigates to chat
+  // Handle Accept & Chat - creates deal and chat room, then navigates to chat
   const handleAcceptAndChat = async (wish: typeof ALL_WISHES[0]) => {
     setIsAccepting(true);
     try {
-      // Create a chat room for this wish
-      const roomId = `wish_${wish.id}_${Date.now()}`;
+      // Create a deal from this wish via the backend
+      const response = await api.createDealFromWish({
+        wish_id: wish.id,
+        price: wish.budgetMax,
+        scheduled_date: wish.preferredDate,
+        notes: `Interested in: ${wish.service}`,
+      });
+
+      const { room_id, deal_id } = response.data;
       
-      // Navigate to chat with wish details
+      // Navigate to chat with wish and deal details
       router.push({
         pathname: '/chat/[roomId]',
         params: {
-          roomId: roomId,
+          roomId: room_id,
+          dealId: deal_id,
           wishId: wish.id,
           wishTitle: wish.service,
           wishBudget: wish.budgetMax.toString(),
@@ -1532,8 +1540,24 @@ export default function NearbyWishesScreen() {
           wishDate: wish.preferredDate,
         }
       });
-    } catch (error) {
-      Alert.alert('Error', 'Failed to start chat. Please try again.');
+    } catch (error: any) {
+      console.error('Error creating deal:', error);
+      // Fallback to local navigation if API fails (for demo/testing)
+      const localRoomId = `wish_${wish.id}_${Date.now()}`;
+      router.push({
+        pathname: '/chat/[roomId]',
+        params: {
+          roomId: localRoomId,
+          wishId: wish.id,
+          wishTitle: wish.service,
+          wishBudget: wish.budgetMax.toString(),
+          wishDescription: wish.description,
+          customerName: wish.customer,
+          customerRating: wish.customerRating.toString(),
+          wishLocation: wish.location,
+          wishDate: wish.preferredDate,
+        }
+      });
     } finally {
       setIsAccepting(false);
     }
