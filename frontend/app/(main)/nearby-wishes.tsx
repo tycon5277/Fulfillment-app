@@ -1939,6 +1939,63 @@ export default function NearbyWishesScreen() {
               contentContainerStyle={{ paddingBottom: 20 }}
             >
               <View style={styles.detailsModalContent}>
+                {/* Map Tile showing both locations */}
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailSectionTitle}>📍 Location</Text>
+                  <View style={styles.mapTile}>
+                    {/* Static map background */}
+                    <View style={styles.mapBackground}>
+                      {/* Grid lines for map effect */}
+                      <View style={styles.mapGrid}>
+                        {[...Array(5)].map((_, i) => (
+                          <View key={`h-${i}`} style={[styles.mapGridLine, { top: `${i * 25}%` }]} />
+                        ))}
+                        {[...Array(5)].map((_, i) => (
+                          <View key={`v-${i}`} style={[styles.mapGridLineV, { left: `${i * 25}%` }]} />
+                        ))}
+                      </View>
+                      
+                      {/* Wisher Location Marker */}
+                      <View style={[styles.mapMarker, styles.wisherMarker, { top: '30%', left: '60%' }]}>
+                        <View style={styles.markerPin}>
+                          <Ionicons name="location" size={24} color="#EF4444" />
+                        </View>
+                        <View style={[styles.markerLabel, { backgroundColor: '#EF4444' }]}>
+                          <Text style={styles.markerLabelText}>Customer</Text>
+                        </View>
+                      </View>
+                      
+                      {/* Genie Location Marker */}
+                      <View style={[styles.mapMarker, styles.genieMarker, { top: '55%', left: '35%' }]}>
+                        <View style={styles.markerPin}>
+                          <Ionicons name="location" size={24} color={COLORS.primary} />
+                        </View>
+                        <View style={[styles.markerLabel, { backgroundColor: COLORS.primary }]}>
+                          <Text style={styles.markerLabelText}>You</Text>
+                        </View>
+                      </View>
+                      
+                      {/* Distance Line */}
+                      <View style={styles.distanceLine} />
+                    </View>
+                    
+                    {/* Map Info */}
+                    <View style={styles.mapInfo}>
+                      <View style={styles.mapInfoRow}>
+                        <View style={styles.mapInfoItem}>
+                          <Ionicons name="navigate" size={16} color={COLORS.primary} />
+                          <Text style={styles.mapInfoText}>{selectedWish?.distance} km away</Text>
+                        </View>
+                        <View style={styles.mapInfoItem}>
+                          <Ionicons name="time" size={16} color={COLORS.textMuted} />
+                          <Text style={styles.mapInfoText}>~{Math.round((selectedWish?.distance || 1) * 3)} min</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.mapLocationText}>{selectedWish?.location}</Text>
+                    </View>
+                  </View>
+                </View>
+
                 {/* Category & Urgency */}
                 <View style={styles.detailSection}>
                   <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
@@ -1954,9 +2011,18 @@ export default function NearbyWishesScreen() {
                   </View>
                 </View>
 
+                {/* Budget - Highlight */}
+                <View style={styles.detailSection}>
+                  <View style={styles.budgetHighlight}>
+                    <Text style={styles.budgetLabel}>💰 Budget</Text>
+                    <Text style={styles.budgetAmount}>{selectedWish?.budget}</Text>
+                    <Text style={styles.budgetNote}>Negotiable</Text>
+                  </View>
+                </View>
+
                 {/* Description */}
                 <View style={styles.detailSection}>
-                  <Text style={styles.detailSectionTitle}>Description</Text>
+                  <Text style={styles.detailSectionTitle}>📝 Description</Text>
                   <View style={styles.detailSectionContent}>
                     <Text style={styles.detailDescription}>
                       {selectedWish?.description}
@@ -1964,38 +2030,17 @@ export default function NearbyWishesScreen() {
                   </View>
                 </View>
 
-                {/* Budget */}
+                {/* Schedule */}
                 <View style={styles.detailSection}>
-                  <Text style={styles.detailSectionTitle}>Budget</Text>
-                  <View style={styles.detailSectionContent}>
-                    <Text style={styles.detailBudgetValue}>{selectedWish?.budget}</Text>
-                    <Text style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4 }}>
-                      Negotiable based on scope
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Details */}
-                <View style={styles.detailSection}>
-                  <Text style={styles.detailSectionTitle}>Details</Text>
+                  <Text style={styles.detailSectionTitle}>📅 Schedule</Text>
                   <View style={styles.detailSectionContent}>
                     <View style={styles.detailRow}>
-                      <Ionicons name="location-outline" size={18} color={COLORS.primary} />
-                      <Text style={styles.detailLabel}>Location</Text>
-                      <Text style={styles.detailValue}>{selectedWish?.location}</Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Ionicons name="navigate-outline" size={18} color={COLORS.primary} />
-                      <Text style={styles.detailLabel}>Distance</Text>
-                      <Text style={styles.detailValue}>{selectedWish?.distance} km away</Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Ionicons name="calendar-outline" size={18} color={COLORS.primary} />
+                      <Ionicons name="calendar" size={18} color={COLORS.primary} />
                       <Text style={styles.detailLabel}>Preferred</Text>
                       <Text style={styles.detailValue}>{selectedWish?.preferredDate}</Text>
                     </View>
                     <View style={styles.detailRow}>
-                      <Ionicons name="time-outline" size={18} color={COLORS.primary} />
+                      <Ionicons name="time" size={18} color={COLORS.textMuted} />
                       <Text style={styles.detailLabel}>Posted</Text>
                       <Text style={styles.detailValue}>{selectedWish?.postedTime}</Text>
                     </View>
@@ -2004,17 +2049,20 @@ export default function NearbyWishesScreen() {
 
                 {/* Customer */}
                 <View style={styles.detailSection}>
-                  <Text style={styles.detailSectionTitle}>Customer</Text>
+                  <Text style={styles.detailSectionTitle}>👤 Customer</Text>
                   <View style={styles.detailSectionContent}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                      <View style={styles.customerAvatar}>
-                        <Text style={styles.customerInitial}>
+                      <View style={styles.customerAvatarLarge}>
+                        <Text style={styles.customerInitialLarge}>
                           {selectedWish?.customer?.charAt(0)}
                         </Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.customerName}>{selectedWish?.customer}</Text>
-                        <Text style={styles.customerRating}>⭐ {selectedWish?.customerRating} rating</Text>
+                        <Text style={styles.customerNameLarge}>{selectedWish?.customer}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Text style={styles.customerRatingLarge}>⭐ {selectedWish?.customerRating}</Text>
+                          <Text style={styles.customerRatingLabel}>rating</Text>
+                        </View>
                       </View>
                     </View>
                   </View>
@@ -2023,7 +2071,7 @@ export default function NearbyWishesScreen() {
                 {/* Photos */}
                 {selectedWish?.photos && selectedWish.photos > 0 && (
                   <View style={styles.detailSection}>
-                    <Text style={styles.detailSectionTitle}>Attached Photos</Text>
+                    <Text style={styles.detailSectionTitle}>📸 Attached Photos</Text>
                     <View style={[styles.detailSectionContent, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
                       <Ionicons name="images" size={24} color={COLORS.textSecondary} />
                       <Text style={{ fontSize: 14, color: COLORS.text }}>
@@ -2058,7 +2106,7 @@ export default function NearbyWishesScreen() {
                 ) : (
                   <>
                     <Ionicons name="chatbubble-ellipses" size={18} color="#FFF" />
-                    <Text style={styles.acceptBtnText}>Accept & Chat</Text>
+                    <Text style={styles.acceptBtnText}>Chat & Accept</Text>
                   </>
                 )}
               </TouchableOpacity>
