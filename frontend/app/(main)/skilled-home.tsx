@@ -733,42 +733,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFF',
   },
-  quickActions: {
-    paddingHorizontal: 20,
-  },
-  quickActionsTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 12,
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  quickActionBtn: {
-    flex: 1,
-    alignItems: 'center',
-    padding: 14,
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  quickActionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  quickActionText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  // New Browse Wishes Card Styles
+  // Browse Wishes Card Styles
   browseWishesCard: {
     flexDirection: 'row',
     alignItems: 'center',
