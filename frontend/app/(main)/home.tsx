@@ -295,6 +295,18 @@ export default function HomeScreen() {
       const newOnlineState = !isOnline;
       setIsOnline(newOnlineState);
       setStoreIsOnline(newOnlineState); // Update Zustand store
+      
+      // Manage location tracking based on online/offline state
+      if (newOnlineState) {
+        // Going ONLINE - start continuous tracking
+        console.log('🟢 Going ONLINE - starting continuous location tracking');
+        await startContinuousTracking();
+      } else {
+        // Going OFFLINE - switch to periodic tracking (every 5 minutes)
+        console.log('🟡 Going OFFLINE - switching to periodic location tracking');
+        await startPeriodicTracking();
+      }
+      
       await fetchStats();
     } catch (error) {
       console.error('Error updating status:', error);
@@ -316,6 +328,11 @@ export default function HomeScreen() {
       await api.updatePartnerStatus('offline');
       setIsOnline(false);
       setStoreIsOnline(false);
+      
+      // Switch to periodic tracking when going offline
+      console.log('🟡 Force Offline - switching to periodic location tracking');
+      await startPeriodicTracking();
+      
       await fetchStats();
     } catch (error) {
       console.error('Error updating status:', error);
