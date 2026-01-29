@@ -177,6 +177,19 @@ export const getEarningsSummary = () => api.get('/partner/earnings');
 export const getEarningsHistory = (limit?: number) =>
   api.get('/partner/earnings/history', { params: { limit } });
 
+// Location Tracking
+export const updateLocation = (data: {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  heading?: number;
+  speed?: number;
+  timestamp: number;
+  is_online: boolean;
+}) => api.put('/partner/location', data);
+
+export const getPartnerLocation = () => api.get('/partner/location');
+
 // Seed data (for testing)
 export const seedOrders = () => api.post('/seed/orders');
 export const seedWishes = () => api.post('/seed/wishes');
