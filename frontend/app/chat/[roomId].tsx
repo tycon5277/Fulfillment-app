@@ -58,6 +58,7 @@ interface ChatRoom {
     wish_type: string;
     remuneration: number;
     status: string;
+    description?: string;
   };
   wisher?: {
     name: string;
@@ -70,7 +71,10 @@ export default function ChatDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
-  const { roomId, dealId, wishId, wishTitle, wishBudget, customerName, customerRating } = params;
+  const { 
+    roomId, dealId, wishId, wishTitle, wishBudget, wishDescription,
+    customerName, customerRating, wishLocation, wishDate 
+  } = params;
   const { user } = useAuthStore();
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -81,13 +85,25 @@ export default function ChatDetailScreen() {
   const [isSending, setIsSending] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  // Deal states - simplified
+  // Deal states - Two-way acceptance
   const [currentDealId, setCurrentDealId] = useState<string | null>(dealId as string || null);
-  const [dealStatus, setDealStatus] = useState<'pending' | 'accepted' | 'in_progress' | 'completed'>('pending');
+  const [dealStatus, setDealStatus] = useState<
+    'pending' |           // Initial - Genie can accept
+    'genie_accepted' |    // Genie accepted, waiting for Wisher
+    'confirmed' |         // Both accepted - Job confirmed
+    'in_progress' |       // Genie started working
+    'completed'           // Job done
+  >('pending');
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Modals
+  const [showDealDetails, setShowDealDetails] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
 
   const price = wishBudget ? parseInt(wishBudget as string) : (room?.wish?.remuneration || 0);
+  const description = (wishDescription as string) || room?.wish?.description || 'Service request details not available.';
+  const location = (wishLocation as string) || 'Location not specified';
+  const preferredDate = (wishDate as string) || 'Flexible';
 
   // Keyboard listeners
   useEffect(() => {
@@ -110,17 +126,37 @@ export default function ChatDetailScreen() {
     loadData();
   }, [roomId]);
 
+  // Simulate Wisher accepting after Genie accepts (for demo)
+  useEffect(() => {
+    if (dealStatus === 'genie_accepted') {
+      // Simulate Wisher accepting after 3 seconds (in real app, this would be a push notification)
+      const timer = setTimeout(() => {
+        setDealStatus('confirmed');
+        const wisherAcceptMsg: Message = {
+          message_id: `msg_wisher_${Date.now()}`,
+          room_id: roomId as string,
+          sender_id: 'wisher',
+          sender_type: 'wisher',
+          content: '✅ I accept your offer! Looking forward to your service.',
+          created_at: new Date().toISOString(),
+        };
+        setMessages(prev => [...prev, wisherAcceptMsg]);
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+        Alert.alert('🎉 Job Confirmed!', 'The customer has accepted. You can now start the job when ready.');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [dealStatus]);
+
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // Try to fetch room from API
       const response = await api.getChatRooms();
       const foundRoom = response.data.find((r: ChatRoom) => r.room_id === roomId);
       
       if (foundRoom) {
         setRoom(foundRoom);
       } else {
-        // Use params from navigation
         setRoom({
           room_id: roomId as string,
           wish_id: (wishId as string) || 'demo',
@@ -132,6 +168,7 @@ export default function ChatDetailScreen() {
             wish_type: 'service',
             remuneration: price,
             status: 'pending',
+            description: description,
           },
           wisher: {
             name: (customerName as string) || 'Customer',
@@ -140,7 +177,6 @@ export default function ChatDetailScreen() {
         });
       }
 
-      // Try to fetch messages
       try {
         const msgResponse = await api.getChatMessages(roomId as string);
         setMessages(msgResponse.data || []);
@@ -148,7 +184,6 @@ export default function ChatDetailScreen() {
         setMessages([]);
       }
     } catch (error) {
-      // Fallback
       setRoom({
         room_id: roomId as string,
         wish_id: 'demo',
@@ -160,6 +195,7 @@ export default function ChatDetailScreen() {
           wish_type: 'service',
           remuneration: price,
           status: 'pending',
+          description: description,
         },
         wisher: {
           name: (customerName as string) || 'Customer',
@@ -179,7 +215,6 @@ export default function ChatDetailScreen() {
     setIsSending(true);
     setNewMessage('');
 
-    // Add message locally first for instant feedback
     const tempMsg: Message = {
       message_id: `temp_${Date.now()}`,
       room_id: roomId as string,
@@ -200,19 +235,23 @@ export default function ChatDetailScreen() {
     }
   };
 
-  // Simple deal actions
+  // Genie accepts the deal - notifies Wisher
   const handleAcceptDeal = async () => {
     setIsProcessing(true);
     try {
       if (currentDealId) {
         await api.acceptDeal(currentDealId);
       }
-      setDealStatus('accepted');
-      await sendMessage('✅ Deal Accepted! I will be there as scheduled.');
-      Alert.alert('Deal Accepted!', 'You can now start the job when ready.');
+      setDealStatus('genie_accepted');
+      await sendMessage(`✅ I'm interested and ready to help!\n\n💰 Price: ₹${price}\n📅 Preferred: ${preferredDate}\n\nWaiting for your confirmation.`);
+      Alert.alert(
+        'Offer Sent!', 
+        'The customer has been notified. You\'ll get a confirmation once they accept.',
+        [{ text: 'OK' }]
+      );
     } catch (error) {
-      setDealStatus('accepted');
-      await sendMessage('✅ Deal Accepted! I will be there as scheduled.');
+      setDealStatus('genie_accepted');
+      await sendMessage(`✅ I'm interested and ready to help! Waiting for your confirmation.`);
     } finally {
       setIsProcessing(false);
     }
@@ -243,7 +282,7 @@ export default function ChatDetailScreen() {
         await api.completeDealJob(currentDealId);
       }
       setDealStatus('completed');
-      await sendMessage('🎉 Job Completed! Thank you for choosing my services.');
+      await sendMessage('🎉 Job Completed! Thank you for choosing my services. Hope you\'re satisfied!');
       Alert.alert('🎉 Job Completed!', `Great work! You earned ₹${price}`);
     } catch (error) {
       setDealStatus('completed');
@@ -259,7 +298,6 @@ export default function ChatDetailScreen() {
   };
 
   const handleGoBack = () => {
-    // Just navigate back without changing online status
     router.back();
   };
 
@@ -268,7 +306,6 @@ export default function ChatDetailScreen() {
     return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Group messages by date
   const groupedMessages = useMemo(() => {
     const groups: { [key: string]: Message[] } = {};
     messages.forEach(msg => {
@@ -288,6 +325,21 @@ export default function ChatDetailScreen() {
     return groups;
   }, [messages]);
 
+  const getStatusBadge = () => {
+    switch (dealStatus) {
+      case 'pending':
+        return { text: 'New Request', color: COLORS.primary, bg: COLORS.primary + '20' };
+      case 'genie_accepted':
+        return { text: 'Awaiting Confirmation', color: COLORS.warning, bg: COLORS.warning + '20' };
+      case 'confirmed':
+        return { text: 'Confirmed', color: COLORS.success, bg: COLORS.success + '20' };
+      case 'in_progress':
+        return { text: 'In Progress', color: COLORS.warning, bg: COLORS.warning + '20' };
+      case 'completed':
+        return { text: 'Completed', color: COLORS.success, bg: COLORS.success + '20' };
+    }
+  };
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -298,6 +350,8 @@ export default function ChatDetailScreen() {
       </SafeAreaView>
     );
   }
+
+  const statusBadge = getStatusBadge();
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
@@ -326,18 +380,34 @@ export default function ChatDetailScreen() {
         </View>
       </SafeAreaView>
 
-      {/* Deal Info Banner - Simple */}
-      <View style={styles.dealBanner}>
+      {/* Clickable Deal Banner - Shows details on tap */}
+      <TouchableOpacity 
+        style={styles.dealBanner} 
+        onPress={() => setShowDealDetails(true)}
+        activeOpacity={0.7}
+      >
         <View style={styles.dealBannerLeft}>
-          <Ionicons name="briefcase" size={18} color={COLORS.primary} />
-          <Text style={styles.dealBannerTitle} numberOfLines={1}>
-            {room?.wish_title || 'Service Request'}
-          </Text>
+          <View style={styles.dealBannerIcon}>
+            <Ionicons name="briefcase" size={16} color={COLORS.primary} />
+          </View>
+          <View style={styles.dealBannerInfo}>
+            <Text style={styles.dealBannerTitle} numberOfLines={1}>
+              {room?.wish_title || 'Service Request'}
+            </Text>
+            <View style={[styles.statusBadge, { backgroundColor: statusBadge.bg }]}>
+              <Text style={[styles.statusBadgeText, { color: statusBadge.color }]}>
+                {statusBadge.text}
+              </Text>
+            </View>
+          </View>
         </View>
-        <Text style={styles.dealBannerPrice}>₹{price}</Text>
-      </View>
+        <View style={styles.dealBannerRight}>
+          <Text style={styles.dealBannerPrice}>₹{price}</Text>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+        </View>
+      </TouchableOpacity>
 
-      {/* Simple Action Button - Based on Status */}
+      {/* Action Button - Based on Status */}
       {dealStatus !== 'completed' && (
         <View style={styles.actionBar}>
           {dealStatus === 'pending' && (
@@ -357,7 +427,14 @@ export default function ChatDetailScreen() {
             </TouchableOpacity>
           )}
 
-          {dealStatus === 'accepted' && (
+          {dealStatus === 'genie_accepted' && (
+            <View style={styles.waitingContainer}>
+              <ActivityIndicator size="small" color={COLORS.warning} />
+              <Text style={styles.waitingText}>Waiting for customer to confirm...</Text>
+            </View>
+          )}
+
+          {dealStatus === 'confirmed' && (
             <TouchableOpacity 
               style={[styles.actionButton, styles.startButton]} 
               onPress={handleStartJob}
@@ -411,6 +488,7 @@ export default function ChatDetailScreen() {
             <View style={styles.emptyChat}>
               <Ionicons name="chatbubble-ellipses-outline" size={48} color={COLORS.textMuted} />
               <Text style={styles.emptyChatText}>Start the conversation!</Text>
+              <Text style={styles.emptyChatSubtext}>Tap "Accept Deal" to show interest</Text>
             </View>
           ) : (
             Object.entries(groupedMessages).map(([date, msgs]) => (
@@ -440,7 +518,7 @@ export default function ChatDetailScreen() {
           )}
         </ScrollView>
 
-        {/* Input Area - Fixed at bottom */}
+        {/* Input Area */}
         <View style={[styles.inputContainer, { paddingBottom: keyboardVisible ? 10 : Math.max(insets.bottom, 10) }]}>
           <View style={styles.inputWrapper}>
             <TextInput
@@ -468,6 +546,144 @@ export default function ChatDetailScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Deal Details Modal */}
+      <Modal visible={showDealDetails} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.detailsModal}>
+            {/* Modal Header */}
+            <View style={styles.detailsModalHeader}>
+              <Text style={styles.detailsModalTitle}>Service Request</Text>
+              <TouchableOpacity onPress={() => setShowDealDetails(false)} style={styles.closeButton}>
+                <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Service Title */}
+              <View style={styles.detailsSection}>
+                <View style={styles.detailsSectionHeader}>
+                  <Ionicons name="briefcase-outline" size={20} color={COLORS.primary} />
+                  <Text style={styles.detailsSectionTitle}>Service</Text>
+                </View>
+                <Text style={styles.detailsServiceTitle}>{room?.wish_title || 'Service Request'}</Text>
+              </View>
+
+              {/* Status */}
+              <View style={styles.detailsSection}>
+                <View style={styles.detailsSectionHeader}>
+                  <Ionicons name="flag-outline" size={20} color={COLORS.primary} />
+                  <Text style={styles.detailsSectionTitle}>Status</Text>
+                </View>
+                <View style={[styles.statusBadgeLarge, { backgroundColor: statusBadge.bg }]}>
+                  <Text style={[styles.statusBadgeLargeText, { color: statusBadge.color }]}>
+                    {statusBadge.text}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Description */}
+              <View style={styles.detailsSection}>
+                <View style={styles.detailsSectionHeader}>
+                  <Ionicons name="document-text-outline" size={20} color={COLORS.primary} />
+                  <Text style={styles.detailsSectionTitle}>Description</Text>
+                </View>
+                <Text style={styles.detailsDescription}>{description}</Text>
+              </View>
+
+              {/* Budget */}
+              <View style={styles.detailsSection}>
+                <View style={styles.detailsSectionHeader}>
+                  <Ionicons name="wallet-outline" size={20} color={COLORS.success} />
+                  <Text style={styles.detailsSectionTitle}>Budget</Text>
+                </View>
+                <Text style={styles.detailsBudget}>₹{price}</Text>
+              </View>
+
+              {/* Location */}
+              <View style={styles.detailsSection}>
+                <View style={styles.detailsSectionHeader}>
+                  <Ionicons name="location-outline" size={20} color={COLORS.primary} />
+                  <Text style={styles.detailsSectionTitle}>Location</Text>
+                </View>
+                <Text style={styles.detailsText}>{location}</Text>
+              </View>
+
+              {/* Preferred Date */}
+              <View style={styles.detailsSection}>
+                <View style={styles.detailsSectionHeader}>
+                  <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
+                  <Text style={styles.detailsSectionTitle}>Preferred Date</Text>
+                </View>
+                <Text style={styles.detailsText}>{preferredDate}</Text>
+              </View>
+
+              {/* Customer */}
+              <View style={styles.detailsSection}>
+                <View style={styles.detailsSectionHeader}>
+                  <Ionicons name="person-outline" size={20} color={COLORS.primary} />
+                  <Text style={styles.detailsSectionTitle}>Customer</Text>
+                </View>
+                <View style={styles.customerInfo}>
+                  <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.customerAvatar}>
+                    <Text style={styles.customerAvatarText}>
+                      {room?.wisher?.name?.charAt(0) || 'C'}
+                    </Text>
+                  </LinearGradient>
+                  <View>
+                    <Text style={styles.customerName}>{room?.wisher?.name || 'Customer'}</Text>
+                    <Text style={styles.customerRating}>⭐ {room?.wisher?.rating || 4.8} rating</Text>
+                  </View>
+                </View>
+              </View>
+            </ScrollView>
+
+            {/* Modal Action */}
+            <View style={styles.detailsModalFooter}>
+              {dealStatus === 'pending' && (
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.acceptButton, { flex: 1 }]} 
+                  onPress={() => {
+                    setShowDealDetails(false);
+                    handleAcceptDeal();
+                  }}
+                  disabled={isProcessing}
+                >
+                  <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                  <Text style={styles.actionButtonText}>Accept Deal</Text>
+                </TouchableOpacity>
+              )}
+              {dealStatus === 'confirmed' && (
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.startButton, { flex: 1 }]} 
+                  onPress={() => {
+                    setShowDealDetails(false);
+                    handleStartJob();
+                  }}
+                >
+                  <Ionicons name="play-circle" size={20} color="#FFF" />
+                  <Text style={styles.actionButtonText}>Start Job</Text>
+                </TouchableOpacity>
+              )}
+              {dealStatus === 'genie_accepted' && (
+                <View style={[styles.waitingContainer, { flex: 1 }]}>
+                  <ActivityIndicator size="small" color={COLORS.warning} />
+                  <Text style={styles.waitingText}>Waiting for confirmation...</Text>
+                </View>
+              )}
+              {(dealStatus === 'in_progress' || dealStatus === 'completed') && (
+                <TouchableOpacity 
+                  style={[styles.actionButton, { flex: 1, backgroundColor: COLORS.textMuted }]} 
+                  onPress={() => setShowDealDetails(false)}
+                >
+                  <Ionicons name="close" size={20} color="#FFF" />
+                  <Text style={styles.actionButtonText}>Close</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Complete Confirmation Modal */}
       <Modal visible={showCompleteModal} transparent animationType="fade">
@@ -568,13 +784,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
 
-  // Deal Banner
+  // Deal Banner - Clickable
   dealBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     backgroundColor: COLORS.cardBg,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
@@ -583,21 +799,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    gap: 8,
+    gap: 12,
+  },
+  dealBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: COLORS.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dealBannerInfo: {
+    flex: 1,
   },
   dealBannerTitle: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     color: COLORS.text,
-    flex: 1,
+    marginBottom: 4,
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  dealBannerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   dealBannerPrice: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: COLORS.success,
   },
 
-  // Action Bar - Simple buttons
+  // Action Bar
   actionBar: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -627,6 +869,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  waitingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 10,
+    backgroundColor: COLORS.warning + '10',
+    borderRadius: 12,
+  },
+  waitingText: {
+    color: COLORS.warning,
+    fontSize: 14,
+    fontWeight: '500',
+  },
 
   // Chat Container
   chatContainer: {
@@ -649,6 +905,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: COLORS.textMuted,
     fontSize: 16,
+    fontWeight: '500',
+  },
+  emptyChatSubtext: {
+    marginTop: 4,
+    color: COLORS.textMuted,
+    fontSize: 13,
   },
 
   // Date Separator
@@ -710,7 +972,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
   },
 
-  // Input Container - FIXED
+  // Input Container
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -748,20 +1010,123 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.textMuted,
   },
 
-  // Modal
+  // Deal Details Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  detailsModal: {
+    backgroundColor: COLORS.cardBg,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+  },
+  detailsModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  detailsModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  detailsSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  detailsSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  detailsSectionTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  detailsServiceTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  detailsDescription: {
+    fontSize: 14,
+    color: COLORS.text,
+    lineHeight: 22,
+  },
+  detailsBudget: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: COLORS.success,
+  },
+  detailsText: {
+    fontSize: 15,
+    color: COLORS.text,
+  },
+  statusBadgeLarge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  statusBadgeLargeText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  customerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  customerAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
   },
+  customerAvatarText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  customerName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  customerRating: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+  },
+  detailsModalFooter: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+
+  // Confirm Modal
   confirmModal: {
     backgroundColor: COLORS.cardBg,
     borderRadius: 20,
     padding: 24,
-    width: '100%',
-    maxWidth: 320,
+    marginHorizontal: 24,
+    marginBottom: 'auto',
+    marginTop: 'auto',
     alignItems: 'center',
   },
   confirmModalIcon: {
@@ -783,6 +1148,7 @@ const styles = StyleSheet.create({
   confirmModalButtons: {
     flexDirection: 'row',
     gap: 12,
+    width: '100%',
   },
   confirmModalCancel: {
     flex: 1,
