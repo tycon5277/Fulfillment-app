@@ -2259,6 +2259,124 @@ async def get_active_wish(user: dict = Depends(get_current_user)):
     
     return wish
 
+
+# ===================== WISHER TRACKING ENDPOINTS =====================
+
+@api_router.get("/wishes/{wish_id}/track")
+async def track_wish_genie(wish_id: str, user: dict = Depends(get_current_user)):
+    """
+    Get Genie's live location for tracking a wish.
+    Available when wish status is 'confirmed', 'accepted', or 'in_progress'.
+    Returns: Genie location, ETA, Genie info, wish details
+    """
+    # Find the wish
+    wish = await db.wishes.find_one({"wish_id": wish_id})
+    
+    if not wish:
+        raise HTTPException(status_code=404, detail="Wish not found")
+    
+    # Check if wish is in trackable state
+    trackable_statuses = ["confirmed", "accepted", "in_progress", "matched"]
+    if wish.get("status") not in trackable_statuses:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Tracking not available. Wish status: {wish.get('status')}"
+        )
+    
+    # Get the assigned Genie
+    genie_id = wish.get("assigned_genie_id") or wish.get("accepted_by")
+    
+    if not genie_id:
+        return {
+            "tracking_available": False,
+            "message": "No Genie assigned yet",
+            "wish_status": wish.get("status")
+        }
+    
+    # Get Genie's info
+    genie = await db.users.find_one(
+        {"user_id": genie_id},
+        {"_id": 0, "user_id": 1, "name": 1, "phone": 1, "picture": 1, "partner_rating": 1}
+    )
+    
+    # Get Genie's current location
+    genie_location = await db.partner_locations.find_one(
+        {"user_id": genie_id},
+        {"_id": 0}
+    )
+    
+    # Calculate ETA (mock calculation based on distance)
+    eta_minutes = None
+    distance_km = None
+    
+    if genie_location and wish.get("location"):
+        # Simple distance calculation (Haversine formula approximation)
+        import math
+        
+        lat1 = genie_location.get("latitude", 0)
+        lon1 = genie_location.get("longitude", 0)
+        lat2 = wish["location"].get("lat", wish["location"].get("latitude", 0))
+        lon2 = wish["location"].get("lng", wish["location"].get("longitude", 0))
+        
+        # Haversine formula
+        R = 6371  # Earth's radius in km
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+        distance_km = round(R * c, 2)
+        
+        # Estimate ETA (assuming average speed of 25 km/h in urban areas)
+        avg_speed_kmh = 25
+        eta_minutes = round((distance_km / avg_speed_kmh) * 60)
+        
+        # Minimum ETA of 2 minutes
+        if eta_minutes < 2:
+            eta_minutes = 2
+    
+    return {
+        "tracking_available": True,
+        "wish_id": wish_id,
+        "wish_status": wish.get("status"),
+        "wish_title": wish.get("title"),
+        "wish_type": wish.get("wish_type"),
+        "genie": {
+            "user_id": genie.get("user_id") if genie else None,
+            "name": genie.get("name") if genie else "Unknown",
+            "phone": genie.get("phone") if genie else None,
+            "picture": genie.get("picture") if genie else None,
+            "rating": genie.get("partner_rating", 5.0) if genie else None
+        },
+        "genie_location": {
+            "latitude": genie_location.get("latitude") if genie_location else None,
+            "longitude": genie_location.get("longitude") if genie_location else None,
+            "accuracy": genie_location.get("accuracy") if genie_location else None,
+            "heading": genie_location.get("heading") if genie_location else None,
+            "speed": genie_location.get("speed") if genie_location else None,
+            "updated_at": genie_location.get("updated_at").isoformat() if genie_location and genie_location.get("updated_at") else None,
+            "is_online": genie_location.get("is_online") if genie_location else False
+        } if genie_location else None,
+        "destination": wish.get("location"),
+        "eta_minutes": eta_minutes,
+        "distance_km": distance_km,
+        "created_at": wish.get("created_at").isoformat() if wish.get("created_at") else None
+    }
+
+
+@api_router.get("/wishes/{wish_id}/status")
+async def get_wish_status(wish_id: str, user: dict = Depends(get_current_user)):
+    """Get the current status of a wish"""
+    wish = await db.wishes.find_one(
+        {"wish_id": wish_id},
+        {"_id": 0, "wish_id": 1, "status": 1, "title": 1, "wish_type": 1, "assigned_genie_id": 1, "accepted_by": 1}
+    )
+    
+    if not wish:
+        raise HTTPException(status_code=404, detail="Wish not found")
+    
+    return wish
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
