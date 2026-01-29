@@ -84,6 +84,11 @@ interface AuthState {
   isOnline: boolean;
   activeWork: ActiveWork[];
   
+  // Location state
+  currentLocation: LocationData | null;
+  locationPermissionGranted: boolean;
+  isTrackingLocation: boolean;
+  
   setUser: (user: User | null) => void;
   setSessionToken: (token: string | null) => void;
   setIsLoading: (loading: boolean) => void;
@@ -93,6 +98,12 @@ interface AuthState {
   setActiveWork: (work: ActiveWork[]) => void;
   addActiveWork: (work: ActiveWork) => void;
   removeActiveWork: (id: string) => void;
+  
+  // Location actions
+  setCurrentLocation: (location: LocationData | null) => void;
+  setLocationPermissionGranted: (granted: boolean) => void;
+  setIsTrackingLocation: (tracking: boolean) => void;
+  
   logout: () => void;
   loadStoredAuth: () => Promise<void>;
 }
