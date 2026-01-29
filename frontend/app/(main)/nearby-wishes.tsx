@@ -1734,70 +1734,80 @@ export default function NearbyWishesScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>📍 Nearby Wishes</Text>
-        <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh}>
-          <Ionicons name="refresh" size={22} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Radius Control */}
-      <View style={styles.radiusControl}>
-        <View style={styles.radiusHeader}>
-          <Text style={styles.radiusLabel}>Search Radius</Text>
-          <View style={styles.radiusValue}>
-            <Text style={styles.radiusNumber}>{radius}</Text>
-            <Text style={styles.radiusUnit}>km</Text>
-          </View>
-        </View>
-        <Slider
-          style={styles.slider}
-          minimumValue={1}
-          maximumValue={10}
-          step={1}
-          value={radius}
-          onValueChange={setRadius}
-          minimumTrackTintColor={COLORS.primary}
-          maximumTrackTintColor={COLORS.border}
-          thumbTintColor={COLORS.primary}
-        />
-        <View style={styles.radiusMarkers}>
-          <Text style={styles.radiusMarker}>1km</Text>
-          <Text style={styles.radiusMarker}>5km</Text>
-          <Text style={styles.radiusMarker}>10km</Text>
-        </View>
-      </View>
-
-      {/* Results Header */}
-      <View style={styles.resultsHeader}>
-        <Text style={styles.resultsCount}>
-          {filteredWishes.length} wish{filteredWishes.length !== 1 ? 'es' : ''} found
+        <Text style={styles.headerTitle}>
+          {isOnline ? '📍 Work Orders' : '📋 My Jobs'}
         </Text>
-        <View style={styles.sortContainer}>
-          <TouchableOpacity
-            style={[styles.sortBtn, sortBy === 'distance' && styles.sortBtnActive]}
-            onPress={() => setSortBy('distance')}
-          >
-            <Text style={[styles.sortBtnText, sortBy === 'distance' && styles.sortBtnTextActive]}>Nearest</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.sortBtn, sortBy === 'budget' && styles.sortBtnActive]}
-            onPress={() => setSortBy('budget')}
-          >
-            <Text style={[styles.sortBtnText, sortBy === 'budget' && styles.sortBtnTextActive]}>Highest ₹</Text>
+        <View style={styles.headerRight}>
+          <View style={[styles.statusIndicator, isOnline ? styles.statusOnline : styles.statusOffline]}>
+            <Text style={styles.statusText}>{isOnline ? 'Online' : 'Offline'}</Text>
+          </View>
+          <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh}>
+            <Ionicons name="refresh" size={22} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Wishes List */}
-      <ScrollView
-        style={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
-        }
-      >
-        {filteredWishes.length === 0 ? renderEmptyState() : filteredWishes.map(renderWishCard)}
-        <View style={{ height: 100 }} />
+      {/* ONLINE MODE: Show Nearby Wishes */}
+      {isOnline ? (
+        <>
+          {/* Radius Control */}
+          <View style={styles.radiusControl}>
+            <View style={styles.radiusHeader}>
+              <Text style={styles.radiusLabel}>Search Radius</Text>
+              <View style={styles.radiusValue}>
+                <Text style={styles.radiusNumber}>{radius}</Text>
+                <Text style={styles.radiusUnit}>km</Text>
+              </View>
+            </View>
+            <Slider
+              style={styles.slider}
+              minimumValue={1}
+              maximumValue={10}
+              step={1}
+              value={radius}
+              onValueChange={setRadius}
+              minimumTrackTintColor={COLORS.primary}
+              maximumTrackTintColor={COLORS.border}
+              thumbTintColor={COLORS.primary}
+            />
+            <View style={styles.radiusMarkers}>
+              <Text style={styles.radiusMarker}>1km</Text>
+              <Text style={styles.radiusMarker}>5km</Text>
+              <Text style={styles.radiusMarker}>10km</Text>
+            </View>
+          </View>
+
+          {/* Results Header */}
+          <View style={styles.resultsHeader}>
+            <Text style={styles.resultsCount}>
+              {filteredWishes.length} wish{filteredWishes.length !== 1 ? 'es' : ''} found
+            </Text>
+            <View style={styles.sortContainer}>
+              <TouchableOpacity
+                style={[styles.sortBtn, sortBy === 'distance' && styles.sortBtnActive]}
+                onPress={() => setSortBy('distance')}
+              >
+                <Text style={[styles.sortBtnText, sortBy === 'distance' && styles.sortBtnTextActive]}>Nearest</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.sortBtn, sortBy === 'budget' && styles.sortBtnActive]}
+                onPress={() => setSortBy('budget')}
+              >
+                <Text style={[styles.sortBtnText, sortBy === 'budget' && styles.sortBtnTextActive]}>Highest ₹</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Wishes List */}
+          <ScrollView
+            style={styles.listContainer}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+            }
+          >
+            {filteredWishes.length === 0 ? renderEmptyState() : filteredWishes.map(renderWishCard)}
+            <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
   );
