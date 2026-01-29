@@ -177,26 +177,53 @@ export default function HomeScreen() {
     }
   }, [isOnline]);
 
-  // Get location
+  // Get location - now using centralized hook
   useEffect(() => {
     (async () => {
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
+        const granted = await requestPermissions();
+        if (!granted) {
           setLocationError(true);
+          Alert.alert(
+            'Location Required',
+            'QuickWish needs your location to show you nearby orders and help customers find you.',
+            [
+              { text: 'Try Again', onPress: requestPermissions },
+              { text: 'Cancel', style: 'cancel' }
+            ]
+          );
           return;
         }
-        const loc = await Location.getCurrentPositionAsync({});
-        setLocation({
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-        });
+        
+        // Get initial location
+        const loc = await getCurrentLocation();
+        if (loc) {
+          setLocation({
+            latitude: loc.latitude,
+            longitude: loc.longitude,
+          });
+        }
+        
+        // Start periodic tracking by default (offline mode)
+        if (!isOnline) {
+          startPeriodicTracking();
+        }
       } catch (error) {
         console.log('Location error, using mock:', error);
         setLocationError(true);
       }
     })();
   }, []);
+  
+  // Update local location state when currentLocation changes
+  useEffect(() => {
+    if (currentLocation) {
+      setLocation({
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+      });
+    }
+  }, [currentLocation]);
 
   const fetchStats = async () => {
     try {
