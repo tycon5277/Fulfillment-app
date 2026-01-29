@@ -1234,6 +1234,383 @@ async def get_promoter_bookings(current_user: User = Depends(require_promoter)):
     
     return bookings
 
+# ===================== DEAL NEGOTIATION ENDPOINTS =====================
+
+class DealOffer(BaseModel):
+    wish_id: str
+    price: float
+    scheduled_date: Optional[str] = None
+    scheduled_time: Optional[str] = None
+    notes: Optional[str] = None
+
+class DealResponse(BaseModel):
+    deal_id: str
+    action: str  # 'accept', 'reject', 'counter'
+    counter_price: Optional[float] = None
+    message: Optional[str] = None
+
+@api_router.post("/deals/create-from-wish")
+async def create_deal_from_wish(data: DealOffer, current_user: User = Depends(require_partner)):
+    """Create a new deal negotiation from a wish and create a chat room"""
+    
+    # Generate unique IDs
+    deal_id = f"deal_{uuid.uuid4().hex[:12]}"
+    room_id = f"room_{uuid.uuid4().hex[:12]}"
+    
+    # Create the deal document
+    deal_doc = {
+        "deal_id": deal_id,
+        "wish_id": data.wish_id,
+        "partner_id": current_user.user_id,
+        "partner_name": current_user.name,
+        "wisher_id": None,  # Will be populated from wish
+        "initial_price": data.price,
+        "current_price": data.price,
+        "scheduled_date": data.scheduled_date,
+        "scheduled_time": data.scheduled_time,
+        "notes": data.notes,
+        "status": "pending",  # pending, negotiating, accepted, rejected, completed
+        "room_id": room_id,
+        "offers": [
+            {
+                "from": "partner",
+                "price": data.price,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "type": "initial"
+            }
+        ],
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    await db.deals.insert_one(deal_doc)
+    
+    # Create the chat room
+    chat_room = {
+        "room_id": room_id,
+        "wish_id": data.wish_id,
+        "wisher_id": "mock_wisher_001",  # Mock for now
+        "partner_id": current_user.user_id,
+        "deal_id": deal_id,
+        "status": "active",
+        "wish_title": f"Service Request - Deal #{deal_id[-6:]}",
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.chat_rooms.insert_one(chat_room)
+    
+    # Create initial message
+    initial_message = {
+        "message_id": f"msg_{uuid.uuid4().hex[:12]}",
+        "room_id": room_id,
+        "sender_id": current_user.user_id,
+        "sender_type": "partner",
+        "content": f"Hello! I'm interested in this job. I can do it for ₹{int(data.price)}" + 
+                   (f" on {data.scheduled_date}" if data.scheduled_date else "") +
+                   (f" at {data.scheduled_time}" if data.scheduled_time else "") +
+                   (f"\n\nNotes: {data.notes}" if data.notes else ""),
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.messages.insert_one(initial_message)
+    
+    logger.info(f"💼 Deal created: {deal_id} by {current_user.user_id}")
+    
+    return {
+        "message": "Deal created successfully",
+        "deal_id": deal_id,
+        "room_id": room_id,
+        "deal": deal_doc
+    }
+
+
+@api_router.get("/deals/{deal_id}")
+async def get_deal(deal_id: str, current_user: User = Depends(require_partner)):
+    """Get deal details"""
+    deal = await db.deals.find_one(
+        {"deal_id": deal_id, "partner_id": current_user.user_id},
+        {"_id": 0}
+    )
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    return deal
+
+
+@api_router.post("/deals/{deal_id}/send-offer")
+async def send_deal_offer(deal_id: str, data: DealOffer, current_user: User = Depends(require_partner)):
+    """Send an offer for a deal (as partner)"""
+    deal = await db.deals.find_one(
+        {"deal_id": deal_id, "partner_id": current_user.user_id},
+        {"_id": 0}
+    )
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    
+    if deal["status"] not in ["pending", "negotiating"]:
+        raise HTTPException(status_code=400, detail="Deal is no longer open for negotiation")
+    
+    # Add offer to history
+    new_offer = {
+        "from": "partner",
+        "price": data.price,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "type": "counter" if len(deal.get("offers", [])) > 1 else "initial"
+    }
+    
+    await db.deals.update_one(
+        {"deal_id": deal_id},
+        {
+            "$set": {
+                "current_price": data.price,
+                "scheduled_date": data.scheduled_date,
+                "scheduled_time": data.scheduled_time,
+                "notes": data.notes,
+                "status": "negotiating",
+                "updated_at": datetime.now(timezone.utc)
+            },
+            "$push": {"offers": new_offer}
+        }
+    )
+    
+    # Send message in chat
+    offer_message = {
+        "message_id": f"msg_{uuid.uuid4().hex[:12]}",
+        "room_id": deal["room_id"],
+        "sender_id": current_user.user_id,
+        "sender_type": "partner",
+        "content": f"💰 Counter Offer: ₹{int(data.price)}" +
+                   (f"\n📅 {data.scheduled_date}" if data.scheduled_date else "") +
+                   (f" at {data.scheduled_time}" if data.scheduled_time else ""),
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.messages.insert_one(offer_message)
+    
+    logger.info(f"💰 Counter offer sent for deal {deal_id}: ₹{data.price}")
+    
+    return {"message": "Offer sent", "deal_id": deal_id, "new_price": data.price}
+
+
+@api_router.post("/deals/{deal_id}/accept")
+async def accept_deal(deal_id: str, current_user: User = Depends(require_partner)):
+    """Partner accepts the current deal terms"""
+    deal = await db.deals.find_one(
+        {"deal_id": deal_id, "partner_id": current_user.user_id},
+        {"_id": 0}
+    )
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    
+    if deal["status"] not in ["pending", "negotiating"]:
+        raise HTTPException(status_code=400, detail="Deal cannot be accepted in current state")
+    
+    await db.deals.update_one(
+        {"deal_id": deal_id},
+        {
+            "$set": {
+                "status": "accepted",
+                "accepted_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    # Update chat room status
+    await db.chat_rooms.update_one(
+        {"room_id": deal["room_id"]},
+        {"$set": {"status": "accepted"}}
+    )
+    
+    # Send confirmation message
+    confirmation_message = {
+        "message_id": f"msg_{uuid.uuid4().hex[:12]}",
+        "room_id": deal["room_id"],
+        "sender_id": current_user.user_id,
+        "sender_type": "partner",
+        "content": f"✅ Deal Accepted!\n\nI'll be there as scheduled. Looking forward to helping you!",
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.messages.insert_one(confirmation_message)
+    
+    logger.info(f"✅ Deal {deal_id} accepted by partner {current_user.user_id}")
+    
+    return {"message": "Deal accepted", "deal_id": deal_id, "status": "accepted"}
+
+
+@api_router.post("/deals/{deal_id}/reject")
+async def reject_deal(deal_id: str, current_user: User = Depends(require_partner)):
+    """Partner rejects the deal"""
+    deal = await db.deals.find_one(
+        {"deal_id": deal_id, "partner_id": current_user.user_id},
+        {"_id": 0}
+    )
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    
+    if deal["status"] not in ["pending", "negotiating"]:
+        raise HTTPException(status_code=400, detail="Deal cannot be rejected in current state")
+    
+    await db.deals.update_one(
+        {"deal_id": deal_id},
+        {
+            "$set": {
+                "status": "rejected",
+                "rejected_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    # Update chat room status
+    await db.chat_rooms.update_one(
+        {"room_id": deal["room_id"]},
+        {"$set": {"status": "rejected"}}
+    )
+    
+    # Send rejection message
+    rejection_message = {
+        "message_id": f"msg_{uuid.uuid4().hex[:12]}",
+        "room_id": deal["room_id"],
+        "sender_id": current_user.user_id,
+        "sender_type": "partner",
+        "content": f"❌ I apologize, but I cannot take this job at the moment. Thank you for understanding.",
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.messages.insert_one(rejection_message)
+    
+    logger.info(f"❌ Deal {deal_id} rejected by partner {current_user.user_id}")
+    
+    return {"message": "Deal rejected", "deal_id": deal_id, "status": "rejected"}
+
+
+@api_router.post("/deals/{deal_id}/start")
+async def start_deal_job(deal_id: str, current_user: User = Depends(require_partner)):
+    """Partner starts working on the deal"""
+    deal = await db.deals.find_one(
+        {"deal_id": deal_id, "partner_id": current_user.user_id},
+        {"_id": 0}
+    )
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    
+    if deal["status"] != "accepted":
+        raise HTTPException(status_code=400, detail="Deal must be accepted before starting")
+    
+    await db.deals.update_one(
+        {"deal_id": deal_id},
+        {
+            "$set": {
+                "status": "in_progress",
+                "started_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    # Update chat room status
+    await db.chat_rooms.update_one(
+        {"room_id": deal["room_id"]},
+        {"$set": {"status": "in_progress"}}
+    )
+    
+    # Send message
+    start_message = {
+        "message_id": f"msg_{uuid.uuid4().hex[:12]}",
+        "room_id": deal["room_id"],
+        "sender_id": current_user.user_id,
+        "sender_type": "partner",
+        "content": f"🚀 Job Started! I'm now working on your request.",
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.messages.insert_one(start_message)
+    
+    logger.info(f"🚀 Job started for deal {deal_id}")
+    
+    return {"message": "Job started", "deal_id": deal_id, "status": "in_progress"}
+
+
+@api_router.post("/deals/{deal_id}/complete")
+async def complete_deal_job(deal_id: str, current_user: User = Depends(require_partner)):
+    """Partner marks the deal as completed"""
+    deal = await db.deals.find_one(
+        {"deal_id": deal_id, "partner_id": current_user.user_id},
+        {"_id": 0}
+    )
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    
+    if deal["status"] != "in_progress":
+        raise HTTPException(status_code=400, detail="Job must be in progress to complete")
+    
+    await db.deals.update_one(
+        {"deal_id": deal_id},
+        {
+            "$set": {
+                "status": "completed",
+                "completed_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    # Update chat room status
+    await db.chat_rooms.update_one(
+        {"room_id": deal["room_id"]},
+        {"$set": {"status": "completed"}}
+    )
+    
+    # Record earnings
+    earning = {
+        "earning_id": f"earn_{uuid.uuid4().hex[:12]}",
+        "partner_id": current_user.user_id,
+        "deal_id": deal_id,
+        "amount": deal.get("current_price", 0),
+        "type": "service",
+        "description": f"Deal #{deal_id[-6:]} completed",
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.earnings.insert_one(earning)
+    
+    # Update partner stats
+    await db.users.update_one(
+        {"user_id": current_user.user_id},
+        {
+            "$inc": {
+                "partner_total_tasks": 1,
+                "partner_total_earnings": deal.get("current_price", 0)
+            }
+        }
+    )
+    
+    # Send completion message
+    complete_message = {
+        "message_id": f"msg_{uuid.uuid4().hex[:12]}",
+        "room_id": deal["room_id"],
+        "sender_id": current_user.user_id,
+        "sender_type": "partner",
+        "content": f"🎉 Job Completed! Thank you for choosing my services. I hope you're satisfied with the work!",
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.messages.insert_one(complete_message)
+    
+    logger.info(f"🎉 Deal {deal_id} completed, earnings: ₹{deal.get('current_price', 0)}")
+    
+    return {
+        "message": "Job completed successfully",
+        "deal_id": deal_id,
+        "status": "completed",
+        "earnings": deal.get("current_price", 0)
+    }
+
+
+@api_router.get("/deals/my-deals")
+async def get_my_deals(status: Optional[str] = None, current_user: User = Depends(require_partner)):
+    """Get all deals for current partner"""
+    query = {"partner_id": current_user.user_id}
+    if status:
+        query["status"] = status
+    
+    deals = await db.deals.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"deals": deals, "count": len(deals)}
+
+
 # ===================== CHAT ENDPOINTS (SHARED) =====================
 
 @api_router.get("/partner/chat/rooms")
