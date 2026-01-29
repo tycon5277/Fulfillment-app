@@ -868,7 +868,8 @@ export default function ChatDetailScreen() {
             style={styles.messagesContainer}
             contentContainerStyle={styles.messagesContent}
             showsVerticalScrollIndicator={false}
-            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: false })}
+            keyboardShouldPersistTaps="handled"
+            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
           >
             {Object.entries(groupedMessages).map(([date, msgs]) => (
               <View key={date}>
