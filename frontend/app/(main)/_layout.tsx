@@ -442,6 +442,12 @@ export default function MainLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="tracking-demo"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
