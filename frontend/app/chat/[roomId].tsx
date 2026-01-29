@@ -1051,6 +1051,9 @@ export default function ChatDetailScreen() {
         </View>
       )}
 
+      {/* Deal Negotiation Card */}
+      {renderDealCard()}
+
       <KeyboardAvoidingView
         style={styles.chatContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
