@@ -3,6 +3,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type PartnerType = 'agent' | 'vendor' | 'promoter' | null;
 
+// Location types
+export interface LocationData {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  altitude?: number;
+  heading?: number;
+  speed?: number;
+  timestamp: number;
+}
+
 export interface User {
   user_id: string;
   email: string;
