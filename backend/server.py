@@ -1675,6 +1675,160 @@ async def seed_culinary_genie_user(response: Response):
         "user": culinary_user
     }
 
+
+@api_router.post("/seed/chat-rooms")
+async def seed_chat_rooms(current_user: User = Depends(get_current_user)):
+    """Seed mock chat rooms with messages for testing"""
+    user_id = current_user.user_id
+    
+    # Create mock wishers
+    mock_wishers = [
+        {
+            "user_id": "wisher_001",
+            "name": "Priya Sharma",
+            "phone": "+91 98765 43210",
+            "rating": 4.9
+        },
+        {
+            "user_id": "wisher_002", 
+            "name": "Rahul Verma",
+            "phone": "+91 87654 32109",
+            "rating": 4.7
+        },
+        {
+            "user_id": "wisher_003",
+            "name": "Anita Patel",
+            "phone": "+91 76543 21098",
+            "rating": 4.8
+        }
+    ]
+    
+    # Create mock wishes
+    mock_wishes = [
+        {
+            "wish_id": "wish_001",
+            "title": "Home Cleaning Service",
+            "wish_type": "cleaning",
+            "remuneration": 1200,
+            "status": "in_progress",
+            "description": "Need deep cleaning for 2BHK apartment"
+        },
+        {
+            "wish_id": "wish_002",
+            "title": "Cook for Birthday Party",
+            "wish_type": "cooking",
+            "remuneration": 3500,
+            "status": "accepted",
+            "description": "Need a cook for 25 guests birthday party"
+        },
+        {
+            "wish_id": "wish_003",
+            "title": "Plumbing Repair",
+            "wish_type": "plumbing",
+            "remuneration": 800,
+            "status": "negotiating",
+            "description": "Fix leaking tap and water heater"
+        }
+    ]
+    
+    created_rooms = []
+    
+    for i, (wisher, wish) in enumerate(zip(mock_wishers, mock_wishes)):
+        room_id = f"room_{user_id}_{i+1}"
+        
+        # Create chat room
+        chat_room = {
+            "room_id": room_id,
+            "wish_id": wish["wish_id"],
+            "wisher_id": wisher["user_id"],
+            "partner_id": user_id,
+            "agent_id": user_id,
+            "status": "active",
+            "wish_title": wish["title"],
+            "wish": wish,
+            "wisher": wisher,
+            "created_at": datetime.now(timezone.utc) - timedelta(hours=i*2),
+            "updated_at": datetime.now(timezone.utc)
+        }
+        
+        await db.chat_rooms.update_one(
+            {"room_id": room_id},
+            {"$set": chat_room},
+            upsert=True
+        )
+        
+        # Create sample messages
+        sample_messages = [
+            {
+                "message_id": f"msg_{room_id}_1",
+                "room_id": room_id,
+                "sender_id": wisher["user_id"],
+                "sender_type": "wisher",
+                "content": f"Hi! I need help with {wish['title'].lower()}. Are you available?",
+                "created_at": datetime.now(timezone.utc) - timedelta(hours=i*2, minutes=30)
+            },
+            {
+                "message_id": f"msg_{room_id}_2",
+                "room_id": room_id,
+                "sender_id": user_id,
+                "sender_type": "partner",
+                "content": "Hello! Yes, I'm available. I can help you with this.",
+                "created_at": datetime.now(timezone.utc) - timedelta(hours=i*2, minutes=25)
+            },
+            {
+                "message_id": f"msg_{room_id}_3",
+                "room_id": room_id,
+                "sender_id": wisher["user_id"],
+                "sender_type": "wisher",
+                "content": f"Great! The budget is ₹{wish['remuneration']}. Is that okay?",
+                "created_at": datetime.now(timezone.utc) - timedelta(hours=i*2, minutes=20)
+            },
+            {
+                "message_id": f"msg_{room_id}_4",
+                "room_id": room_id,
+                "sender_id": user_id,
+                "sender_type": "partner",
+                "content": "Yes, that works for me. When would you like me to come?",
+                "created_at": datetime.now(timezone.utc) - timedelta(hours=i*2, minutes=15)
+            },
+            {
+                "message_id": f"msg_{room_id}_5",
+                "room_id": room_id,
+                "sender_id": wisher["user_id"],
+                "sender_type": "wisher",
+                "content": "Can you come tomorrow at 10 AM? 📅",
+                "created_at": datetime.now(timezone.utc) - timedelta(hours=i*2, minutes=10)
+            },
+            {
+                "message_id": f"msg_{room_id}_6",
+                "room_id": room_id,
+                "sender_id": user_id,
+                "sender_type": "partner",
+                "content": "Confirmed! ✅ I'll be there at 10 AM sharp.",
+                "created_at": datetime.now(timezone.utc) - timedelta(hours=i*2, minutes=5)
+            }
+        ]
+        
+        for msg in sample_messages:
+            await db.chat_messages.update_one(
+                {"message_id": msg["message_id"]},
+                {"$set": msg},
+                upsert=True
+            )
+        
+        created_rooms.append({
+            "room_id": room_id,
+            "wisher_name": wisher["name"],
+            "wish_title": wish["title"],
+            "messages_count": len(sample_messages)
+        })
+    
+    return {
+        "message": f"Created {len(created_rooms)} chat rooms with messages",
+        "rooms": created_rooms
+    }
+
+
 @api_router.post("/seed/orders")
 async def seed_sample_orders():
     """Seed sample orders for testing"""
