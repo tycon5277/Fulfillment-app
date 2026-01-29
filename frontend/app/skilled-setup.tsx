@@ -1094,7 +1094,7 @@ export default function SkilledSetupScreen() {
           <Animated.View style={[styles.progressFill, { width: getProgressWidth() as any }]} />
         </View>
         <View style={styles.progressSteps}>
-          {['✨', '⭐', '💰', '📝'].map((emoji, index) => (
+          {['✨', '⭐', '📍', '📝'].map((emoji, index) => (
             <View 
               key={index} 
               style={[
