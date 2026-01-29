@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,230 +6,200 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as api from '../../src/api';
 import { useAuthStore } from '../../src/store';
-import { getUserCategory, MOCK_APPOINTMENTS } from '../../src/skillMockData';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const COLORS = {
   background: '#F8FAFC',
   cardBg: '#FFFFFF',
-  cardBorder: '#E2E8F0',
-  primary: '#2563EB',
+  primary: '#6366F1',
+  primaryLight: '#818CF8',
   success: '#10B981',
   warning: '#F59E0B',
   error: '#EF4444',
-  text: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#94A3B8',
-  border: '#E2E8F0',
+  text: '#1F2937',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  border: '#E5E7EB',
 };
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-// Filter tabs for sorting appointments
+// Simple filter tabs
 const FILTER_TABS = [
-  { key: 'all', label: 'All' },
-  { key: 'upcoming', label: 'Upcoming' },
-  { key: 'in_progress', label: 'In Progress' },
-  { key: 'completed', label: 'Completed' },
+  { key: 'all', label: 'All', icon: 'list' },
+  { key: 'recent', label: 'Recent', icon: 'time' },
+  { key: 'upcoming', label: 'Upcoming', icon: 'calendar' },
+  { key: 'completed', label: 'Done', icon: 'checkmark-circle' },
 ];
+
+interface Appointment {
+  appointment_id: string;
+  service_title: string;
+  customer_name: string;
+  scheduled_date: string;
+  scheduled_time?: string;
+  location: string;
+  price: number;
+  status: string;
+  notes?: string;
+  created_at?: string;
+}
 
 export default function AppointmentsScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+  const [loading, setLoading] = useState(true);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selectedFilter, setSelectedFilter] = useState('all');
 
-  // Get user's category and appointments
-  const userSkills = user?.agent_skills || [];
-  const userCategory = getUserCategory(userSkills);
-  const categoryAppointments = MOCK_APPOINTMENTS[userCategory] || MOCK_APPOINTMENTS['home_services'] || [];
+  // Fetch appointments from backend
+  const fetchAppointments = async () => {
+    try {
+      const response = await api.default.get('/appointments');
+      setAppointments(response.data.appointments || []);
+    } catch (error) {
+      console.log('Using mock appointments');
+      // Mock data for demo
+      setAppointments([
+        {
+          appointment_id: 'apt_demo_1',
+          service_title: 'Home Cleaning',
+          customer_name: 'Priya Sharma',
+          scheduled_date: 'Thu, 30 Jan 2025',
+          scheduled_time: '3:00 PM',
+          location: 'Andheri West, Mumbai',
+          price: 1500,
+          status: 'upcoming',
+          created_at: new Date().toISOString(),
+        },
+        {
+          appointment_id: 'apt_demo_2',
+          service_title: 'Plumbing Repair',
+          customer_name: 'Rahul Mehta',
+          scheduled_date: 'Fri, 31 Jan 2025',
+          scheduled_time: '10:00 AM',
+          location: 'Bandra, Mumbai',
+          price: 800,
+          status: 'upcoming',
+          created_at: new Date(Date.now() - 3600000).toISOString(),
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const onRefresh = () => {
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
+
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1500);
+    await fetchAppointments();
+    setRefreshing(false);
   };
 
-  const formatDateKey = (date: Date) => {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  };
-
-  const getWeekDates = () => {
-    const dates = [];
-    const start = new Date(selectedDate);
-    start.setDate(start.getDate() - start.getDay());
-    
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      dates.push(d);
-    }
-    return dates;
-  };
-
-  const weekDates = getWeekDates();
-  const todayKey = formatDateKey(new Date());
-  const selectedKey = formatDateKey(selectedDate);
-  
-  // Filter and sort appointments
+  // Filter appointments
   const filteredAppointments = useMemo(() => {
-    let filtered = [...categoryAppointments];
+    let filtered = [...appointments];
     
-    // Apply filter
-    if (selectedFilter !== 'all') {
-      filtered = filtered.filter(apt => apt.status === selectedFilter);
+    switch (selectedFilter) {
+      case 'recent':
+        // Sort by created_at descending (most recent first)
+        filtered.sort((a, b) => {
+          const dateA = new Date(a.created_at || 0).getTime();
+          const dateB = new Date(b.created_at || 0).getTime();
+          return dateB - dateA;
+        });
+        break;
+      case 'upcoming':
+        filtered = filtered.filter(apt => apt.status === 'upcoming');
+        break;
+      case 'completed':
+        filtered = filtered.filter(apt => apt.status === 'completed');
+        break;
+      default:
+        // All - show upcoming first, then in_progress, then completed
+        const statusOrder: { [key: string]: number } = {
+          'upcoming': 0,
+          'in_progress': 1,
+          'completed': 2,
+        };
+        filtered.sort((a, b) => (statusOrder[a.status] ?? 3) - (statusOrder[b.status] ?? 3));
     }
-    
-    // Sort: in_progress first, then upcoming, then completed
-    const statusOrder: { [key: string]: number } = {
-      'in_progress': 0,
-      'upcoming': 1,
-      'completed': 2,
-    };
-    
-    filtered.sort((a, b) => {
-      const orderA = statusOrder[a.status] ?? 3;
-      const orderB = statusOrder[b.status] ?? 3;
-      return orderA - orderB;
-    });
     
     return filtered;
-  }, [categoryAppointments, selectedFilter]);
+  }, [appointments, selectedFilter]);
+
+  // Get counts
+  const counts = useMemo(() => ({
+    all: appointments.length,
+    recent: appointments.length,
+    upcoming: appointments.filter(a => a.status === 'upcoming').length,
+    completed: appointments.filter(a => a.status === 'completed').length,
+  }), [appointments]);
 
   const getStatusStyle = (status: string) => {
     switch (status) {
       case 'completed':
-        return { bg: COLORS.success + '15', text: COLORS.success, icon: 'checkmark-circle', label: 'Completed' };
+        return { bg: COLORS.success + '15', color: COLORS.success, icon: 'checkmark-circle' as const };
       case 'in_progress':
-        return { bg: COLORS.warning + '15', text: COLORS.warning, icon: 'time', label: 'In Progress' };
+        return { bg: COLORS.warning + '15', color: COLORS.warning, icon: 'play-circle' as const };
       case 'upcoming':
-        return { bg: COLORS.primary + '15', text: COLORS.primary, icon: 'calendar', label: 'Upcoming' };
+        return { bg: COLORS.primary + '15', color: COLORS.primary, icon: 'calendar' as const };
       default:
-        return { bg: COLORS.textMuted + '15', text: COLORS.textMuted, icon: 'help', label: status };
+        return { bg: COLORS.textMuted + '15', color: COLORS.textMuted, icon: 'help-circle' as const };
     }
   };
 
-  const hasAppointments = (date: Date) => {
-    return categoryAppointments.length > 0;
-  };
-
-  const navigateDate = (direction: number) => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() + direction);
-    setSelectedDate(newDate);
-  };
-
-  // Get counts for filter badges
-  const filterCounts = useMemo(() => ({
-    all: categoryAppointments.length,
-    upcoming: categoryAppointments.filter(a => a.status === 'upcoming').length,
-    in_progress: categoryAppointments.filter(a => a.status === 'in_progress').length,
-    completed: categoryAppointments.filter(a => a.status === 'completed').length,
-  }), [categoryAppointments]);
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading schedule...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
+      {/* Simple Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Appointments</Text>
-        <TouchableOpacity style={styles.addBtn}>
-          <Ionicons name="add" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Month & Year */}
-      <View style={styles.monthHeader}>
-        <TouchableOpacity onPress={() => navigateDate(-7)}>
-          <Ionicons name="chevron-back" size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={styles.monthText}>
-          {MONTHS[selectedDate.getMonth()]} {selectedDate.getFullYear()}
-        </Text>
-        <TouchableOpacity onPress={() => navigateDate(7)}>
-          <Ionicons name="chevron-forward" size={24} color={COLORS.text} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Week View */}
-      <View style={styles.weekContainer}>
-        {weekDates.map((date, index) => {
-          const isToday = formatDateKey(date) === todayKey;
-          const isSelected = formatDateKey(date) === selectedKey;
-          const hasApt = hasAppointments(date);
-          
-          return (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.dayCard,
-                isSelected && styles.dayCardSelected,
-              ]}
-              onPress={() => setSelectedDate(date)}
-            >
-              <Text style={[styles.dayName, isSelected && styles.dayNameSelected]}>
-                {DAYS[date.getDay()]}
-              </Text>
-              <Text style={[
-                styles.dayNumber,
-                isToday && styles.dayNumberToday,
-                isSelected && styles.dayNumberSelected,
-              ]}>
-                {date.getDate()}
-              </Text>
-              {hasApt && (
-                <View style={[styles.aptDot, isSelected && styles.aptDotSelected]} />
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {/* Summary Bar */}
-      <View style={styles.summaryBar}>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryValue}>{filteredAppointments.length}</Text>
-          <Text style={styles.summaryLabel}>Appointments</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryValue}>
-            ₹{filteredAppointments.reduce((sum, apt) => sum + apt.earnings, 0).toLocaleString()}
-          </Text>
-          <Text style={styles.summaryLabel}>Expected</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryValue}>
-            {filteredAppointments.reduce((sum, apt) => sum + parseFloat(apt.duration), 0)} hrs
-          </Text>
-          <Text style={styles.summaryLabel}>Total Time</Text>
+        <Text style={styles.headerTitle}>Schedule</Text>
+        <View style={styles.headerBadge}>
+          <Text style={styles.headerBadgeText}>{appointments.length}</Text>
         </View>
       </View>
 
-      {/* Filter Tabs */}
+      {/* Filter Tabs - Horizontal Scroll */}
       <View style={styles.filterContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterScroll}
+        >
           {FILTER_TABS.map((tab) => {
-            const count = filterCounts[tab.key as keyof typeof filterCounts];
             const isActive = selectedFilter === tab.key;
+            const count = counts[tab.key as keyof typeof counts];
             return (
               <TouchableOpacity
                 key={tab.key}
                 style={[styles.filterTab, isActive && styles.filterTabActive]}
                 onPress={() => setSelectedFilter(tab.key)}
               >
+                <Ionicons 
+                  name={tab.icon as any} 
+                  size={18} 
+                  color={isActive ? '#FFF' : COLORS.textSecondary} 
+                />
                 <Text style={[styles.filterTabText, isActive && styles.filterTabTextActive]}>
                   {tab.label}
                 </Text>
@@ -247,83 +217,95 @@ export default function AppointmentsScreen() {
       </View>
 
       {/* Appointments List */}
-      <ScrollView 
-        style={styles.scrollView}
+      <ScrollView
+        style={styles.listContainer}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
         }
       >
         {filteredAppointments.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Ionicons name="calendar-outline" size={48} color={COLORS.textMuted} />
-            <Text style={styles.emptyTitle}>No Appointments</Text>
-            <Text style={styles.emptyText}>
-              {selectedFilter === 'all' 
-                ? "You don't have any appointments scheduled." 
-                : `No ${selectedFilter.replace('_', ' ')} appointments.`}
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIcon}>
+              <Ionicons name="calendar-outline" size={48} color={COLORS.textMuted} />
+            </View>
+            <Text style={styles.emptyTitle}>No appointments</Text>
+            <Text style={styles.emptySubtitle}>
+              {selectedFilter === 'completed' 
+                ? 'Completed jobs will appear here'
+                : 'Accept jobs from Work Orders to see them here'}
             </Text>
           </View>
         ) : (
-          filteredAppointments.map((apt, index) => {
-            const statusStyle = getStatusStyle(apt.status);
-            return (
-              <TouchableOpacity 
-                key={apt.id} 
-                style={styles.aptCard}
-                onPress={() => router.push(`/(main)/appointment-detail?id=${apt.id}&status=${apt.status}`)}
-                activeOpacity={0.7}
-              >
-                {/* Timeline */}
-                <View style={styles.timeline}>
-                  <View style={[styles.timelineDot, { backgroundColor: statusStyle.text }]} />
-                  {index < filteredAppointments.length - 1 && <View style={styles.timelineLine} />}
-                </View>
-                
-                {/* Content */}
-                <View style={styles.aptCardContent}>
-                  <View style={styles.aptCardHeader}>
-                    <View>
-                      <Text style={styles.aptTime}>{apt.time}</Text>
-                      <Text style={styles.aptDuration}>{apt.duration}</Text>
+          <>
+            {selectedFilter === 'recent' && (
+              <View style={styles.sectionHeader}>
+                <Ionicons name="time" size={18} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>Recently Added</Text>
+              </View>
+            )}
+            
+            {filteredAppointments.map((apt) => {
+              const status = getStatusStyle(apt.status);
+              return (
+                <TouchableOpacity 
+                  key={apt.appointment_id} 
+                  style={styles.appointmentCard}
+                  activeOpacity={0.7}
+                >
+                  {/* Status Indicator */}
+                  <View style={[styles.statusBar, { backgroundColor: status.color }]} />
+                  
+                  <View style={styles.cardContent}>
+                    {/* Top Row: Title & Price */}
+                    <View style={styles.cardTopRow}>
+                      <Text style={styles.cardTitle} numberOfLines={1}>{apt.service_title}</Text>
+                      <Text style={styles.cardPrice}>₹{apt.price}</Text>
                     </View>
-                    <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-                      <Ionicons name={statusStyle.icon as any} size={12} color={statusStyle.text} />
-                      <Text style={[styles.statusText, { color: statusStyle.text }]}>{statusStyle.label}</Text>
+
+                    {/* Customer */}
+                    <View style={styles.cardRow}>
+                      <Ionicons name="person" size={16} color={COLORS.textSecondary} />
+                      <Text style={styles.cardText}>{apt.customer_name}</Text>
+                    </View>
+
+                    {/* Date & Time */}
+                    <View style={styles.cardRow}>
+                      <Ionicons name="calendar" size={16} color={COLORS.primary} />
+                      <Text style={styles.cardText}>{apt.scheduled_date}</Text>
+                      {apt.scheduled_time && (
+                        <>
+                          <Text style={styles.cardDivider}>•</Text>
+                          <Ionicons name="time" size={16} color={COLORS.warning} />
+                          <Text style={styles.cardText}>{apt.scheduled_time}</Text>
+                        </>
+                      )}
+                    </View>
+
+                    {/* Location */}
+                    <View style={styles.cardRow}>
+                      <Ionicons name="location" size={16} color={COLORS.error} />
+                      <Text style={styles.cardTextMuted} numberOfLines={1}>{apt.location}</Text>
+                    </View>
+
+                    {/* Status Badge */}
+                    <View style={styles.cardFooter}>
+                      <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
+                        <Ionicons name={status.icon} size={14} color={status.color} />
+                        <Text style={[styles.statusText, { color: status.color }]}>
+                          {apt.status.replace('_', ' ').toUpperCase()}
+                        </Text>
+                      </View>
                     </View>
                   </View>
-                  
-                  <Text style={styles.aptService}>{apt.service}</Text>
-                  <Text style={styles.aptCustomer}>{apt.customer}</Text>
-                  
-                  <View style={styles.aptFooter}>
-                    <View style={styles.locationRow}>
-                      <Ionicons name="location-outline" size={14} color={COLORS.textMuted} />
-                      <Text style={styles.locationText}>{apt.location}</Text>
-                    </View>
-                    <Text style={styles.aptEarnings}>₹{apt.earnings}</Text>
-                  </View>
-                  
-                  {apt.status === 'upcoming' && (
-                    <View style={styles.aptActions}>
-                      <TouchableOpacity style={styles.actionBtn}>
-                        <Ionicons name="navigate-outline" size={16} color={COLORS.primary} />
-                        <Text style={styles.actionBtnText}>Navigate</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.actionBtn}>
-                        <Ionicons name="chatbubble-outline" size={16} color={COLORS.primary} />
-                        <Text style={styles.actionBtnText}>Chat</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={[styles.actionBtn, styles.startBtn]}>
-                        <Text style={styles.startBtnText}>Start Job</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          })
+                </TouchableOpacity>
+              );
+            })}
+          </>
         )}
+
+        {/* Bottom Padding */}
         <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
@@ -335,321 +317,211 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    color: COLORS.textSecondary,
+  },
+
+  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: COLORS.cardBg,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: COLORS.text,
   },
-  addBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+  headerBadge: {
+    marginLeft: 8,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  monthHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: COLORS.cardBg,
-  },
-  monthText: {
-    fontSize: 17,
+  headerBadgeText: {
+    fontSize: 13,
     fontWeight: '700',
-    color: COLORS.text,
+    color: '#FFF',
   },
-  weekContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+
+  // Filters
+  filterContainer: {
     backgroundColor: COLORS.cardBg,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  dayCard: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderRadius: 12,
-    marginHorizontal: 2,
-  },
-  dayCardSelected: {
-    backgroundColor: COLORS.primary,
-  },
-  dayName: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.textMuted,
-    marginBottom: 4,
-  },
-  dayNameSelected: {
-    color: 'rgba(255,255,255,0.8)',
-  },
-  dayNumber: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  dayNumberToday: {
-    color: COLORS.primary,
-  },
-  dayNumberSelected: {
-    color: '#FFF',
-  },
-  aptDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: COLORS.primary,
-    marginTop: 4,
-  },
-  aptDotSelected: {
-    backgroundColor: '#FFF',
-  },
-  summaryBar: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 14,
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  summaryItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  summaryDivider: {
-    width: 1,
-    backgroundColor: COLORS.border,
-  },
-  summaryValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: COLORS.text,
-  },
-  summaryLabel: {
-    fontSize: 11,
-    color: COLORS.textMuted,
-    marginTop: 2,
-  },
-  scrollView: {
-    flex: 1,
-    paddingTop: 16,
-  },
-  emptyCard: {
-    alignItems: 'center',
-    padding: 40,
-    marginHorizontal: 16,
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginTop: 16,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  aptCard: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginBottom: 16,
-  },
-  timeline: {
-    width: 24,
-    alignItems: 'center',
-  },
-  timelineDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginTop: 4,
-  },
-  timelineLine: {
-    width: 2,
-    flex: 1,
-    backgroundColor: COLORS.border,
-    marginTop: 4,
-  },
-  aptCardContent: {
-    flex: 1,
-    marginLeft: 12,
-    padding: 16,
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  aptCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  aptTime: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  aptDuration: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    marginTop: 2,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 4,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  aptService: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: 4,
-  },
-  aptCustomer: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginBottom: 10,
-  },
-  aptFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    flex: 1,
-  },
-  locationText: {
-    fontSize: 13,
-    color: COLORS.textMuted,
-  },
-  aptEarnings: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: COLORS.success,
-  },
-  aptActions: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 14,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    gap: 4,
-  },
-  actionBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  startBtn: {
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor: COLORS.success,
-    borderColor: COLORS.success,
-  },
-  startBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  // Filter Tab Styles
-  filterContainer: {
-    marginTop: 12,
-    marginHorizontal: 16,
-  },
   filterScroll: {
-    gap: 8,
+    paddingHorizontal: 16,
+    gap: 10,
   },
   filterTab: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 14,
     paddingVertical: 10,
-    paddingHorizontal: 16,
     borderRadius: 20,
-    backgroundColor: COLORS.cardBg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.background,
     gap: 6,
   },
   filterTabActive: {
     backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
   },
   filterTabText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     color: COLORS.textSecondary,
   },
   filterTabTextActive: {
-    color: '#FFFFFF',
+    color: '#FFF',
   },
   filterBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
     backgroundColor: COLORS.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: 2,
   },
   filterBadgeActive: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(255,255,255,0.3)',
   },
   filterBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '600',
     color: COLORS.textSecondary,
   },
   filterBadgeTextActive: {
-    color: '#FFFFFF',
+    color: '#FFF',
+  },
+
+  // List
+  listContainer: {
+    flex: 1,
+  },
+  listContent: {
+    padding: 16,
+  },
+
+  // Section Header
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+
+  // Empty State
+  emptyState: {
+    alignItems: 'center',
+    paddingTop: 60,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    paddingHorizontal: 40,
+  },
+
+  // Appointment Card
+  appointmentCard: {
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 16,
+    marginBottom: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    flexDirection: 'row',
+  },
+  statusBar: {
+    width: 4,
+  },
+  cardContent: {
+    flex: 1,
+    padding: 16,
+  },
+  cardTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+    flex: 1,
+    marginRight: 10,
+  },
+  cardPrice: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.success,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  cardText: {
+    fontSize: 14,
+    color: COLORS.text,
+  },
+  cardTextMuted: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    flex: 1,
+  },
+  cardDivider: {
+    color: COLORS.textMuted,
+    marginHorizontal: 4,
+  },
+  cardFooter: {
+    marginTop: 8,
+    flexDirection: 'row',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
 });
