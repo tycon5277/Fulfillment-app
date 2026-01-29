@@ -144,7 +144,17 @@ export default function SkilledChatsScreen() {
             </View>
           )}
         </View>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity 
+          style={styles.seedButton} 
+          onPress={seedChatData}
+          disabled={isSeedingChats}
+        >
+          {isSeedingChats ? (
+            <ActivityIndicator size="small" color={COLORS.primary} />
+          ) : (
+            <Ionicons name="add-circle" size={26} color={COLORS.primary} />
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
