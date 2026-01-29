@@ -1508,6 +1508,35 @@ export default function NearbyWishesScreen() {
     return sorted;
   }, [userSkills, radius, sortBy, isOnline]);
 
+  // Handle Accept & Chat - creates chat room and navigates to chat
+  const handleAcceptAndChat = async (wish: typeof ALL_WISHES[0]) => {
+    setIsAccepting(true);
+    try {
+      // Create a chat room for this wish
+      const roomId = `wish_${wish.id}_${Date.now()}`;
+      
+      // Navigate to chat with wish details
+      router.push({
+        pathname: '/chat/[roomId]',
+        params: {
+          roomId: roomId,
+          wishId: wish.id,
+          wishTitle: wish.service,
+          wishBudget: wish.budgetMax.toString(),
+          wishDescription: wish.description,
+          customerName: wish.customer,
+          customerRating: wish.customerRating.toString(),
+          wishLocation: wish.location,
+          wishDate: wish.preferredDate,
+        }
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to start chat. Please try again.');
+    } finally {
+      setIsAccepting(false);
+    }
+  };
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1500);
