@@ -325,40 +325,32 @@ export default function ChatDetailScreen() {
     loadData();
   }, [roomId]);
 
-  // When Wisher accepts → Create appointment and show gamified modal
+  // When Wisher accepts → Show appointment editing modal
   useEffect(() => {
     if (dealStatus === 'genie_accepted') {
       const timer = setTimeout(async () => {
-        // Create appointment when wisher accepts
-        try {
-          await api.default.post('/appointments', {
-            deal_id: currentDealId,
-            wish_id: wishId,
-            service_title: wishTitle || room?.wish_title,
-            customer_name: customerName || room?.wisher?.name,
-            scheduled_date: preferredDate,
-            location: location,
-            price: price,
-            status: 'confirmed',
-          });
-        } catch (e) {
-          console.log('Appointment creation - using local state');
-        }
-
+        // Wisher accepts - show appointment editing modal
         setDealStatus('confirmed');
         const wisherAcceptMsg: Message = {
           message_id: `msg_wisher_${Date.now()}`,
           room_id: roomId as string,
           sender_id: 'wisher',
           sender_type: 'wisher',
-          content: '✅ I accept your offer! Looking forward to your service.',
+          content: '✅ I accept your offer! Please confirm the appointment details.',
           created_at: new Date().toISOString(),
         };
         setMessages(prev => [...prev, wisherAcceptMsg]);
         scrollViewRef.current?.scrollToEnd({ animated: true });
         
-        // Show gamified success modal
-        setShowJobConfirmedSuccess(true);
+        // Initialize appointment data with preferred values
+        setAppointmentData({
+          date: preferredDate || 'Tomorrow',
+          time: '3:00 PM',
+          notes: '',
+        });
+        
+        // Show appointment editing modal
+        setShowAppointmentModal(true);
       }, 3000);
       return () => clearTimeout(timer);
     }
