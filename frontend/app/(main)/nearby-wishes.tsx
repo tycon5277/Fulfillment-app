@@ -7,12 +7,17 @@ import {
   TouchableOpacity,
   RefreshControl,
   Dimensions,
+  Modal,
+  Alert,
+  ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { useAuthStore } from '../../src/store';
+import * as api from '../../src/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
