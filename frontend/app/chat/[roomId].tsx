@@ -362,12 +362,13 @@ export default function ChatDetailScreen() {
         setMessages(prev => [...prev, wisherAcceptMsg]);
         scrollViewRef.current?.scrollToEnd({ animated: true });
         
-        // Initialize appointment data with preferred values
-        setAppointmentData({
-          date: preferredDate || 'Tomorrow',
-          time: '3:00 PM',
-          notes: '',
-        });
+        // Initialize appointment date/time
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(15, 0, 0, 0); // Default to 3:00 PM tomorrow
+        setAppointmentDate(tomorrow);
+        setAppointmentTime(tomorrow);
+        setAppointmentNotes('');
         
         // Show appointment editing modal
         setShowAppointmentModal(true);
