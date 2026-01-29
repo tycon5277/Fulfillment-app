@@ -200,4 +200,39 @@ export const seedOrders = () => api.post('/seed/orders');
 export const seedWishes = () => api.post('/seed/wishes');
 export const seedChatRooms = () => api.post('/seed/chat-rooms');
 
+// Deal Negotiation APIs
+export const createDealFromWish = (data: {
+  wish_id: string;
+  price: number;
+  scheduled_date?: string;
+  scheduled_time?: string;
+  notes?: string;
+}) => api.post('/deals/create-from-wish', data);
+
+export const getDeal = (dealId: string) => 
+  api.get(`/deals/${dealId}`);
+
+export const sendDealOffer = (dealId: string, data: {
+  wish_id: string;
+  price: number;
+  scheduled_date?: string;
+  scheduled_time?: string;
+  notes?: string;
+}) => api.post(`/deals/${dealId}/send-offer`, data);
+
+export const acceptDeal = (dealId: string) => 
+  api.post(`/deals/${dealId}/accept`);
+
+export const rejectDeal = (dealId: string) => 
+  api.post(`/deals/${dealId}/reject`);
+
+export const startDealJob = (dealId: string) => 
+  api.post(`/deals/${dealId}/start`);
+
+export const completeDealJob = (dealId: string) => 
+  api.post(`/deals/${dealId}/complete`);
+
+export const getMyDeals = (status?: string) => 
+  api.get('/deals/my-deals', { params: status ? { status } : {} });
+
 export default api;
