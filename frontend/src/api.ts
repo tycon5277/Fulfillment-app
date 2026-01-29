@@ -198,5 +198,6 @@ export const getWishStatus = (wishId: string) => api.get(`/wishes/${wishId}/stat
 // Seed data (for testing)
 export const seedOrders = () => api.post('/seed/orders');
 export const seedWishes = () => api.post('/seed/wishes');
+export const seedChatRooms = () => api.post('/seed/chat-rooms');
 
 export default api;
