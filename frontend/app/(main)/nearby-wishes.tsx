@@ -1423,11 +1423,12 @@ const ALL_WISHES = [
 
 export default function NearbyWishesScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, isOnline } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
   const [radius, setRadius] = useState(5);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [sortBy, setSortBy] = useState<'distance' | 'budget' | 'time'>('distance');
+  const [jobFilter, setJobFilter] = useState<'all' | 'in_progress' | 'completed'>('all');
 
   // Get user's skills - memoized to prevent unnecessary recalculations
   const userSkills = useMemo(() => {
@@ -1442,9 +1443,25 @@ export default function NearbyWishesScreen() {
     return skills;
   }, [user?.agent_skills, user?.partner_type, user?.agent_type, user?.user_id]);
 
-  // Filter wishes based on user's skills
+  // Filter MY JOBS (accepted/completed) for offline mode
+  const myJobs = useMemo(() => {
+    if (jobFilter === 'all') return MY_JOBS;
+    return MY_JOBS.filter(job => {
+      if (jobFilter === 'in_progress') return job.status === 'in_progress' || job.status === 'accepted';
+      if (jobFilter === 'completed') return job.status === 'completed';
+      return true;
+    });
+  }, [jobFilter]);
+
+  // Filter wishes based on user's skills (only for ONLINE mode)
   const filteredWishes = useMemo(() => {
-    console.log('🔍 Filtering wishes...');
+    // If offline, don't show available wishes
+    if (!isOnline) {
+      console.log('🔴 OFFLINE - not showing available wishes');
+      return [];
+    }
+    
+    console.log('🟢 ONLINE - Filtering wishes...');
     console.log('  - User has', userSkills.length, 'skills:', userSkills);
     console.log('  - Radius:', radius, 'km');
     
