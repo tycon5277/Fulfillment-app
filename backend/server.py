@@ -1314,11 +1314,13 @@ async def create_deal_from_wish(data: DealOffer, current_user: User = Depends(re
     
     logger.info(f"💼 Deal created: {deal_id} by {current_user.user_id}")
     
+    # Return serializable response (excluding datetime objects from deal_doc)
     return {
         "message": "Deal created successfully",
         "deal_id": deal_id,
         "room_id": room_id,
-        "deal": deal_doc
+        "status": deal_doc["status"],
+        "initial_price": deal_doc["initial_price"]
     }
 
 
