@@ -165,6 +165,18 @@ backend:
           agent: "testing"
           comment: "✅ All API endpoints are properly structured with /api prefix. Backend is accessible at https://skilled-match-5.preview.emergentagent.com/api and all routes are working correctly."
 
+  - task: "Deal Negotiation APIs"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ ALL DEAL NEGOTIATION APIS WORKING PERFECTLY: 1) POST /api/seed/culinary-genie creates test user with session token (200 OK), 2) POST /api/deals/create-from-wish creates deal with deal_id, room_id, status=pending (200 OK), 3) GET /api/deals/my-deals retrieves deals list with count (200 OK), 4) POST /api/deals/{deal_id}/send-offer sends counter offers successfully (200 OK), 5) POST /api/deals/{deal_id}/accept accepts deals with status=accepted (200 OK), 6) POST /api/deals/{deal_id}/start starts jobs with status=in_progress (200 OK), 7) POST /api/deals/{deal_id}/complete completes jobs with status=completed and earnings (200 OK), 8) POST /api/deals/{deal_id}/reject rejects deals with status=rejected (200 OK). All 8 test scenarios passed successfully. Deal negotiation workflow is fully functional."
+
 frontend:
   - task: "Login Screen Display"
     implemented: true
