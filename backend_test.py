@@ -199,6 +199,312 @@ class BackendTester:
         except Exception as e:
             self.log_result("Auth Me (Unauthorized)", False, f"Error: {str(e)}")
     
+    def test_seed_culinary_genie(self):
+        """Test: Seed Culinary Genie User - POST /api/seed/culinary-genie"""
+        try:
+            response = self.session.post(f"{BASE_URL}/seed/culinary-genie", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                session_token = data.get("session_token")
+                if session_token:
+                    self.session_token = session_token
+                    # Set authorization header for future requests
+                    self.session.headers.update({"Authorization": f"Bearer {session_token}"})
+                    self.log_result("Seed Culinary Genie", True, f"Created culinary genie user with session token", response.status_code)
+                    return True
+                else:
+                    self.log_result("Seed Culinary Genie", False, f"No session token in response: {data}", response.status_code)
+            else:
+                self.log_result("Seed Culinary Genie", False, f"HTTP {response.status_code}: {response.text}", response.status_code)
+                
+        except requests.exceptions.RequestException as e:
+            self.log_result("Seed Culinary Genie", False, f"Connection error: {str(e)}")
+        except Exception as e:
+            self.log_result("Seed Culinary Genie", False, f"Unexpected error: {str(e)}")
+            
+        return False
+    
+    def test_create_deal_from_wish(self):
+        """Test: Create Deal from Wish - POST /api/deals/create-from-wish"""
+        if not self.session_token:
+            self.log_result("Create Deal from Wish", False, "No session token available")
+            return None
+            
+        deal_data = {
+            "wish_id": "cul1",
+            "price": 1200,
+            "scheduled_date": "Tomorrow",
+            "scheduled_time": "3:00 PM",
+            "notes": "I am interested!"
+        }
+        
+        try:
+            response = self.session.post(f"{BASE_URL}/deals/create-from-wish", json=deal_data, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                deal_id = data.get("deal_id")
+                room_id = data.get("room_id")
+                status = data.get("status")
+                
+                if deal_id and room_id and status == "pending":
+                    self.log_result("Create Deal from Wish", True, f"Deal created: {deal_id}, Room: {room_id}, Status: {status}", response.status_code)
+                    return deal_id
+                else:
+                    self.log_result("Create Deal from Wish", False, f"Missing required fields: {data}", response.status_code)
+            else:
+                self.log_result("Create Deal from Wish", False, f"HTTP {response.status_code}: {response.text}", response.status_code)
+                
+        except requests.exceptions.RequestException as e:
+            self.log_result("Create Deal from Wish", False, f"Connection error: {str(e)}")
+        except Exception as e:
+            self.log_result("Create Deal from Wish", False, f"Unexpected error: {str(e)}")
+            
+        return None
+    
+    def test_get_my_deals(self):
+        """Test: Get My Deals - GET /api/deals/my-deals"""
+        if not self.session_token:
+            self.log_result("Get My Deals", False, "No session token available")
+            return False
+            
+        try:
+            response = self.session.get(f"{BASE_URL}/deals/my-deals", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                deals = data.get("deals", [])
+                count = data.get("count", 0)
+                
+                self.log_result("Get My Deals", True, f"Retrieved {count} deals", response.status_code)
+                return True
+            else:
+                self.log_result("Get My Deals", False, f"HTTP {response.status_code}: {response.text}", response.status_code)
+                
+        except requests.exceptions.RequestException as e:
+            self.log_result("Get My Deals", False, f"Connection error: {str(e)}")
+        except Exception as e:
+            self.log_result("Get My Deals", False, f"Unexpected error: {str(e)}")
+            
+        return False
+    
+    def test_send_counter_offer(self, deal_id):
+        """Test: Send Counter Offer - POST /api/deals/{deal_id}/send-offer"""
+        if not self.session_token or not deal_id:
+            self.log_result("Send Counter Offer", False, "No session token or deal ID available")
+            return False
+            
+        counter_data = {
+            "wish_id": "cul1",
+            "price": 1500
+        }
+        
+        try:
+            response = self.session.post(f"{BASE_URL}/deals/{deal_id}/send-offer", json=counter_data, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                new_price = data.get("new_price")
+                
+                if new_price == 1500:
+                    self.log_result("Send Counter Offer", True, f"Counter offer sent: ₹{new_price}", response.status_code)
+                    return True
+                else:
+                    self.log_result("Send Counter Offer", False, f"Unexpected price: {data}", response.status_code)
+            else:
+                self.log_result("Send Counter Offer", False, f"HTTP {response.status_code}: {response.text}", response.status_code)
+                
+        except requests.exceptions.RequestException as e:
+            self.log_result("Send Counter Offer", False, f"Connection error: {str(e)}")
+        except Exception as e:
+            self.log_result("Send Counter Offer", False, f"Unexpected error: {str(e)}")
+            
+        return False
+    
+    def test_accept_deal(self, deal_id):
+        """Test: Accept Deal - POST /api/deals/{deal_id}/accept"""
+        if not self.session_token or not deal_id:
+            self.log_result("Accept Deal", False, "No session token or deal ID available")
+            return False
+            
+        try:
+            response = self.session.post(f"{BASE_URL}/deals/{deal_id}/accept", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                status = data.get("status")
+                
+                if status == "accepted":
+                    self.log_result("Accept Deal", True, f"Deal accepted, status: {status}", response.status_code)
+                    return True
+                else:
+                    self.log_result("Accept Deal", False, f"Unexpected status: {status}", response.status_code)
+            else:
+                self.log_result("Accept Deal", False, f"HTTP {response.status_code}: {response.text}", response.status_code)
+                
+        except requests.exceptions.RequestException as e:
+            self.log_result("Accept Deal", False, f"Connection error: {str(e)}")
+        except Exception as e:
+            self.log_result("Accept Deal", False, f"Unexpected error: {str(e)}")
+            
+        return False
+    
+    def test_start_job(self, deal_id):
+        """Test: Start Job - POST /api/deals/{deal_id}/start"""
+        if not self.session_token or not deal_id:
+            self.log_result("Start Job", False, "No session token or deal ID available")
+            return False
+            
+        try:
+            response = self.session.post(f"{BASE_URL}/deals/{deal_id}/start", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                status = data.get("status")
+                
+                if status == "in_progress":
+                    self.log_result("Start Job", True, f"Job started, status: {status}", response.status_code)
+                    return True
+                else:
+                    self.log_result("Start Job", False, f"Unexpected status: {status}", response.status_code)
+            else:
+                self.log_result("Start Job", False, f"HTTP {response.status_code}: {response.text}", response.status_code)
+                
+        except requests.exceptions.RequestException as e:
+            self.log_result("Start Job", False, f"Connection error: {str(e)}")
+        except Exception as e:
+            self.log_result("Start Job", False, f"Unexpected error: {str(e)}")
+            
+        return False
+    
+    def test_complete_job(self, deal_id):
+        """Test: Complete Job - POST /api/deals/{deal_id}/complete"""
+        if not self.session_token or not deal_id:
+            self.log_result("Complete Job", False, "No session token or deal ID available")
+            return False
+            
+        try:
+            response = self.session.post(f"{BASE_URL}/deals/{deal_id}/complete", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                status = data.get("status")
+                earnings = data.get("earnings")
+                
+                if status == "completed" and earnings is not None:
+                    self.log_result("Complete Job", True, f"Job completed, status: {status}, earnings: ₹{earnings}", response.status_code)
+                    return True
+                else:
+                    self.log_result("Complete Job", False, f"Missing status or earnings: {data}", response.status_code)
+            else:
+                self.log_result("Complete Job", False, f"HTTP {response.status_code}: {response.text}", response.status_code)
+                
+        except requests.exceptions.RequestException as e:
+            self.log_result("Complete Job", False, f"Connection error: {str(e)}")
+        except Exception as e:
+            self.log_result("Complete Job", False, f"Unexpected error: {str(e)}")
+            
+        return False
+    
+    def test_reject_deal(self):
+        """Test: Reject Deal - POST /api/deals/{deal_id}/reject (creates new deal first)"""
+        if not self.session_token:
+            self.log_result("Reject Deal", False, "No session token available")
+            return False
+            
+        # First create a new deal for rejection
+        deal_data = {
+            "wish_id": "cul2",
+            "price": 800,
+            "scheduled_date": "Next Week",
+            "scheduled_time": "2:00 PM",
+            "notes": "Testing rejection flow"
+        }
+        
+        try:
+            # Create new deal
+            response = self.session.post(f"{BASE_URL}/deals/create-from-wish", json=deal_data, timeout=10)
+            
+            if response.status_code != 200:
+                self.log_result("Reject Deal", False, "Failed to create new deal for rejection test")
+                return False
+            
+            data = response.json()
+            new_deal_id = data.get("deal_id")
+            
+            if not new_deal_id:
+                self.log_result("Reject Deal", False, "No deal ID returned from new deal creation")
+                return False
+            
+            # Now reject the deal
+            response = self.session.post(f"{BASE_URL}/deals/{new_deal_id}/reject", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                status = data.get("status")
+                
+                if status == "rejected":
+                    self.log_result("Reject Deal", True, f"Deal rejected, status: {status}", response.status_code)
+                    return True
+                else:
+                    self.log_result("Reject Deal", False, f"Unexpected status: {status}", response.status_code)
+            else:
+                self.log_result("Reject Deal", False, f"HTTP {response.status_code}: {response.text}", response.status_code)
+                
+        except requests.exceptions.RequestException as e:
+            self.log_result("Reject Deal", False, f"Connection error: {str(e)}")
+        except Exception as e:
+            self.log_result("Reject Deal", False, f"Unexpected error: {str(e)}")
+            
+        return False
+    
+    def run_deal_negotiation_tests(self):
+        """Run Deal Negotiation API tests as requested in the review"""
+        print("=" * 60)
+        print("DEAL NEGOTIATION BACKEND API TESTS")
+        print("=" * 60)
+        print()
+        
+        # Test 1: Seed culinary genie user
+        seed_ok = self.test_seed_culinary_genie()
+        print()
+        
+        if not seed_ok:
+            print("❌ Cannot proceed without session token")
+            return False
+        
+        # Test 2: Create deal from wish
+        deal_id = self.test_create_deal_from_wish()
+        print()
+        
+        # Test 3: Get my deals
+        self.test_get_my_deals()
+        print()
+        
+        if deal_id:
+            # Test 4: Send counter offer
+            self.test_send_counter_offer(deal_id)
+            print()
+            
+            # Test 5: Accept deal
+            self.test_accept_deal(deal_id)
+            print()
+            
+            # Test 6: Start job
+            self.test_start_job(deal_id)
+            print()
+            
+            # Test 7: Complete job
+            self.test_complete_job(deal_id)
+            print()
+        
+        # Test 8: Reject deal (creates new deal)
+        self.test_reject_deal()
+        print()
+        
+        return True
+    
     def run_all_tests(self):
         """Run all backend tests"""
         print("=" * 60)
