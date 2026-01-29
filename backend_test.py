@@ -575,5 +575,36 @@ class BackendTester:
 
 if __name__ == "__main__":
     tester = BackendTester()
-    success = tester.run_all_tests()
-    sys.exit(0 if success else 1)
+    
+    # Check if we should run deal negotiation tests specifically
+    if len(sys.argv) > 1 and sys.argv[1] == "deals":
+        print("🚀 Running Deal Negotiation API Tests")
+        success = tester.run_deal_negotiation_tests()
+        
+        # Summary
+        print("=" * 60)
+        print("DEAL NEGOTIATION TEST SUMMARY")
+        print("=" * 60)
+        
+        passed = sum(1 for r in tester.results if r["success"])
+        total = len(tester.results)
+        
+        print(f"Total Tests: {total}")
+        print(f"Passed: {passed}")
+        print(f"Failed: {total - passed}")
+        print()
+        
+        # Show failed tests
+        failed_tests = [r for r in tester.results if not r["success"]]
+        if failed_tests:
+            print("FAILED TESTS:")
+            for test in failed_tests:
+                print(f"  ❌ {test['test']}: {test['details']}")
+        else:
+            print("🎉 ALL DEAL NEGOTIATION TESTS PASSED!")
+        
+        sys.exit(0 if passed == total else 1)
+    else:
+        # Run original tests
+        success = tester.run_all_tests()
+        sys.exit(0 if success else 1)
