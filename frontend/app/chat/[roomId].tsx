@@ -288,12 +288,12 @@ export default function ChatDetailScreen() {
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   
-  // Appointment editing state
-  const [appointmentData, setAppointmentData] = useState({
-    date: '',
-    time: '',
-    notes: '',
-  });
+  // Appointment editing state with Date objects
+  const [appointmentDate, setAppointmentDate] = useState(new Date());
+  const [appointmentTime, setAppointmentTime] = useState(new Date());
+  const [appointmentNotes, setAppointmentNotes] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   
   // Gamified success modals
   const [showOfferSentSuccess, setShowOfferSentSuccess] = useState(false);
@@ -305,6 +305,25 @@ export default function ChatDetailScreen() {
   const description = (wishDescription as string) || room?.wish?.description || 'Service request details not available.';
   const location = (wishLocation as string) || 'Location not specified';
   const preferredDate = (wishDate as string) || 'Flexible';
+  
+  // Format date for display
+  const formatDateDisplay = (date: Date) => {
+    return date.toLocaleDateString('en-IN', { 
+      weekday: 'short', 
+      day: 'numeric', 
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+  
+  // Format time for display
+  const formatTimeDisplay = (date: Date) => {
+    return date.toLocaleTimeString('en-IN', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true
+    });
+  };
 
   // Keyboard listeners
   useEffect(() => {
