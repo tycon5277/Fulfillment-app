@@ -1808,7 +1808,21 @@ export default function NearbyWishesScreen() {
           >
             {filteredWishes.length === 0 ? renderEmptyState() : filteredWishes.map(renderWishCard)}
             <View style={{ height: 100 }} />
-      </ScrollView>
+          </ScrollView>
+        </>
+      ) : (
+        /* OFFLINE MODE: Show My Jobs */
+        <ScrollView
+          style={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+          }
+        >
+          {renderOfflineContent()}
+          <View style={{ height: 100 }} />
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
