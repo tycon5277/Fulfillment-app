@@ -378,12 +378,6 @@ export default function SkilledProfileScreen() {
           </View>
         ))}
       </View>
-
-      {/* Withdraw Button */}
-      <TouchableOpacity style={styles.withdrawButton}>
-        <Ionicons name="wallet-outline" size={20} color="#FFF" />
-        <Text style={styles.withdrawButtonText}>Withdraw Earnings</Text>
-      </TouchableOpacity>
     </>
   );
 
