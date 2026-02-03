@@ -120,24 +120,46 @@ export default function MainLayout() {
   const lastBackPressRef = useRef<number>(0);
   const [showExitToast, setShowExitToast] = useState(false);
 
-  // Handle hardware back button to prevent blank screen
+  // Handle hardware back button - only for main tab screens
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      // Get the current tab/route
       const currentPath = pathname;
       
-      // Define home routes for different user types
-      const homeRoutes = [
-        '/(main)/skilled-home',
-        '/(main)/home',
+      // Define MAIN TAB routes (bottom navigation tabs only)
+      const mainTabRoutes = [
         '/skilled-home',
         '/home',
+        '/nearby-wishes',
+        '/appointments',
+        '/skilled-profile',
+        '/profile',
+        '/wishes',
+        '/my-quests',
+        '/products',
+        '/events',
+        '/bookings',
       ];
       
+      // Check if current path is a MAIN TAB screen
+      const isOnMainTab = mainTabRoutes.some(route => {
+        const cleanPath = currentPath.replace('/(main)', '');
+        return cleanPath === route || cleanPath.endsWith(route);
+      });
+      
+      // If NOT on a main tab (e.g., chat, earnings detail, reviews, etc.)
+      // Let the default back behavior work (go to previous screen)
+      if (!isOnMainTab) {
+        return false; // Let system handle normal back navigation
+      }
+      
+      // Define home routes
+      const homeRoutes = ['/skilled-home', '/home'];
+      
       // Check if we're on the home screen
-      const isOnHomeScreen = homeRoutes.some(route => 
-        currentPath.includes(route.replace('/(main)', ''))
-      );
+      const isOnHomeScreen = homeRoutes.some(route => {
+        const cleanPath = currentPath.replace('/(main)', '');
+        return cleanPath === route || cleanPath.endsWith(route);
+      });
       
       if (isOnHomeScreen) {
         // Implement "press back twice to exit"
@@ -165,7 +187,7 @@ export default function MainLayout() {
         }
       }
       
-      // If on any other tab, navigate to the appropriate home
+      // On other main tabs (Work Orders, Schedule, Profile) -> go to Home
       if (isSkilledGenie) {
         router.replace('/(main)/skilled-home');
       } else {
