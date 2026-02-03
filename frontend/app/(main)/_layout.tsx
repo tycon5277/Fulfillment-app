@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../src/store';
 import THEME from '../../src/theme';
+import useAppStateManager from '../../src/hooks/useAppStateManager';
 
 // Animated Wishes Button Component with Pulsing Glow - Violet/Purple Theme
 const WishesButton = ({ focused }: { focused: boolean }) => {
