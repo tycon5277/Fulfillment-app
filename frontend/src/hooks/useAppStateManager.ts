@@ -1,51 +1,30 @@
 import { useEffect, useRef } from 'react';
 import { AppState, AppStateStatus, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { useAuthStore } from '../store';
 
 // Inactivity timeout - if app was closed for more than 30 minutes, set offline
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
 
-// Notification channel for Android
-const ONLINE_NOTIFICATION_ID = 'online-status-notification';
-
-// Configure notification handler
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: false,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-    shouldShowInForeground: false,
-  }),
-});
+// Check if running in Expo Go (notifications don't work there in SDK 53+)
+const isExpoGo = Constants.appOwnership === 'expo';
 
 export const useAppStateManager = () => {
   const { isOnline, setIsOnline, updateLastActivity, user } = useAuthStore();
   const appState = useRef(AppState.currentState);
   const lastBackgroundTime = useRef<number | null>(null);
 
-  // Setup notification channel for Android
-  useEffect(() => {
-    const setupNotificationChannel = async () => {
-      if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('online-status', {
-          name: 'Online Status',
-          importance: Notifications.AndroidImportance.LOW,
-          vibrationPattern: [0],
-          lightColor: '#10B981',
-          lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-          bypassDnd: false,
-          showBadge: false,
-        });
-      }
-    };
-    setupNotificationChannel();
-  }, []);
-
   // Show/hide persistent notification based on online status
+  // Only attempt notifications if not in Expo Go
   useEffect(() => {
     const manageOnlineNotification = async () => {
+      // Skip notifications in Expo Go - they're not supported in SDK 53+
+      if (isExpoGo) {
+        console.log('📱 Running in Expo Go - notifications disabled');
+        return;
+      }
+      
       if (isOnline && user) {
         // Show persistent notification when online
         await showOnlineNotification();
@@ -138,8 +117,17 @@ export const useAppStateManager = () => {
 };
 
 // Show persistent notification when user is online
+// Only works in development builds, not Expo Go
 export const showOnlineNotification = async () => {
+  if (isExpoGo) {
+    console.log('📱 Skipping notification in Expo Go');
+    return;
+  }
+  
   try {
+    // Dynamically import notifications only when needed
+    const Notifications = await import('expo-notifications');
+    
     // Request permissions first
     const { status } = await Notifications.getPermissionsAsync();
     if (status !== 'granted') {
@@ -150,12 +138,25 @@ export const showOnlineNotification = async () => {
       }
     }
 
+    // Setup notification channel for Android
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('online-status', {
+        name: 'Online Status',
+        importance: Notifications.AndroidImportance.LOW,
+        vibrationPattern: [0],
+        lightColor: '#10B981',
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        bypassDnd: false,
+        showBadge: false,
+      });
+    }
+
     // Cancel any existing online notification first
-    await Notifications.dismissNotificationAsync(ONLINE_NOTIFICATION_ID);
+    await Notifications.dismissNotificationAsync('online-status-notification');
 
     // Schedule a persistent notification
     await Notifications.scheduleNotificationAsync({
-      identifier: ONLINE_NOTIFICATION_ID,
+      identifier: 'online-status-notification',
       content: {
         title: '🟢 You are Online',
         body: 'You are visible to customers looking for services',
@@ -172,17 +173,23 @@ export const showOnlineNotification = async () => {
     
     console.log('✅ Online notification shown');
   } catch (error) {
-    console.error('Error showing online notification:', error);
+    // Gracefully handle notification errors (e.g., in Expo Go)
+    console.log('📱 Notifications not available:', error);
   }
 };
 
 // Hide the persistent notification
 export const hideOnlineNotification = async () => {
+  if (isExpoGo) {
+    return;
+  }
+  
   try {
-    await Notifications.dismissNotificationAsync(ONLINE_NOTIFICATION_ID);
+    const Notifications = await import('expo-notifications');
+    await Notifications.dismissNotificationAsync('online-status-notification');
     console.log('✅ Online notification hidden');
   } catch (error) {
-    console.error('Error hiding online notification:', error);
+    console.log('📱 Could not hide notification:', error);
   }
 };
 
