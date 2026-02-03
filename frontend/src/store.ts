@@ -94,7 +94,7 @@ interface AuthState {
   setIsLoading: (loading: boolean) => void;
   setIsUserLoaded: (loaded: boolean) => void;
   setStats: (stats: PartnerStats | null) => void;
-  setIsOnline: (online: boolean) => void;
+  setIsOnline: (online: boolean) => Promise<void>;
   setActiveWork: (work: ActiveWork[]) => void;
   addActiveWork: (work: ActiveWork) => void;
   removeActiveWork: (id: string) => void;
