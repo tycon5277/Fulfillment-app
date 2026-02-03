@@ -227,6 +227,7 @@ export default function MainLayout() {
   const initialRoute = isSkilledGenie ? 'skilled-home' : 'home';
 
   return (
+    <>
     <Tabs
       initialRouteName={initialRoute}
       screenOptions={{
