@@ -76,6 +76,13 @@ export default function SkilledProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'earnings'>('profile');
   const [earningsPeriod, setEarningsPeriod] = useState<'today' | 'week' | 'month' | 'total'>('week');
+  const [showSettings, setShowSettings] = useState(false);
+  
+  // Settings state
+  const [notifications, setNotifications] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [locationSharing, setLocationSharing] = useState(true);
+  const [autoAccept, setAutoAccept] = useState(false);
 
   const fetchData = async () => {
     try {
