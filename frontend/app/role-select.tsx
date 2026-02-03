@@ -108,7 +108,7 @@ export default function RoleSelectScreen() {
 
           {/* Partner Type Selection */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>I want to be a...</Text>
+            <Text style={styles.sectionTitle}>Become a Genie</Text>
             
             {PARTNER_TYPES.map((type) => (
               <TouchableOpacity
@@ -129,25 +129,21 @@ export default function RoleSelectScreen() {
                   <Text style={styles.partnerTypeDesc}>{type.description}</Text>
                   <Text style={styles.partnerTypeSubtext}>{type.subtext}</Text>
                 </View>
-                <View style={[styles.radioOuter, partnerType === type.type && { borderColor: type.color }]}>
-                  {partnerType === type.type && (
-                    <View style={[styles.radioInner, { backgroundColor: type.color }]} />
-                  )}
+                <View style={[styles.selectedBadge, { backgroundColor: type.color }]}>
+                  <Ionicons name="checkmark" size={16} color={COLORS.white} />
                 </View>
               </TouchableOpacity>
             ))}
           </View>
 
           {/* Agent Info Card */}
-          {partnerType === 'agent' && (
-            <View style={styles.infoCard}>
-              <Ionicons name="information-circle" size={20} color={COLORS.primary} />
-              <Text style={styles.infoText}>
-                As a Genie, you can be a <Text style={styles.infoBold}>Carpet Genie</Text> (deliveries, rides, errands with your vehicle) 
-                or a <Text style={styles.infoBold}>Skilled Genie</Text> (electrician, plumber, painter, etc.)
-              </Text>
-            </View>
-          )}
+          <View style={styles.infoCard}>
+            <Ionicons name="information-circle" size={20} color={COLORS.primary} />
+            <Text style={styles.infoText}>
+              As a Genie, you can be a <Text style={styles.infoBold}>Mobile Genie</Text> (deliveries, rides, errands with your vehicle) 
+              or a <Text style={styles.infoBold}>Skilled Genie</Text> (electrician, plumber, painter, etc.)
+            </Text>
+          </View>
 
           {/* Error Message */}
           {error ? (
