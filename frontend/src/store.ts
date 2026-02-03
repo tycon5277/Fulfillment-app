@@ -135,9 +135,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setIsUserLoaded: (loaded) => set({ isUserLoaded: loaded }),
   setStats: (stats) => set({ stats }),
   setIsOnline: async (online) => {
-    // Persist online state to AsyncStorage
+    // Persist online state and activity time to AsyncStorage
     try {
       await AsyncStorage.setItem('is_online', JSON.stringify(online));
+      // Save last activity time when going online
+      if (online) {
+        await AsyncStorage.setItem('last_activity_time', Date.now().toString());
+      }
     } catch (error) {
       console.error('Error saving online state:', error);
     }
@@ -152,9 +156,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setLocationPermissionGranted: (granted) => set({ locationPermissionGranted: granted }),
   setIsTrackingLocation: (tracking) => set({ isTrackingLocation: tracking }),
   
+  // Update last activity time (call this periodically when app is active)
+  updateLastActivity: async () => {
+    try {
+      await AsyncStorage.setItem('last_activity_time', Date.now().toString());
+    } catch (error) {
+      console.error('Error updating last activity:', error);
+    }
+  },
+  
   logout: async () => {
     await AsyncStorage.removeItem('session_token');
     await AsyncStorage.removeItem('is_online');
+    await AsyncStorage.removeItem('last_activity_time');
     set({ 
       user: null, 
       sessionToken: null, 
