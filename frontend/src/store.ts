@@ -104,6 +104,9 @@ interface AuthState {
   setLocationPermissionGranted: (granted: boolean) => void;
   setIsTrackingLocation: (tracking: boolean) => void;
   
+  // Activity tracking
+  updateLastActivity: () => Promise<void>;
+  
   logout: () => void;
   loadStoredAuth: () => Promise<void>;
 }
