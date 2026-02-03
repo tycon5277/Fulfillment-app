@@ -163,6 +163,79 @@ export default function AppointmentsScreen() {
     }
   };
 
+  const openAppointmentDetails = (apt: Appointment) => {
+    setSelectedAppointment(apt);
+    setShowDetailModal(true);
+  };
+
+  const handleCall = () => {
+    // In a real app, this would use the customer's actual phone number
+    Linking.openURL('tel:+919876543210');
+  };
+
+  const handleChat = () => {
+    if (selectedAppointment) {
+      setShowDetailModal(false);
+      // Navigate to chat with the customer
+      router.push({
+        pathname: '/chat/[roomId]',
+        params: { 
+          roomId: `room_${selectedAppointment.appointment_id}`,
+          wishTitle: selectedAppointment.service_title,
+          customerName: selectedAppointment.customer_name,
+        }
+      });
+    }
+  };
+
+  const handleStartJob = async () => {
+    if (!selectedAppointment) return;
+    Alert.alert(
+      'Start Job',
+      `Are you ready to start "${selectedAppointment.service_title}"?`,
+      [
+        { text: 'Not Yet', style: 'cancel' },
+        { 
+          text: 'Yes, Start!', 
+          onPress: async () => {
+            // Update appointment status
+            const updatedAppointments = appointments.map(apt => 
+              apt.appointment_id === selectedAppointment.appointment_id 
+                ? { ...apt, status: 'in_progress' }
+                : apt
+            );
+            setAppointments(updatedAppointments);
+            setSelectedAppointment({ ...selectedAppointment, status: 'in_progress' });
+          }
+        }
+      ]
+    );
+  };
+
+  const handleCompleteJob = async () => {
+    if (!selectedAppointment) return;
+    Alert.alert(
+      'Complete Job',
+      `Have you finished "${selectedAppointment.service_title}"?`,
+      [
+        { text: 'Not Yet', style: 'cancel' },
+        { 
+          text: 'Yes, Done! 🎉', 
+          onPress: async () => {
+            // Update appointment status
+            const updatedAppointments = appointments.map(apt => 
+              apt.appointment_id === selectedAppointment.appointment_id 
+                ? { ...apt, status: 'completed' }
+                : apt
+            );
+            setAppointments(updatedAppointments);
+            setSelectedAppointment({ ...selectedAppointment, status: 'completed' });
+          }
+        }
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
