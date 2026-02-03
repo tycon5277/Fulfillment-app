@@ -134,7 +134,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setIsLoading: (loading) => set({ isLoading: loading }),
   setIsUserLoaded: (loaded) => set({ isUserLoaded: loaded }),
   setStats: (stats) => set({ stats }),
-  setIsOnline: (online) => set({ isOnline: online }),
+  setIsOnline: async (online) => {
+    // Persist online state to AsyncStorage
+    try {
+      await AsyncStorage.setItem('is_online', JSON.stringify(online));
+    } catch (error) {
+      console.error('Error saving online state:', error);
+    }
+    set({ isOnline: online });
+  },
   setActiveWork: (work) => set({ activeWork: work }),
   addActiveWork: (work) => set((state) => ({ activeWork: [...state.activeWork, work] })),
   removeActiveWork: (id) => set((state) => ({ activeWork: state.activeWork.filter(w => w.id !== id) })),
@@ -146,6 +154,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   
   logout: async () => {
     await AsyncStorage.removeItem('session_token');
+    await AsyncStorage.removeItem('is_online');
     set({ 
       user: null, 
       sessionToken: null, 
@@ -161,8 +170,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loadStoredAuth: async () => {
     try {
       const token = await AsyncStorage.getItem('session_token');
+      const onlineState = await AsyncStorage.getItem('is_online');
+      
       if (token) {
         set({ sessionToken: token });
+      }
+      
+      // Restore online state if saved
+      if (onlineState !== null) {
+        set({ isOnline: JSON.parse(onlineState) });
       }
     } catch (error) {
       console.error('Error loading stored auth:', error);
