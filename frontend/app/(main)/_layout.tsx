@@ -90,7 +90,7 @@ const WishesButton = ({ focused }: { focused: boolean }) => {
 };
 
 export default function MainLayout() {
-  const { user, isLoading, isUserLoaded } = useAuthStore();
+  const { user, isLoading, isUserLoaded, isOnline, setIsOnline } = useAuthStore();
   const insets = useSafeAreaInsets();
   
   // CRITICAL: Compute user type ONLY from the user object
