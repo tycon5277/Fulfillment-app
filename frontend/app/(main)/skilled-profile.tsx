@@ -60,8 +60,8 @@ const MOCK_EARNINGS = {
     { id: 't1', type: 'earning', amount: 800, service: 'Deep Cleaning', customer: 'Amit Kumar', date: 'Today, 2:30 PM' },
     { id: 't2', type: 'earning', amount: 1200, service: 'Kitchen Cleaning', customer: 'Priya Patel', date: 'Today, 11:00 AM' },
     { id: 't3', type: 'earning', amount: 400, service: 'Bathroom Cleaning', customer: 'Rahul Sharma', date: 'Yesterday' },
-    { id: 't4', type: 'withdrawal', amount: 5000, service: 'Bank Transfer', customer: 'HDFC Bank', date: '2 days ago' },
-    { id: 't5', type: 'earning', amount: 2500, service: 'Full House Clean', customer: 'Sunita Verma', date: '3 days ago' },
+    { id: 't4', type: 'earning', amount: 2500, service: 'Full House Clean', customer: 'Sunita Verma', date: '2 days ago' },
+    { id: 't5', type: 'earning', amount: 1800, service: 'Office Cleaning', customer: 'Tech Solutions', date: '3 days ago' },
   ],
 };
 
