@@ -331,6 +331,7 @@ export default function AppointmentsScreen() {
                   key={apt.appointment_id} 
                   style={styles.appointmentCard}
                   activeOpacity={0.7}
+                  onPress={() => openAppointmentDetails(apt)}
                 >
                   {/* Status Indicator */}
                   <View style={[styles.statusBar, { backgroundColor: status.color }]} />
