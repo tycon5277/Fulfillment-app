@@ -555,7 +555,9 @@ export default function MainLayout() {
     {showExitToast && Platform.OS === 'ios' && (
       <View style={styles.exitToastContainer}>
         <View style={styles.exitToast}>
-          <Text style={styles.exitToastText}>Press back again to exit app</Text>
+          <Text style={styles.exitToastText}>
+            {isOnline ? 'Press back again to go offline & exit' : 'Press back again to exit app'}
+          </Text>
         </View>
       </View>
     )}
