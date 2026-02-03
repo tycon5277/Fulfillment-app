@@ -840,6 +840,29 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  sectionHeader: {
+    marginBottom: 12,
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
+  infoNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary + '10',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 12,
+    gap: 8,
+  },
+  infoNoteText: {
+    fontSize: 12,
+    color: COLORS.primary,
+    flex: 1,
+  },
   transactionItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -876,5 +899,13 @@ const styles = StyleSheet.create({
   transactionAmount: {
     fontSize: 15,
     fontWeight: '700',
+  },
+  jobAmountContainer: {
+    alignItems: 'flex-end',
+  },
+  jobAmountLabel: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    marginTop: 2,
   },
 });
