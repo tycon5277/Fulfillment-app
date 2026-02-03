@@ -56,12 +56,13 @@ const MOCK_EARNINGS = {
     { name: 'Bathroom Cleaning', amount: 8500, jobs: 10, percentage: 19 },
     { name: 'Other Services', amount: 6000, jobs: 5, percentage: 13 },
   ],
-  recentTransactions: [
-    { id: 't1', type: 'earning', amount: 800, service: 'Deep Cleaning', customer: 'Amit Kumar', date: 'Today, 2:30 PM' },
-    { id: 't2', type: 'earning', amount: 1200, service: 'Kitchen Cleaning', customer: 'Priya Patel', date: 'Today, 11:00 AM' },
-    { id: 't3', type: 'earning', amount: 400, service: 'Bathroom Cleaning', customer: 'Rahul Sharma', date: 'Yesterday' },
-    { id: 't4', type: 'earning', amount: 2500, service: 'Full House Clean', customer: 'Sunita Verma', date: '2 days ago' },
-    { id: 't5', type: 'earning', amount: 1800, service: 'Office Cleaning', customer: 'Tech Solutions', date: '3 days ago' },
+  // These are completed jobs from our app - actual payment happens outside (GPay, cash, etc.)
+  completedJobs: [
+    { id: 'j1', amount: 800, service: 'Deep Cleaning', customer: 'Amit Kumar', date: 'Today, 2:30 PM', status: 'completed' },
+    { id: 'j2', amount: 1200, service: 'Kitchen Cleaning', customer: 'Priya Patel', date: 'Today, 11:00 AM', status: 'completed' },
+    { id: 'j3', amount: 400, service: 'Bathroom Cleaning', customer: 'Rahul Sharma', date: 'Yesterday', status: 'completed' },
+    { id: 'j4', amount: 2500, service: 'Full House Clean', customer: 'Sunita Verma', date: '2 days ago', status: 'completed' },
+    { id: 'j5', amount: 1800, service: 'Office Cleaning', customer: 'Tech Solutions', date: '3 days ago', status: 'completed' },
   ],
 };
 
