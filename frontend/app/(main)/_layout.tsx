@@ -167,16 +167,29 @@ export default function MainLayout() {
         const timeSinceLastPress = now - lastBackPressRef.current;
         
         if (timeSinceLastPress < 2000) {
-          // Second press within 2 seconds - exit app
-          BackHandler.exitApp();
+          // Second press within 2 seconds - set offline and exit app
+          if (isOnline) {
+            setIsOnline(false); // Set user offline before exiting
+          }
+          
+          // Small delay to ensure offline status is saved
+          setTimeout(() => {
+            BackHandler.exitApp();
+          }, 100);
+          
           return true;
         } else {
-          // First press - show warning
+          // First press - show warning with offline info
           lastBackPressRef.current = now;
+          
+          // Message includes offline status info if currently online
+          const exitMessage = isOnline 
+            ? 'Press back again to go offline & exit' 
+            : 'Press back again to exit app';
           
           // Show toast on Android, Alert on iOS
           if (Platform.OS === 'android') {
-            ToastAndroid.show('Press back again to exit app', ToastAndroid.SHORT);
+            ToastAndroid.show(exitMessage, ToastAndroid.SHORT);
           } else {
             // For iOS, show a brief visual indicator
             setShowExitToast(true);
