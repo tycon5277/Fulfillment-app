@@ -10,10 +10,13 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Modal,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../src/store';
 import * as api from '../../src/api';
 
