@@ -115,6 +115,10 @@ export default function MainLayout() {
 
   const router = useRouter();
   const pathname = usePathname();
+  
+  // Track back button presses for "press twice to exit" feature
+  const lastBackPressRef = useRef<number>(0);
+  const [showExitToast, setShowExitToast] = useState(false);
 
   // Handle hardware back button to prevent blank screen
   useEffect(() => {
@@ -130,9 +134,35 @@ export default function MainLayout() {
         '/home',
       ];
       
-      // If already on home, let the default back behavior happen (exit app)
-      if (homeRoutes.some(route => currentPath.includes(route.replace('/(main)', '')))) {
-        return false; // Let system handle it (exit app)
+      // Check if we're on the home screen
+      const isOnHomeScreen = homeRoutes.some(route => 
+        currentPath.includes(route.replace('/(main)', ''))
+      );
+      
+      if (isOnHomeScreen) {
+        // Implement "press back twice to exit"
+        const now = Date.now();
+        const timeSinceLastPress = now - lastBackPressRef.current;
+        
+        if (timeSinceLastPress < 2000) {
+          // Second press within 2 seconds - exit app
+          BackHandler.exitApp();
+          return true;
+        } else {
+          // First press - show warning
+          lastBackPressRef.current = now;
+          
+          // Show toast on Android, Alert on iOS
+          if (Platform.OS === 'android') {
+            ToastAndroid.show('Press back again to exit app', ToastAndroid.SHORT);
+          } else {
+            // For iOS, show a brief visual indicator
+            setShowExitToast(true);
+            setTimeout(() => setShowExitToast(false), 2000);
+          }
+          
+          return true; // Prevent default (don't exit yet)
+        }
       }
       
       // If on any other tab, navigate to the appropriate home
