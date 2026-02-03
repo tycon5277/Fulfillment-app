@@ -387,6 +387,182 @@ export default function AppointmentsScreen() {
         {/* Bottom Padding */}
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Appointment Detail Modal */}
+      <Modal visible={showDetailModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.detailModal}>
+            {selectedAppointment && (
+              <>
+                {/* Modal Header */}
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Job Details</Text>
+                  <TouchableOpacity 
+                    onPress={() => setShowDetailModal(false)} 
+                    style={styles.closeButton}
+                  >
+                    <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  {/* Status Banner */}
+                  {(() => {
+                    const status = getStatusStyle(selectedAppointment.status);
+                    return (
+                      <View style={[styles.statusBanner, { backgroundColor: status.bg }]}>
+                        <Ionicons name={status.icon} size={20} color={status.color} />
+                        <Text style={[styles.statusBannerText, { color: status.color }]}>
+                          {selectedAppointment.status === 'upcoming' && '📅 Upcoming Appointment'}
+                          {selectedAppointment.status === 'in_progress' && '🚀 Job In Progress'}
+                          {selectedAppointment.status === 'completed' && '✅ Completed'}
+                        </Text>
+                      </View>
+                    );
+                  })()}
+
+                  {/* Service Info */}
+                  <View style={styles.detailSection}>
+                    <Text style={styles.detailLabel}>Service</Text>
+                    <Text style={styles.detailServiceTitle}>{selectedAppointment.service_title}</Text>
+                  </View>
+
+                  {/* Customer Info */}
+                  <View style={styles.detailSection}>
+                    <Text style={styles.detailLabel}>Customer</Text>
+                    <View style={styles.customerCard}>
+                      <LinearGradient
+                        colors={[COLORS.primary, COLORS.primaryLight]}
+                        style={styles.customerAvatar}
+                      >
+                        <Text style={styles.customerAvatarText}>
+                          {selectedAppointment.customer_name.charAt(0)}
+                        </Text>
+                      </LinearGradient>
+                      <View style={styles.customerInfo}>
+                        <Text style={styles.customerName}>{selectedAppointment.customer_name}</Text>
+                        <Text style={styles.customerRating}>⭐ 4.8 rating</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Date & Time */}
+                  <View style={styles.detailSection}>
+                    <Text style={styles.detailLabel}>Schedule</Text>
+                    <View style={styles.scheduleRow}>
+                      <View style={styles.scheduleItem}>
+                        <Ionicons name="calendar" size={20} color={COLORS.primary} />
+                        <Text style={styles.scheduleText}>{selectedAppointment.scheduled_date}</Text>
+                      </View>
+                      {selectedAppointment.scheduled_time && (
+                        <View style={styles.scheduleItem}>
+                          <Ionicons name="time" size={20} color={COLORS.warning} />
+                          <Text style={styles.scheduleText}>{selectedAppointment.scheduled_time}</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Location */}
+                  <View style={styles.detailSection}>
+                    <Text style={styles.detailLabel}>Location</Text>
+                    <View style={styles.locationCard}>
+                      <Ionicons name="location" size={20} color={COLORS.error} />
+                      <Text style={styles.locationText}>{selectedAppointment.location}</Text>
+                    </View>
+                  </View>
+
+                  {/* Earnings */}
+                  <View style={styles.detailSection}>
+                    <Text style={styles.detailLabel}>Earnings</Text>
+                    <View style={styles.earningsCard}>
+                      <Text style={styles.earningsAmount}>₹{selectedAppointment.price}</Text>
+                      <Text style={styles.earningsNote}>
+                        {selectedAppointment.status === 'completed' ? 'Earned' : 'Expected'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Notes */}
+                  {selectedAppointment.notes && (
+                    <View style={styles.detailSection}>
+                      <Text style={styles.detailLabel}>Notes</Text>
+                      <View style={styles.notesCard}>
+                        <Text style={styles.notesText}>{selectedAppointment.notes}</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Action Buttons */}
+                  <View style={styles.actionButtonsContainer}>
+                    {/* Quick Actions */}
+                    <View style={styles.quickActionsRow}>
+                      <TouchableOpacity style={styles.quickActionBtn} onPress={handleCall}>
+                        <View style={[styles.quickActionIcon, { backgroundColor: COLORS.success + '15' }]}>
+                          <Ionicons name="call" size={20} color={COLORS.success} />
+                        </View>
+                        <Text style={styles.quickActionText}>Call</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity style={styles.quickActionBtn} onPress={handleChat}>
+                        <View style={[styles.quickActionIcon, { backgroundColor: COLORS.primary + '15' }]}>
+                          <Ionicons name="chatbubble" size={20} color={COLORS.primary} />
+                        </View>
+                        <Text style={styles.quickActionText}>Chat</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity 
+                        style={styles.quickActionBtn}
+                        onPress={() => {
+                          const loc = selectedAppointment.location;
+                          Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(loc)}`);
+                        }}
+                      >
+                        <View style={[styles.quickActionIcon, { backgroundColor: COLORS.error + '15' }]}>
+                          <Ionicons name="navigate" size={20} color={COLORS.error} />
+                        </View>
+                        <Text style={styles.quickActionText}>Navigate</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Primary Action */}
+                    {selectedAppointment.status === 'upcoming' && (
+                      <TouchableOpacity style={styles.primaryActionBtn} onPress={handleStartJob}>
+                        <LinearGradient
+                          colors={[COLORS.success, '#34D399']}
+                          style={styles.primaryActionGradient}
+                        >
+                          <Ionicons name="play-circle" size={22} color="#FFF" />
+                          <Text style={styles.primaryActionText}>Start Job</Text>
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    )}
+
+                    {selectedAppointment.status === 'in_progress' && (
+                      <TouchableOpacity style={styles.primaryActionBtn} onPress={handleCompleteJob}>
+                        <LinearGradient
+                          colors={[COLORS.warning, '#FBBF24']}
+                          style={styles.primaryActionGradient}
+                        >
+                          <Ionicons name="checkmark-done-circle" size={22} color="#FFF" />
+                          <Text style={styles.primaryActionText}>Complete Job</Text>
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    )}
+
+                    {selectedAppointment.status === 'completed' && (
+                      <View style={styles.completedBanner}>
+                        <Text style={styles.completedEmoji}>🎉</Text>
+                        <Text style={styles.completedText}>Great job! You earned ₹{selectedAppointment.price}</Text>
+                      </View>
+                    )}
+                  </View>
+                </ScrollView>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
