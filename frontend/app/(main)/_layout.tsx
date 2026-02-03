@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import { Tabs } from 'expo-router';
+import React, { useEffect, useRef, useCallback } from 'react';
+import { Tabs, useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, View, Platform, Animated, Text } from 'react-native';
+import { StyleSheet, View, Platform, Animated, Text, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../src/store';
