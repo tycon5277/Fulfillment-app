@@ -46,7 +46,7 @@ export default function RoleSelectScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   
-  const [partnerType, setPartnerType] = useState<PartnerType>(null);
+  const [partnerType, setPartnerType] = useState<PartnerType>('agent'); // Auto-select Genie
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
