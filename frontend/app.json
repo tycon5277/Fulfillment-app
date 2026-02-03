@@ -48,6 +48,13 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow QuickWish Agent to use your location for delivery tracking"
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#10B981"
+        }
       ]
     ],
     "experiments": {
