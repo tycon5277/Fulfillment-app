@@ -29,7 +29,7 @@ const COLORS = {
   pink: '#EC4899',
 };
 
-type PartnerType = 'agent' | 'vendor' | 'promoter' | null;
+type PartnerType = 'agent' | null;
 
 const PARTNER_TYPES = [
   {
@@ -39,22 +39,6 @@ const PARTNER_TYPES = [
     color: COLORS.primary,
     description: 'Fulfill wishes & earn money',
     subtext: 'Mobile services or skilled work',
-  },
-  {
-    type: 'vendor' as PartnerType,
-    title: 'Vendor',
-    icon: 'storefront' as const,
-    color: COLORS.secondary,
-    description: 'Bring your shop online',
-    subtext: 'Sell products locally',
-  },
-  {
-    type: 'promoter' as PartnerType,
-    title: 'Promoter',
-    icon: 'megaphone' as const,
-    color: COLORS.amber,
-    description: 'Organize trips & events',
-    subtext: 'Sell tickets & bookings',
   },
 ];
 
