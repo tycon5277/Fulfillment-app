@@ -60,6 +60,8 @@ export default function AppointmentsScreen() {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Fetch appointments from backend
   const fetchAppointments = async () => {
