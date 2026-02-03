@@ -267,6 +267,15 @@ export default function MainLayout() {
 
   return (
     <>
+    {/* Online Status Bar - Shows when user is online */}
+    {isOnline && (
+      <View style={styles.onlineStatusBar}>
+        <View style={styles.onlineStatusDot} />
+        <Text style={styles.onlineStatusText}>You are Online</Text>
+        <Text style={styles.onlineStatusSubtext}>Visible to customers</Text>
+      </View>
+    )}
+    
     <Tabs
       initialRouteName={initialRoute}
       screenOptions={{
