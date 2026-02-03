@@ -514,6 +514,16 @@ export default function MainLayout() {
         }}
       />
     </Tabs>
+
+    {/* Exit Toast for iOS */}
+    {showExitToast && Platform.OS === 'ios' && (
+      <View style={styles.exitToastContainer}>
+        <View style={styles.exitToast}>
+          <Text style={styles.exitToastText}>Press back again to exit app</Text>
+        </View>
+      </View>
+    )}
+    </>
   );
 }
 
