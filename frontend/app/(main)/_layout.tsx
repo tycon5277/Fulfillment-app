@@ -113,6 +113,41 @@ export default function MainLayout() {
     skills: user?.agent_skills?.length || 0
   });
 
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Handle hardware back button to prevent blank screen
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Get the current tab/route
+      const currentPath = pathname;
+      
+      // Define home routes for different user types
+      const homeRoutes = [
+        '/(main)/skilled-home',
+        '/(main)/home',
+        '/skilled-home',
+        '/home',
+      ];
+      
+      // If already on home, let the default back behavior happen (exit app)
+      if (homeRoutes.some(route => currentPath.includes(route.replace('/(main)', '')))) {
+        return false; // Let system handle it (exit app)
+      }
+      
+      // If on any other tab, navigate to the appropriate home
+      if (isSkilledGenie) {
+        router.replace('/(main)/skilled-home');
+      } else {
+        router.replace('/(main)/home');
+      }
+      
+      return true; // Prevent default back behavior
+    });
+
+    return () => backHandler.remove();
+  }, [pathname, isSkilledGenie, router]);
+
   // Show loading screen until user data is FULLY loaded from server
   // AND the user has valid partner info (to prevent tab glitch)
   // This is a more robust check - wait for full user data including type
