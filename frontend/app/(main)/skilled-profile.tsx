@@ -402,7 +402,7 @@ export default function SkilledProfileScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>👤 My Profile</Text>
-        <TouchableOpacity style={styles.settingsBtn}>
+        <TouchableOpacity style={styles.settingsBtn} onPress={() => setShowSettings(true)}>
           <Ionicons name="settings-outline" size={24} color={COLORS.text} />
         </TouchableOpacity>
       </View>
