@@ -461,93 +461,17 @@ export default function SkilledProfileScreen() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Notifications Section */}
-              <View style={styles.settingsSection}>
-                <Text style={styles.sectionLabel}>NOTIFICATIONS</Text>
-                
-                <View style={styles.settingItem}>
-                  <View style={styles.settingInfo}>
-                    <View style={[styles.settingIcon, { backgroundColor: COLORS.primary + '15' }]}>
-                      <Ionicons name="notifications" size={18} color={COLORS.primary} />
-                    </View>
-                    <View>
-                      <Text style={styles.settingName}>Push Notifications</Text>
-                      <Text style={styles.settingDesc}>Receive job alerts & updates</Text>
-                    </View>
-                  </View>
-                  <Switch
-                    value={notifications}
-                    onValueChange={setNotifications}
-                    trackColor={{ false: '#E5E7EB', true: COLORS.primary + '50' }}
-                    thumbColor={notifications ? COLORS.primary : '#9CA3AF'}
-                  />
-                </View>
-
-                <View style={styles.settingItem}>
-                  <View style={styles.settingInfo}>
-                    <View style={[styles.settingIcon, { backgroundColor: COLORS.secondary + '15' }]}>
-                      <Ionicons name="volume-high" size={18} color={COLORS.secondary} />
-                    </View>
-                    <View>
-                      <Text style={styles.settingName}>Sound & Vibration</Text>
-                      <Text style={styles.settingDesc}>Alert sounds for new jobs</Text>
-                    </View>
-                  </View>
-                  <Switch
-                    value={soundEnabled}
-                    onValueChange={setSoundEnabled}
-                    trackColor={{ false: '#E5E7EB', true: COLORS.secondary + '50' }}
-                    thumbColor={soundEnabled ? COLORS.secondary : '#9CA3AF'}
-                  />
-                </View>
-              </View>
-
-              {/* Privacy Section */}
-              <View style={styles.settingsSection}>
-                <Text style={styles.sectionLabel}>PRIVACY & LOCATION</Text>
-                
-                <View style={styles.settingItem}>
-                  <View style={styles.settingInfo}>
-                    <View style={[styles.settingIcon, { backgroundColor: COLORS.success + '15' }]}>
-                      <Ionicons name="location" size={18} color={COLORS.success} />
-                    </View>
-                    <View>
-                      <Text style={styles.settingName}>Location Sharing</Text>
-                      <Text style={styles.settingDesc}>Share location when online</Text>
-                    </View>
-                  </View>
-                  <Switch
-                    value={locationSharing}
-                    onValueChange={setLocationSharing}
-                    trackColor={{ false: '#E5E7EB', true: COLORS.success + '50' }}
-                    thumbColor={locationSharing ? COLORS.success : '#9CA3AF'}
-                  />
-                </View>
-
-                <View style={styles.settingItem}>
-                  <View style={styles.settingInfo}>
-                    <View style={[styles.settingIcon, { backgroundColor: COLORS.warning + '15' }]}>
-                      <Ionicons name="flash" size={18} color={COLORS.warning} />
-                    </View>
-                    <View>
-                      <Text style={styles.settingName}>Auto-Accept Jobs</Text>
-                      <Text style={styles.settingDesc}>Automatically accept nearby jobs</Text>
-                    </View>
-                  </View>
-                  <Switch
-                    value={autoAccept}
-                    onValueChange={setAutoAccept}
-                    trackColor={{ false: '#E5E7EB', true: COLORS.warning + '50' }}
-                    thumbColor={autoAccept ? COLORS.warning : '#9CA3AF'}
-                  />
-                </View>
-              </View>
-
               {/* Account Section */}
               <View style={styles.settingsSection}>
                 <Text style={styles.sectionLabel}>ACCOUNT</Text>
                 
-                <TouchableOpacity style={styles.settingItemNav}>
+                <TouchableOpacity 
+                  style={styles.settingItemNav}
+                  onPress={() => {
+                    setShowSettings(false);
+                    router.push('/edit-profile');
+                  }}
+                >
                   <View style={styles.settingInfo}>
                     <View style={[styles.settingIcon, { backgroundColor: '#8B5CF6' + '15' }]}>
                       <Ionicons name="person" size={18} color="#8B5CF6" />
@@ -560,7 +484,13 @@ export default function SkilledProfileScreen() {
                   <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.settingItemNav}>
+                <TouchableOpacity 
+                  style={styles.settingItemNav}
+                  onPress={() => {
+                    setShowSettings(false);
+                    router.push('/documents');
+                  }}
+                >
                   <View style={styles.settingInfo}>
                     <View style={[styles.settingIcon, { backgroundColor: '#3B82F6' + '15' }]}>
                       <Ionicons name="document-text" size={18} color="#3B82F6" />
@@ -572,6 +502,11 @@ export default function SkilledProfileScreen() {
                   </View>
                   <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
                 </TouchableOpacity>
+              </View>
+
+              {/* Support Section */}
+              <View style={styles.settingsSection}>
+                <Text style={styles.sectionLabel}>SUPPORT</Text>
 
                 <TouchableOpacity style={styles.settingItemNav}>
                   <View style={styles.settingInfo}>
