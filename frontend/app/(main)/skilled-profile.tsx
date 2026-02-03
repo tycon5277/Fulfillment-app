@@ -350,32 +350,37 @@ export default function SkilledProfileScreen() {
         ))}
       </View>
 
-      {/* Recent Transactions */}
+      {/* Completed Jobs (Earnings tracked from app) */}
       <View style={styles.transactionsSection}>
-        <Text style={styles.sectionTitle}>Recent Transactions</Text>
-        {MOCK_EARNINGS.recentTransactions.map((transaction) => (
-          <View key={transaction.id} style={styles.transactionItem}>
-            <View style={[
-              styles.transactionIcon,
-              { backgroundColor: transaction.type === 'earning' ? COLORS.success + '15' : COLORS.error + '15' }
-            ]}>
-              <Ionicons
-                name={transaction.type === 'earning' ? 'arrow-down' : 'arrow-up'}
-                size={18}
-                color={transaction.type === 'earning' ? COLORS.success : COLORS.error}
-              />
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Completed Jobs</Text>
+          <Text style={styles.sectionSubtitle}>Earnings from jobs done via QuickWish</Text>
+        </View>
+        
+        {/* Info Note */}
+        <View style={styles.infoNote}>
+          <Ionicons name="information-circle" size={16} color={COLORS.primary} />
+          <Text style={styles.infoNoteText}>
+            Payment collected directly from customer (Cash/UPI/etc.)
+          </Text>
+        </View>
+
+        {MOCK_EARNINGS.completedJobs.map((job) => (
+          <View key={job.id} style={styles.transactionItem}>
+            <View style={[styles.transactionIcon, { backgroundColor: COLORS.success + '15' }]}>
+              <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
             </View>
             <View style={styles.transactionInfo}>
-              <Text style={styles.transactionService}>{transaction.service}</Text>
-              <Text style={styles.transactionCustomer}>{transaction.customer}</Text>
-              <Text style={styles.transactionDate}>{transaction.date}</Text>
+              <Text style={styles.transactionService}>{job.service}</Text>
+              <Text style={styles.transactionCustomer}>{job.customer}</Text>
+              <Text style={styles.transactionDate}>{job.date}</Text>
             </View>
-            <Text style={[
-              styles.transactionAmount,
-              { color: transaction.type === 'earning' ? COLORS.success : COLORS.error }
-            ]}>
-              {transaction.type === 'earning' ? '+' : '-'}₹{transaction.amount.toLocaleString()}
-            </Text>
+            <View style={styles.jobAmountContainer}>
+              <Text style={[styles.transactionAmount, { color: COLORS.success }]}>
+                ₹{job.amount.toLocaleString()}
+              </Text>
+              <Text style={styles.jobAmountLabel}>earned</Text>
+            </View>
           </View>
         ))}
       </View>
