@@ -94,6 +94,9 @@ export default function MainLayout() {
   const { user, isLoading, isUserLoaded, isOnline, setIsOnline } = useAuthStore();
   const insets = useSafeAreaInsets();
   
+  // Initialize app state manager for background/foreground handling and notifications
+  useAppStateManager();
+  
   // CRITICAL: Compute user type ONLY from the user object
   // These values determine which tabs to show
   const partnerType = user?.partner_type;
