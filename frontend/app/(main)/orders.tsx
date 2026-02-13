@@ -504,7 +504,7 @@ export default function OrdersScreen() {
       <View style={styles.statsRow}>
         <View style={styles.statCard}>
           <Text style={styles.statEmoji}>📦</Text>
-          <Text style={styles.statValue}>{stats.total}</Text>
+          <Text style={styles.statValue}>{stats.total + externalOrders.length}</Text>
           <Text style={styles.statLabel}>Available</Text>
         </View>
         <View style={styles.statCard}>
@@ -525,6 +525,82 @@ export default function OrdersScreen() {
           </View>
         </TouchableOpacity>
       </View>
+
+      {/* Active Delivery Banner */}
+      {hasActiveDelivery && (
+        <TouchableOpacity 
+          style={styles.activeDeliveryBanner}
+          onPress={() => router.push('/(main)/active-delivery')}
+        >
+          <View style={styles.activeDeliveryIcon}>
+            <Ionicons name="bicycle" size={24} color="#FFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.activeDeliveryTitle}>Active Delivery</Text>
+            <Text style={styles.activeDeliverySubtitle}>Tap to view details</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color="#FFF" />
+        </TouchableOpacity>
+      )}
+
+      {/* External Orders Section (from Order Lifecycle API) */}
+      {externalOrders.length > 0 && (
+        <View style={styles.externalOrdersSection}>
+          <Text style={styles.sectionTitle}>🔥 Live Delivery Orders</Text>
+          {externalOrders.map((extOrder) => (
+            <View key={extOrder.order_id} style={styles.externalOrderCard}>
+              <View style={styles.externalOrderHeader}>
+                <View style={styles.externalOrderVendor}>
+                  <View style={styles.vendorIconBg}>
+                    <Ionicons name="storefront" size={18} color={THEME.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.externalVendorName} numberOfLines={1}>{extOrder.vendor_name}</Text>
+                    <Text style={styles.externalItemsCount}>{extOrder.items_count} items</Text>
+                  </View>
+                </View>
+                <View style={styles.externalEarningsBox}>
+                  <Text style={styles.externalEarningsLabel}>Earn</Text>
+                  <Text style={styles.externalEarningsValue}>₹{extOrder.delivery_fee.toFixed(0)}</Text>
+                </View>
+              </View>
+              
+              <View style={styles.externalAddresses}>
+                <View style={styles.externalAddressRow}>
+                  <View style={[styles.addressDot, { backgroundColor: THEME.accent2 }]} />
+                  <Text style={styles.externalAddressText} numberOfLines={1}>{extOrder.vendor_address}</Text>
+                </View>
+                <View style={styles.addressConnector} />
+                <View style={styles.externalAddressRow}>
+                  <View style={[styles.addressDot, { backgroundColor: THEME.success }]} />
+                  <Text style={styles.externalAddressText} numberOfLines={1}>{extOrder.customer_address}</Text>
+                </View>
+              </View>
+              
+              <View style={styles.externalOrderFooter}>
+                <View style={styles.externalDistanceRow}>
+                  <Ionicons name="navigate" size={14} color={THEME.textMuted} />
+                  <Text style={styles.externalDistanceText}>{extOrder.distance_to_vendor_km.toFixed(1)} km to pickup</Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.externalAcceptBtn, accepting === extOrder.order_id && styles.acceptButtonDisabled]}
+                  onPress={() => handleAcceptExternalOrder(extOrder.order_id)}
+                  disabled={accepting === extOrder.order_id}
+                >
+                  {accepting === extOrder.order_id ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <>
+                      <Text style={styles.externalAcceptBtnText}>Accept</Text>
+                      <Ionicons name="arrow-forward" size={14} color="#FFF" />
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Orders List - Only show when online */}
       {!isOnline ? (
