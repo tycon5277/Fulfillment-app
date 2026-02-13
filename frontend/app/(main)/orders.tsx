@@ -229,9 +229,13 @@ export default function OrdersScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchOrders();
+    await Promise.all([
+      fetchOrders(),
+      fetchExternalOrders(),
+      checkActiveDelivery(),
+    ]);
     setRefreshing(false);
-  }, []);
+  }, [fetchExternalOrders, checkActiveDelivery]);
 
   const toggleExpand = (orderId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
