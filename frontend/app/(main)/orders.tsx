@@ -121,12 +121,66 @@ export default function OrdersScreen() {
             latitude: loc.coords.latitude,
             longitude: loc.coords.longitude,
           });
+          // Also update store
+          setCurrentLocation({
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude,
+            accuracy: loc.coords.accuracy || undefined,
+            timestamp: loc.timestamp,
+          });
         }
       } catch (error) {
         console.log('Location error, using mock');
       }
     })();
+  }, [setCurrentLocation]);
+
+  // Fetch external orders from Order Lifecycle API
+  const fetchExternalOrders = useCallback(async () => {
+    if (!isOnline) return;
+    
+    try {
+      const lat = currentLocation?.latitude || myLocation.latitude;
+      const lng = currentLocation?.longitude || myLocation.longitude;
+      
+      const response = await genieAPI.getAvailableOrders(lat, lng);
+      setExternalOrders(response.data.available_orders || []);
+      console.log('📦 External orders:', response.data.count);
+    } catch (error: any) {
+      console.log('External API not available or not authenticated');
+      // Silently fail - external API might not be configured
+    }
+  }, [isOnline, currentLocation, myLocation]);
+
+  // Check for active delivery
+  const checkActiveDelivery = useCallback(async () => {
+    try {
+      const response = await genieAPI.getCurrentOrder();
+      setHasActiveDelivery(response.data.has_active_order);
+    } catch (error) {
+      setHasActiveDelivery(false);
+    }
   }, []);
+
+  // Accept external order
+  const handleAcceptExternalOrder = async (orderId: string) => {
+    setAccepting(orderId);
+    try {
+      await genieAPI.acceptOrder(orderId, 10, 20);
+      Alert.alert(
+        'Order Accepted! 🎉',
+        'Head to Active Delivery to see pickup details.',
+        [{ text: 'View Delivery', onPress: () => router.push('/(main)/active-delivery') }]
+      );
+      fetchExternalOrders();
+      checkActiveDelivery();
+    } catch (error: any) {
+      const message = error?.response?.data?.detail || 'Failed to accept order. It may have been taken.';
+      Alert.alert('Unable to Accept', message);
+    } finally {
+      setAccepting(null);
+    }
+  };
 
   const fetchOrders = async () => {
     try {
