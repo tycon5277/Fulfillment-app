@@ -1793,6 +1793,114 @@ export default function NearbyWishesScreen() {
     );
   };
 
+  // Render delivery order card (from external API)
+  const renderDeliveryOrderCard = (order: AvailableOrder) => {
+    const isAccepting = acceptingOrderId === order.order_id;
+    
+    return (
+      <View key={order.order_id} style={styles.orderCard}>
+        {/* Header with vendor info */}
+        <View style={styles.orderHeader}>
+          <View style={styles.orderVendorInfo}>
+            <View style={styles.orderIconContainer}>
+              <Ionicons name="storefront" size={20} color={COLORS.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.orderVendorName} numberOfLines={1}>{order.vendor_name}</Text>
+              <Text style={styles.orderItemsCount}>{order.items_count} item{order.items_count !== 1 ? 's' : ''}</Text>
+            </View>
+          </View>
+          <View style={styles.orderEarningsBox}>
+            <Text style={styles.orderEarningsLabel}>Earn</Text>
+            <Text style={styles.orderEarningsValue}>₹{order.delivery_fee.toFixed(0)}</Text>
+          </View>
+        </View>
+
+        {/* Addresses */}
+        <View style={styles.orderAddresses}>
+          <View style={styles.orderAddressRow}>
+            <View style={[styles.orderDot, { backgroundColor: COLORS.success }]} />
+            <Text style={styles.orderAddressText} numberOfLines={1}>{order.vendor_address}</Text>
+          </View>
+          <View style={styles.orderAddressConnector} />
+          <View style={styles.orderAddressRow}>
+            <View style={[styles.orderDot, { backgroundColor: COLORS.error }]} />
+            <Text style={styles.orderAddressText} numberOfLines={1}>{order.customer_address}</Text>
+          </View>
+        </View>
+
+        {/* Distance & Accept Button */}
+        <View style={styles.orderFooter}>
+          <View style={styles.orderDistance}>
+            <Ionicons name="navigate" size={16} color={COLORS.textSecondary} />
+            <Text style={styles.orderDistanceText}>{order.distance_to_vendor_km.toFixed(1)} km to pickup</Text>
+          </View>
+          <TouchableOpacity 
+            style={[styles.orderAcceptBtn, isAccepting && styles.orderAcceptBtnDisabled]}
+            onPress={() => handleAcceptOrder(order.order_id)}
+            disabled={isAccepting}
+          >
+            {isAccepting ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle" size={18} color="#FFF" />
+                <Text style={styles.orderAcceptBtnText}>Accept</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  // Render active delivery banner
+  const renderActiveDeliveryBanner = () => {
+    if (!hasActiveOrder) return null;
+    
+    return (
+      <TouchableOpacity 
+        style={styles.activeDeliveryBanner}
+        onPress={() => router.push('/(main)/active-delivery')}
+      >
+        <View style={styles.activeDeliveryIcon}>
+          <Ionicons name="bicycle" size={24} color="#FFF" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.activeDeliveryTitle}>Active Delivery</Text>
+          <Text style={styles.activeDeliverySubtitle}>Tap to view details</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={24} color="#FFF" />
+      </TouchableOpacity>
+    );
+  };
+
+  // Render delivery orders content
+  const renderDeliveryOrdersContent = () => (
+    <View style={styles.ordersContainer}>
+      {ordersLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Finding nearby orders...</Text>
+        </View>
+      ) : availableOrders.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyEmoji}>📦</Text>
+          <Text style={styles.emptyTitle}>No Available Orders</Text>
+          <Text style={styles.emptyText}>
+            No delivery orders available in your area right now. Check back soon!
+          </Text>
+          <TouchableOpacity style={styles.expandRadiusBtn} onPress={onRefresh}>
+            <Ionicons name="refresh" size={16} color={COLORS.primary} />
+            <Text style={styles.expandRadiusBtnText}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        availableOrders.map(renderDeliveryOrderCard)
+      )}
+    </View>
+  );
+
   // Render offline state (my jobs)
   const renderOfflineContent = () => (
     <View style={styles.offlineContainer}>
