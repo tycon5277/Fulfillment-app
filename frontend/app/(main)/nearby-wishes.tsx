@@ -1563,16 +1563,10 @@ export default function NearbyWishesScreen() {
     }
   };
 
-  const onRefresh = useCallback(async () => {
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
-    try {
-      await Promise.all([fetchAvailableOrders(), checkActiveOrder()]);
-    } catch (error) {
-      console.error('Refresh error:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  }, [fetchAvailableOrders, checkActiveOrder]);
+    setTimeout(() => setRefreshing(false), 1500);
+  }, []);
 
   const handleExpandRadius = useCallback(() => {
     setRadius(10);
