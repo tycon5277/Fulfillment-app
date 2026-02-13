@@ -562,6 +562,12 @@ export default function MainLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="active-delivery"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
 
     {/* Exit Toast for iOS */}
