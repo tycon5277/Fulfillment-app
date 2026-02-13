@@ -1432,16 +1432,127 @@ const ALL_WISHES = [
 
 export default function NearbyWishesScreen() {
   const router = useRouter();
-  const { user, isOnline } = useAuthStore();
+  const { user, isOnline, currentLocation, setCurrentLocation } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
   const [radius, setRadius] = useState(5);
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [viewMode, setViewMode] = useState<'orders' | 'wishes'>('orders'); // Default to delivery orders
   const [sortBy, setSortBy] = useState<'distance' | 'budget' | 'time'>('distance');
   const [jobFilter, setJobFilter] = useState<'all' | 'in_progress' | 'completed'>('all');
   
   // Selected wish for details modal
   const [selectedWish, setSelectedWish] = useState<typeof ALL_WISHES[0] | null>(null);
   const [isAccepting, setIsAccepting] = useState(false);
+
+  // ============= DELIVERY ORDERS STATE =============
+  const [availableOrders, setAvailableOrders] = useState<AvailableOrder[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [acceptingOrderId, setAcceptingOrderId] = useState<string | null>(null);
+  const [hasActiveOrder, setHasActiveOrder] = useState(false);
+  
+  // Polling interval ref
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Fetch available orders from external API
+  const fetchAvailableOrders = useCallback(async () => {
+    if (!isOnline) return;
+    
+    try {
+      // Get current location
+      let lat = currentLocation?.latitude || 28.4595; // Default to Gurgaon
+      let lng = currentLocation?.longitude || 77.0266;
+      
+      // Try to get fresh location
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+          lat = location.coords.latitude;
+          lng = location.coords.longitude;
+          setCurrentLocation({
+            latitude: lat,
+            longitude: lng,
+            accuracy: location.coords.accuracy || undefined,
+            timestamp: location.timestamp,
+          });
+        }
+      } catch (locError) {
+        console.log('Using default/cached location');
+      }
+      
+      const response = await genieAPI.getAvailableOrders(lat, lng);
+      setAvailableOrders(response.data.available_orders || []);
+      console.log('📦 Fetched', response.data.count, 'available orders');
+    } catch (error: any) {
+      console.error('Error fetching orders:', error?.response?.data || error.message);
+      // Don't show alert on every poll failure
+    }
+  }, [isOnline, currentLocation, setCurrentLocation]);
+
+  // Check for active order
+  const checkActiveOrder = useCallback(async () => {
+    try {
+      const response = await genieAPI.getCurrentOrder();
+      setHasActiveOrder(response.data.has_active_order);
+      return response.data.has_active_order;
+    } catch (error) {
+      setHasActiveOrder(false);
+      return false;
+    }
+  }, []);
+
+  // Accept delivery order
+  const handleAcceptOrder = async (orderId: string) => {
+    setAcceptingOrderId(orderId);
+    try {
+      await genieAPI.acceptOrder(orderId, 10, 20);
+      Alert.alert(
+        'Order Accepted! 🎉',
+        'You have accepted this delivery. Head to the pickup location.',
+        [{ text: 'View Delivery', onPress: () => router.push('/(main)/active-delivery') }]
+      );
+      // Refresh orders
+      fetchAvailableOrders();
+      checkActiveOrder();
+    } catch (error: any) {
+      console.error('Error accepting order:', error?.response?.data || error.message);
+      const message = error?.response?.data?.detail || 'Failed to accept order. It may have been taken by another genie.';
+      Alert.alert('Unable to Accept', message);
+    } finally {
+      setAcceptingOrderId(null);
+    }
+  };
+
+  // Start/stop polling when online status changes
+  useEffect(() => {
+    if (isOnline) {
+      // Initial fetch
+      setOrdersLoading(true);
+      Promise.all([fetchAvailableOrders(), checkActiveOrder()]).finally(() => {
+        setOrdersLoading(false);
+      });
+      
+      // Poll every 10 seconds
+      pollingIntervalRef.current = setInterval(() => {
+        fetchAvailableOrders();
+        checkActiveOrder();
+      }, 10000);
+    } else {
+      // Stop polling when offline
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      setAvailableOrders([]);
+    }
+    
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [isOnline, fetchAvailableOrders, checkActiveOrder]);
 
   // Get user's skills - memoized to prevent unnecessary recalculations
   const userSkills = useMemo(() => {
