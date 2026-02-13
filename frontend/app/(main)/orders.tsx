@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +20,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import * as api from '../../src/api';
+import { genieAPI, AvailableOrder } from '../../src/orderApi';
 import THEME from '../../src/theme';
 import type { Order } from '../../src/types';
 import GameModal from '../../src/components/GameModal';
