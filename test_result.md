@@ -163,7 +163,7 @@ backend:
     status_history:
         - working: true
           agent: "testing"
-          comment: "✅ All API endpoints are properly structured with /api prefix. Backend is accessible at https://skilledgenie-hub.preview.emergentagent.com/api and all routes are working correctly."
+          comment: "✅ All API endpoints are properly structured with /api prefix. Backend is accessible at https://appointment-hub-289.preview.emergentagent.com/api and all routes are working correctly."
 
   - task: "Deal Negotiation APIs"
     implemented: true
