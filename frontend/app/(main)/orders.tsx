@@ -203,14 +203,29 @@ export default function OrdersScreen() {
 
   useEffect(() => {
     fetchOrders();
+    fetchExternalOrders();
+    checkActiveDelivery();
     
-    // Real-time updates simulation - refresh every 30 seconds
-    const interval = setInterval(() => {
+    // Poll external orders every 10 seconds when online
+    if (isOnline) {
+      pollingIntervalRef.current = setInterval(() => {
+        fetchExternalOrders();
+        checkActiveDelivery();
+      }, 10000);
+    }
+    
+    // Refresh local orders every 30 seconds
+    const localInterval = setInterval(() => {
       fetchOrders();
     }, 30000);
     
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      clearInterval(localInterval);
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [isOnline, fetchExternalOrders, checkActiveDelivery]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
