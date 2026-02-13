@@ -1830,129 +1830,68 @@ export default function NearbyWishesScreen() {
         </View>
       </View>
 
-      {/* Active Delivery Banner */}
-      {renderActiveDeliveryBanner()}
-
-      {/* ONLINE MODE: Show Orders/Wishes Tabs */}
+      {/* ONLINE MODE: Show Nearby Wishes */}
       {isOnline ? (
         <>
-          {/* Tab Switcher: Delivery Orders vs Service Wishes */}
-          <View style={styles.tabSwitcher}>
-            <TouchableOpacity 
-              style={[styles.tabBtn, viewMode === 'orders' && styles.tabBtnActive]}
-              onPress={() => setViewMode('orders')}
-            >
-              <Ionicons 
-                name={viewMode === 'orders' ? "bicycle" : "bicycle-outline"} 
-                size={18} 
-                color={viewMode === 'orders' ? '#FFF' : COLORS.textSecondary} 
-              />
-              <Text style={[styles.tabBtnText, viewMode === 'orders' && styles.tabBtnTextActive]}>
-                Delivery Orders
-              </Text>
-              {availableOrders.length > 0 && (
-                <View style={styles.tabBadge}>
-                  <Text style={styles.tabBadgeText}>{availableOrders.length}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.tabBtn, viewMode === 'wishes' && styles.tabBtnActive]}
-              onPress={() => setViewMode('wishes')}
-            >
-              <Ionicons 
-                name={viewMode === 'wishes' ? "construct" : "construct-outline"} 
-                size={18} 
-                color={viewMode === 'wishes' ? '#FFF' : COLORS.textSecondary} 
-              />
-              <Text style={[styles.tabBtnText, viewMode === 'wishes' && styles.tabBtnTextActive]}>
-                Service Jobs
-              </Text>
-              {filteredWishes.length > 0 && (
-                <View style={[styles.tabBadge, viewMode === 'wishes' && styles.tabBadgeActive]}>
-                  <Text style={styles.tabBadgeText}>{filteredWishes.length}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+          {/* Radius Control */}
+          <View style={styles.radiusControl}>
+            <View style={styles.radiusHeader}>
+              <Text style={styles.radiusLabel}>Search Radius</Text>
+              <View style={styles.radiusValue}>
+                <Text style={styles.radiusNumber}>{radius}</Text>
+                <Text style={styles.radiusUnit}>km</Text>
+              </View>
+            </View>
+            <Slider
+              style={styles.slider}
+              minimumValue={1}
+              maximumValue={10}
+              step={1}
+              value={radius}
+              onValueChange={setRadius}
+              minimumTrackTintColor={COLORS.primary}
+              maximumTrackTintColor={COLORS.border}
+              thumbTintColor={COLORS.primary}
+            />
+            <View style={styles.radiusMarkers}>
+              <Text style={styles.radiusMarker}>1km</Text>
+              <Text style={styles.radiusMarker}>5km</Text>
+              <Text style={styles.radiusMarker}>10km</Text>
+            </View>
           </View>
 
-          {/* Content based on selected tab */}
-          {viewMode === 'orders' ? (
-            /* Delivery Orders Tab */
-            <ScrollView
-              style={styles.listContainer}
-              showsVerticalScrollIndicator={false}
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
-              }
-            >
-              {renderDeliveryOrdersContent()}
-              <View style={{ height: 100 }} />
-            </ScrollView>
-          ) : (
-            /* Service Wishes Tab */
-            <>
-              {/* Radius Control */}
-              <View style={styles.radiusControl}>
-                <View style={styles.radiusHeader}>
-                  <Text style={styles.radiusLabel}>Search Radius</Text>
-                  <View style={styles.radiusValue}>
-                    <Text style={styles.radiusNumber}>{radius}</Text>
-                    <Text style={styles.radiusUnit}>km</Text>
-                  </View>
-                </View>
-                <Slider
-                  style={styles.slider}
-                  minimumValue={1}
-                  maximumValue={10}
-                  step={1}
-                  value={radius}
-                  onValueChange={setRadius}
-                  minimumTrackTintColor={COLORS.primary}
-                  maximumTrackTintColor={COLORS.border}
-                  thumbTintColor={COLORS.primary}
-                />
-                <View style={styles.radiusMarkers}>
-                  <Text style={styles.radiusMarker}>1km</Text>
-                  <Text style={styles.radiusMarker}>5km</Text>
-                  <Text style={styles.radiusMarker}>10km</Text>
-                </View>
-              </View>
-
-              {/* Results Header */}
-              <View style={styles.resultsHeader}>
-                <Text style={styles.resultsCount}>
-                  {filteredWishes.length} job{filteredWishes.length !== 1 ? 's' : ''} found
-                </Text>
-                <View style={styles.sortContainer}>
-                  <TouchableOpacity
-                    style={[styles.sortBtn, sortBy === 'distance' && styles.sortBtnActive]}
-                    onPress={() => setSortBy('distance')}
-                  >
-                    <Text style={[styles.sortBtnText, sortBy === 'distance' && styles.sortBtnTextActive]}>Nearest</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.sortBtn, sortBy === 'budget' && styles.sortBtnActive]}
-                    onPress={() => setSortBy('budget')}
-                  >
-                    <Text style={[styles.sortBtnText, sortBy === 'budget' && styles.sortBtnTextActive]}>Highest ₹</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Wishes List */}
-              <ScrollView
-                style={styles.listContainer}
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                  <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
-                }
+          {/* Results Header */}
+          <View style={styles.resultsHeader}>
+            <Text style={styles.resultsCount}>
+              {filteredWishes.length} wish{filteredWishes.length !== 1 ? 'es' : ''} found
+            </Text>
+            <View style={styles.sortContainer}>
+              <TouchableOpacity
+                style={[styles.sortBtn, sortBy === 'distance' && styles.sortBtnActive]}
+                onPress={() => setSortBy('distance')}
               >
-                {filteredWishes.length === 0 ? renderEmptyState() : filteredWishes.map(renderWishCard)}
-                <View style={{ height: 100 }} />
-              </ScrollView>
-            </>
-          )}
+                <Text style={[styles.sortBtnText, sortBy === 'distance' && styles.sortBtnTextActive]}>Nearest</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.sortBtn, sortBy === 'budget' && styles.sortBtnActive]}
+                onPress={() => setSortBy('budget')}
+              >
+                <Text style={[styles.sortBtnText, sortBy === 'budget' && styles.sortBtnTextActive]}>Highest ₹</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Wishes List */}
+          <ScrollView
+            style={styles.listContainer}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+            }
+          >
+            {filteredWishes.length === 0 ? renderEmptyState() : filteredWishes.map(renderWishCard)}
+            <View style={{ height: 100 }} />
+          </ScrollView>
         </>
       ) : (
         /* OFFLINE MODE: Show My Jobs */
