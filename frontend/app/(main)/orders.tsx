@@ -86,7 +86,7 @@ interface ExpandedOrder {
 
 export default function OrdersScreen() {
   const router = useRouter();
-  const { user, isOnline } = useAuthStore();
+  const { user, isOnline, currentLocation, setCurrentLocation } = useAuthStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -95,11 +95,19 @@ export default function OrdersScreen() {
   const [myLocation, setMyLocation] = useState(MOCK_LOCATION);
   const [stats, setStats] = useState({ total: 0, pending: 0, earnings: 0 });
   
+  // External API orders (from Order Lifecycle backend)
+  const [externalOrders, setExternalOrders] = useState<AvailableOrder[]>([]);
+  const [hasActiveDelivery, setHasActiveDelivery] = useState(false);
+  
+  // Polling interval ref
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
   // Modal states
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [selectedExternalOrderId, setSelectedExternalOrderId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
   // Get user location
