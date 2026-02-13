@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,8 @@ import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { useAuthStore } from '../../src/store';
 import * as api from '../../src/api';
+import { genieAPI, AvailableOrder } from '../../src/orderApi';
+import * as Location from 'expo-location';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
