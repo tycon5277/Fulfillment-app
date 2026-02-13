@@ -2181,48 +2181,6 @@ export default function NearbyWishesScreen() {
             </>
           )}
         </>
-              thumbTintColor={COLORS.primary}
-            />
-            <View style={styles.radiusMarkers}>
-              <Text style={styles.radiusMarker}>1km</Text>
-              <Text style={styles.radiusMarker}>5km</Text>
-              <Text style={styles.radiusMarker}>10km</Text>
-            </View>
-          </View>
-
-          {/* Results Header */}
-          <View style={styles.resultsHeader}>
-            <Text style={styles.resultsCount}>
-              {filteredWishes.length} wish{filteredWishes.length !== 1 ? 'es' : ''} found
-            </Text>
-            <View style={styles.sortContainer}>
-              <TouchableOpacity
-                style={[styles.sortBtn, sortBy === 'distance' && styles.sortBtnActive]}
-                onPress={() => setSortBy('distance')}
-              >
-                <Text style={[styles.sortBtnText, sortBy === 'distance' && styles.sortBtnTextActive]}>Nearest</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.sortBtn, sortBy === 'budget' && styles.sortBtnActive]}
-                onPress={() => setSortBy('budget')}
-              >
-                <Text style={[styles.sortBtnText, sortBy === 'budget' && styles.sortBtnTextActive]}>Highest ₹</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Wishes List */}
-          <ScrollView
-            style={styles.listContainer}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
-            }
-          >
-            {filteredWishes.length === 0 ? renderEmptyState() : filteredWishes.map(renderWishCard)}
-            <View style={{ height: 100 }} />
-          </ScrollView>
-        </>
       ) : (
         /* OFFLINE MODE: Show My Jobs */
         <ScrollView
